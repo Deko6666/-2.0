@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>江西软件职业技术大学勤工助学系统</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a3a6b;
+            --primary-light: #2a5298;
+            --primary-dark: #0e2240;
+            --accent: #c0392b;
+            --accent-light: #e74c3c;
+            --gold: #d4a017;
+            --bg: #f4f6f9;
+            --card: #ffffff;
+            --text: #2c3e50;
+            --text-light: #7f8c8d;
+            --border: #e0e4e8;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --info: #2980b9;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* ========== 顶部横幅 ========== */
+        .top-banner {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+            color: #fff; text-align: center; padding: 12px 0;
+            font-size: 13px; letter-spacing: 2px;
+            border-bottom: 3px solid var(--gold);
+        }
+        .top-banner .school-name { font-weight: 300; opacity: 0.9; }
+
+        /* ========== 导航栏 ========== */
+        .navbar {
+            background: #fff; height: 64px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .nav-left { display: flex; align-items: center; gap: 30px; }
+        .nav-logo { display: flex; align-items: center; gap: 10px; }
+        .nav-logo .logo-icon {
+            width: 40px; height: 40px; background: var(--primary);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #fff;
+        }
+        .nav-logo .logo-text { font-size: 17px; font-weight: 700; color: var(--primary); letter-spacing: 1px; }
+        .nav-links { display: flex; gap: 4px; }
+        .nav-links span {
+            color: var(--text-light); cursor: pointer;
+            padding: 8px 20px; border-radius: 6px;
+            font-size: 14px; font-weight: 500; transition: 0.2s;
+        }
+        .nav-links span:hover { color: var(--primary); background: #eef2f7; }
+        .nav-links span.active { color: var(--primary); background: #e8eef6; font-weight: 600; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+
+        /* ========== 容器 ========== */
+        .container { max-width: 1120px; margin: 24px auto; padding: 0 20px; }
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ========== 卡片 ========== */
+        .card {
+            background: var(--card); border-radius: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            padding: 24px; margin-bottom: 18px;
+        }
+        .card-title {
+            font-size: 16px; font-weight: 700; color: var(--primary);
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 2px solid var(--bg);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* ========== 按钮 ========== */
+        .btn {
+            padding: 9px 22px; border-radius: 6px; border: none;
+            cursor: pointer; font-weight: 600; font-size: 13px;
+            transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;
+            font-family: inherit;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-light); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover:not(:disabled) { background: #1e8e4e; }
+        .btn-warning { background: var(--warning); color: #fff; }
+        .btn-warning:hover:not(:disabled) { background: #d68910; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover:not(:disabled) { background: #c0392b; }
+        .btn-outline { border: 1.5px solid var(--primary); color: var(--primary); background: transparent; }
+        .btn-outline:hover { background: #eef2f7; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-lg { padding: 12px 30px; font-size: 15px; }
+        .btn-gold { background: var(--gold); color: #fff; }
+
+        /* ========== 表单 ========== */
+        label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+        input, select, textarea {
+            width: 100%; padding: 10px 14px; margin-bottom: 14px;
+            border: 1.5px solid var(--border); border-radius: 6px;
+            font-size: 14px; transition: 0.2s; font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,58,107,0.08); }
+        textarea { resize: vertical; min-height: 70px; }
+
+        /* ========== 状态标签 ========== */
+        .badge {
+            display: inline-block; padding: 3px 10px; border-radius: 4px;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+        }
+        .badge-pending { background: #fff3cd; color: #856404; }
+        .badge-published { background: #d4edda; color: #155724; }
+        .badge-approved { background: #cce5ff; color: #004085; }
+        .badge-taken { background: #e2e3e5; color: #383d41; }
+        .badge-rejected { background: #f8d7da; color: #721c24; }
+        .badge-confirmed { background: #d4edda; color: #155724; }
+        .badge-paid { background: #d4edda; color: #155724; }
+
+        /* ========== 统计卡片 ========== */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { text-align: center; padding: 22px 16px; }
+        .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 6px; }
+        .stat-value { font-size: 26px; font-weight: 700; }
+        .stat-value.green { color: var(--success); }
+        .stat-value.blue { color: var(--primary); }
+        .stat-value.orange { color: var(--warning); }
+        .stat-value.red { color: var(--danger); }
+
+        /* ========== 岗位卡片 ========== */
+        .job-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+        .job-card { border-top: 3px solid var(--primary); transition: 0.2s; }
+        .job-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        .job-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .job-meta { display: flex; gap: 16px; margin: 8px 0; font-size: 13px; color: var(--text-light); }
+        .job-salary { font-size: 22px; font-weight: 700; color: var(--gold); margin: 8px 0; }
+        .job-employer { font-size: 12px; color: #aaa; font-family: 'Courier New', monospace; word-break: break-all; }
+
+        /* ========== 弹窗 ========== */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.45); display: none;
+            align-items: center; justify-content: center; z-index: 200;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-content {
+            background: #fff; padding: 32px; border-radius: 12px;
+            width: 420px; max-width: 92vw; position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .modal-close {
+            position: absolute; top: 14px; right: 18px;
+            font-size: 24px; cursor: pointer; color: #aaa; background: none; border: none;
+        }
+        .modal-close:hover { color: #333; }
+
+        /* ========== 表格 ========== */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8f9fb; padding: 10px 14px; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid var(--border); }
+        td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+        tr:hover td { background: #fafbfc; }
+
+        /* ========== 个人资料 ========== */
+        .profile-header { display: flex; align-items: center; gap: 24px; }
+        .avatar-circle {
+            width: 88px; height: 88px; border-radius: 50%;
+            border: 3px solid var(--border); object-fit: cover; cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .avatar-picker { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+        .avatar-picker img {
+            width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent; transition: 0.2s;
+        }
+        .avatar-picker img:hover, .avatar-picker img.selected { border-color: var(--primary); transform: scale(1.08); }
+        .wallet-addr { font-family: 'Courier New', monospace; font-size: 12px; color: var(--text-light); word-break: break-all; }
+        .tx-link { color: var(--info); text-decoration: none; font-family: monospace; font-size: 12px; }
+        .tx-link:hover { text-decoration: underline; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #bbb; }
+        .empty-state .icon { font-size: 48px; margin-bottom: 8px; }
+        .loading { text-align: center; padding: 30px; color: #bbb; }
+        .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #eee; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ========== 页脚 ========== */
+        .footer {
+            text-align: center; padding: 20px; color: #bbb; font-size: 12px;
+            border-top: 1px solid var(--border); margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 0 16px; }
+            .nav-logo .logo-text { font-size: 14px; }
+            .nav-links span { padding: 6px 10px; font-size: 12px; }
+            .container { padding: 0 12px; }
+            .job-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 顶部横幅 -->
+<div class="top-banner">
+    <span class="school-name">JIANGXI SOFTWARE VOCATIONAL AND TECHNICAL UNIVERSITY</span>
+</div>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+    <div class="nav-left">
+        <div class="nav-logo">
+            <div class="logo-icon">🎓</div>
+            <div class="logo-text">江西软件职业技术大学勤工助学系统</div>
+        </div>
+        <div class="nav-links" id="navLinks" style="display:none;">
+            <span class="active" onclick="switchPage('hall')">📋 任务大厅</span>
+            <span onclick="switchPage('contracts')">📄 我的合约</span>
+            <span onclick="switchPage('salary')">💰 薪酬记录</span>
+            <span id="navAutoSettle" style="display:none" onclick="switchPage('autoSettle')">🤖 自动结算</span>
+            <span id="navAdmin" style="display:none" onclick="switchPage('admin')">⚙️ 系统管理</span>
+            <span onclick="runDiagnosis()" style="color:var(--warning);">🔍 诊断</span>
+        </div>
+    </div>
+    <div class="nav-right" id="userTopArea">
+        <button class="btn btn-primary" onclick="openModal('authModal')">登录 / 注册</button>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- ==================== 任务大厅 ==================== -->
+    <div id="hallPage" class="page active">
+        <div id="teacherPublish" class="card" style="display:none; border-left: 4px solid var(--gold);">
+            <div class="card-title">📢 发布新岗位</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div><label>岗位名称</label><input type="text" id="jobTitle" placeholder="如：图书馆管理员"></div>
+                <div><label>用人部门</label><input type="text" id="jobDept" placeholder="如：图书馆"></div>
+                <div><label>时薪 (ETH)</label><input type="number" id="jobHourlyRate" placeholder="0.01" step="0.001"></div>
+                <div><label>总预算 (ETH)</label><input type="number" id="jobBudget" placeholder="0.5" step="0.01"></div>
+            </div>
+            <label>岗位描述</label>
+            <textarea id="jobDesc" placeholder="工作内容、任职要求等"></textarea>
+            <button class="btn btn-gold btn-lg" onclick="publishJob()" style="margin-top:4px;">🚀 链上发布并锁仓</button>
+        </div>
+        <div class="card-title" style="margin-bottom:16px;">🔥 最新岗位</div>
+        <div id="jobGrid" class="job-grid">
+            <div class="loading"><span class="spinner"></span>加载中...</div>
+        </div>
+    </div>
+
+    <!-- ==================== 我的合约 ==================== -->
+    <div id="contractsPage" class="page">
+        <div id="studentContracts">
+            <div class="card">
+                <div class="card-title">📄 我的任职合约</div>
+                <div id="myContractsList"><div class="loading"><span class="spinner"></span>加载中...</div></div>
+            </div>
+        </div>
+        <div id="teacherContracts" style="display:none;">
+            <div class="card">
+                <div class="card-title">📬 待审批申请 <span id="pendingBadge" class="badge badge-pending" style="display:none;">0</span></div>
+                <div id="pendingApplications"><div class="loading"><span class="spinner"></span>加载中...</div></div>
+            </div>
+            <div class="card">
+                <div class="card-title">⏰ 待确认工时</div>
+                <div id="unconfirmedHours"><div class="loading"><span class="spinner"></span>加载中...</div></div>
+            </div>
+            <div class="card">
+                <div class="card-title">💰 待结算薪酬</div>
+                <div id="pendingSettlements"><div class="loading"><span class="spinner"></span>加载中...</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 薪酬记录 ==================== -->
+    <div id="salaryPage" class="page">
+        <div class="stats-grid">
+            <div class="card stat-card"><div class="stat-label">累计收入</div><div class="stat-value green"><span id="totalEarnings">0.00</span> ETH</div></div>
+            <div class="card stat-card"><div class="stat-label">结算次数</div><div class="stat-value blue"><span id="settleCount">0</span></div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">💰 薪酬结算记录</div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>岗位</th><th>部门</th><th>工时</th><th>金额</th><th>交易哈希</th><th>时间</th><th>状态</th></tr></thead>
+                    <tbody id="settlementTable"><tr><td colspan="7" class="empty-state">暂无记录</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 自动结算管理 ==================== -->
+    <div id="autoSettlePage" class="page">
+        <div class="stats-grid">
+            <div class="card stat-card"><div class="stat-label">结算状态</div><div class="stat-value blue"><span id="asStatus">-</span></div></div>
+            <div class="card stat-card"><div class="stat-label">结算周期</div><div class="stat-value orange"><span id="asCycle">-</span> 天</div></div>
+            <div class="card stat-card"><div class="stat-label">待结算合约</div><div class="stat-value green"><span id="asPending">-</span></div></div>
+            <div class="card stat-card"><div class="stat-label">待结算金额</div><div class="stat-value red"><span id="asAmount">-</span> ETH</div></div>
+        </div>
+
+        <!-- 结算调度状态 -->
+        <div class="card" style="border-left:4px solid var(--success);">
+            <div class="card-title">🤖 自动结算调度状态</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px;">
+                <div>上次结算: <b id="asLastSettle">-</b></div>
+                <div>下次结算: <b id="asNextSettle" style="color:var(--primary);">-</b></div>
+                <div>自动结算: <span id="asEnabled" class="badge badge-published">-</span></div>
+                <div>工时确认宽限期: <b id="asGrace">-</b> 小时</div>
+            </div>
+            <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-gold btn-lg" onclick="triggerAutoSettlement()">⚡ 立即执行自动结算</button>
+                <button class="btn btn-outline" onclick="loadAutoSettlePage()">🔄 刷新状态</button>
+            </div>
+        </div>
+
+        <!-- 结算配置 -->
+        <div class="card" id="settleConfigCard" style="display:none;">
+            <div class="card-title">⚙️ 结算配置（管理员）</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+                <div>
+                    <label>结算周期（天）</label>
+                    <input type="number" id="cfgCycleDays" value="30" min="1" max="365">
+                </div>
+                <div>
+                    <label>工时确认宽限期（小时）</label>
+                    <input type="number" id="cfgGraceHours" value="48" min="1" max="168">
+                </div>
+                <div>
+                    <label>自动结算</label>
+                    <select id="cfgAutoEnabled">
+                        <option value="true">✅ 开启</option>
+                        <option value="false">❌ 关闭</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveSettlementConfig()" style="margin-top:4px;">💾 保存配置</button>
+        </div>
+
+        <!-- 自动结算工作原理 -->
+        <div class="card">
+            <div class="card-title">📖 自动结算工作原理</div>
+            <div style="font-size:13px; line-height:2; color:#555;">
+                <p><b>1️⃣ 工时自动确认：</b>学生打卡下班后，教师在 <b>宽限期</b>（默认48小时）内未确认的工时，系统将<b>自动确认</b>并计入可结算工时。</p>
+                <p><b>2️⃣ 到期自动触发：</b>系统后台<b>每小时</b>检查一次是否到达结算周期（默认30天）。到达后自动触发链上智能合约执行薪酬结算。</p>
+                <p><b>3️⃣ 自动核算与发放：</b>合约根据「已确认工时 × 时薪」自动核算每位学生的薪酬，并<b>直接从合约锁仓的预算中转账给学生</b>，全程无需人工干预。</p>
+                <p><b>4️⃣ 全程可审计：</b>所有操作（发布、审批、打卡、确认、结算）均记录在<b>审计日志</b>和<b>区块链</b>中，确保公开透明、不可篡改。</p>
+            </div>
+        </div>
+
+        <!-- 审计日志 -->
+        <div class="card">
+            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">📜 审计日志 <button class="btn btn-outline btn-sm" onclick="loadAuditLogs()">🔄 刷新</button></div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>操作</th><th>执行者</th><th>目标</th><th>详情</th><th>交易哈希</th><th>时间</th></tr></thead>
+                    <tbody id="auditLogTable"><tr><td colspan="7" class="loading"><span class="spinner"></span>加载中...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 系统管理 ==================== -->
+    <div id="adminPage" class="page">
+        <div class="stats-grid">
+            <div class="card stat-card"><div class="stat-label">用户总数</div><div class="stat-value blue" id="adminUserCount">-</div></div>
+            <div class="card stat-card"><div class="stat-label">活跃岗位</div><div class="stat-value orange" id="adminActiveJobs">-</div></div>
+            <div class="card stat-card"><div class="stat-label">在岗人数</div><div class="stat-value green" id="adminActiveEmp">-</div></div>
+            <div class="card stat-card"><div class="stat-label">累计薪酬</div><div class="stat-value red" id="adminPaid">-</div></div>
+        </div>
+        <!-- 系统信息 -->
+        <div class="card">
+            <div class="card-title">🔧 系统信息</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                <div>RPC节点: <span id="sysRpc" class="wallet-addr">-</span></div>
+                <div>链ID: <span id="sysChainId">-</span></div>
+                <div>合约余额: <span id="sysBalance" style="color:var(--success);font-weight:700;">-</span> ETH</div>
+                <div>总工时: <span id="sysHours">-</span> 小时</div>
+                <div>教师数: <span id="sysTeachers">-</span></div>
+                <div>学生数: <span id="sysStudents">-</span></div>
+            </div>
+        </div>
+        <!-- 岗位管理 -->
+        <div class="card">
+            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">📋 岗位管理 <button class="btn btn-danger btn-sm" onclick="adminDeleteAllJobs()">🗑️ 清空全部</button></div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>链上ID</th><th>岗位名称</th><th>部门</th><th>发布者</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody id="adminJobTable"><tr><td colspan="7" class="loading"><span class="spinner"></span>加载中...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 合约管理 -->
+        <div class="card">
+            <div class="card-title">📄 所有合约</div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>岗位</th><th>学生</th><th>教师</th><th>状态</th><th>工时</th></tr></thead>
+                    <tbody id="adminEmpTable"><tr><td colspan="6" class="loading"><span class="spinner"></span>加载中...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 用户管理 -->
+        <div class="card">
+            <div class="card-title">👥 用户管理</div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>用户名</th><th>昵称</th><th>角色</th><th>钱包地址</th><th>注册时间</th><th>操作</th></tr></thead>
+                    <tbody id="adminUserTable"><tr><td colspan="7" class="loading"><span class="spinner"></span>加载中...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 个人中心 ==================== -->
+    <div id="minePage" class="page">
+        <div class="card">
+            <div class="profile-header">
+                <img id="myAvatar" class="avatar-circle" src="https://api.dicebear.com/7.x/bottts/svg?seed=1" onclick="document.getElementById('fileBtn').click()">
+                <div style="flex:1;">
+                    <h2 style="margin:0 0 6px; font-size:20px;"><span id="myNickname">新同学</span> <small id="myRoleTag" style="color:#999; font-size:13px;"></small></h2>
+                    <p style="font-size:13px; color:#666;">账号: <span id="myUsername"></span></p>
+                    <p class="wallet-addr" style="margin-top:2px;">钱包: <span id="myWallet">未连接</span></p>
+                    <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-outline btn-sm" onclick="toggleEdit()">✏️ 编辑资料</button>
+                        <button class="btn btn-outline btn-sm" onclick="connectWallet()">🦊 连接钱包</button>
+                        <button class="btn btn-danger btn-sm" onclick="logout()">退出系统</button>
+                    </div>
+                </div>
+            </div>
+            <div id="editPanel" style="display:none; border-top:1px solid var(--border); padding-top:16px; margin-top:16px;">
+                <label>新昵称</label>
+                <input type="text" id="newNickname" placeholder="输入新昵称" style="width:260px;">
+                <div style="margin:10px 0;">
+                    <input type="file" id="fileBtn" style="display:none" onchange="doUpload(event)">
+                    <img id="uploadPreview" src="" style="width:48px; height:48px; border-radius:50%; object-fit:cover; display:none; vertical-align:middle; margin-right:10px;">
+                    <button class="btn btn-outline btn-sm" onclick="document.getElementById('fileBtn').click()">📁 上传头像</button>
+                </div>
+                <label>选择预设头像</label>
+                <div class="avatar-picker" id="avatarPicker"></div>
+                <button class="btn btn-primary" onclick="saveProfile()">💾 保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 页脚 -->
+<div class="footer">© 江西软件职业技术大学 勤工助学管理系统 · 基于区块链智能合约</div>
+
+<!-- 登录弹窗 -->
+<div class="modal-overlay" id="authModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('authModal')">×</button>
+        <div style="text-align:center; margin-bottom:20px;">
+            <div style="font-size:32px; margin-bottom:6px;">🎓</div>
+            <h3 id="mTitle" style="color:var(--primary); font-size:18px;">用户登录</h3>
+        </div>
+        <button class="btn btn-success btn-lg" style="width:100%; margin-bottom:16px;" onclick="connectWallet()">🦊 MetaMask 快捷登录</button>
+        <div style="text-align:center; color:#ccc; margin-bottom:16px; font-size:13px;">── 或使用账号密码 ──</div>
+        <label>账号</label>
+        <input type="text" id="u" placeholder="请输入账号">
+        <label>密码</label>
+        <input type="password" id="p" placeholder="请输入密码">
+        <div id="roleSelect" style="display:none;">
+            <label>角色</label>
+            <select id="r"><option value="STUDENT">学生</option><option value="TEACHER">教师</option></select>
+        </div>
+        <button class="btn btn-primary btn-lg" style="width:100%;" onclick="handleAuth()">进入系统</button>
+        <p id="toggleLink" style="color:var(--primary); cursor:pointer; font-size:13px; margin-top:14px; text-align:center;" onclick="switchAuth()">没有账号？点击注册</p>
+    </div>
+</div>
+
+<!-- 打卡弹窗 -->
+<div class="modal-overlay" id="clockModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('clockModal')">×</button>
+        <h3 style="text-align:center; margin-bottom:20px; color:var(--primary);">⏰ 工时打卡</h3>
+        <div id="clockStatus" style="text-align:center; margin-bottom:20px;">
+            <div style="font-size:52px;" id="clockIcon">🕐</div>
+            <p id="clockText" style="font-size:15px; color:#555; margin-top:8px;">准备打卡</p>
+        </div>
+        <div id="clockInPanel">
+            <button class="btn btn-success btn-lg" style="width:100%;" onclick="doClockIn()">🟢 上班打卡</button>
+        </div>
+        <div id="clockOutPanel" style="display:none;">
+            <label>工作时长 (分钟)</label>
+            <input type="number" id="workMinutes" placeholder="如：120" min="1" max="480">
+            <button class="btn btn-warning btn-lg" style="width:100%;" onclick="doClockOut()">🔴 下班打卡</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ======================== 全局状态 ========================
+let currentUser = null;
+let isLogin = true;
+let uploadedAvatarUrl = "";
+let selectedAvatarUrl = "";
+let currentClockInId = null;
+let currentChainClockInId = 0;
+let currentEmploymentId = null;
+let currentChainEmploymentId = null;
+
+const API = "http://127.0.0.1:8000/api";
+const CONTRACT_ADDR = "0xcc08369ee6d688e013922e9018cd390d4a81e893";
+const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=1";
+
+const CONTRACT_ABI = [
+    "function createJob(string _title, string _department, uint256 _hourlyRate) external payable",
+    "function applyForJob(uint256 _jobId) external",
+    "function approveApplication(uint256 _employmentId) external",
+    "function rejectApplication(uint256 _employmentId) external",
+    "function closeJob(uint256 _jobId) external",
+    "function resignFromJob(uint256 _employmentId) external",
+    "function clockIn(uint256 _employmentId) external",
+    "function clockOut(uint256 _clockInId, uint256 _workMinutes) external",
+    "function confirmHours(uint256 _clockInId) external",
+    "function settleSalary(uint256 _employmentId) external",
+    "function registerAsTeacher() external",
+    "function jobCount() view returns (uint256)",
+    "function employmentCount() view returns (uint256)",
+    "function clockInCount() view returns (uint256)",
+    "function getJob(uint256 _jobId) view returns (tuple(uint256 id, string title, string department, uint256 hourlyRate, address employer, uint256 totalBudget, uint256 remainingBudget, uint8 status, uint256 createdAt))",
+    "function getEmployment(uint256 _employmentId) view returns (tuple(uint256 id, uint256 jobId, address student, uint8 status, uint256 totalHours, uint256 appliedAt, uint256 approvedAt))",
+    "function getContractBalance() view returns (uint256)",
+    "function executeAutoSettlement() external",
+    "function isSettlementDue() view returns (bool)",
+    "function getSettlementConfig() view returns (uint256, uint256, bool, uint256, uint256)",
+    "function getPendingSettlementIds() view returns (uint256[])",
+    "function updateSettlementConfig(uint256 _cycleDays, bool _autoEnabled, uint256 _gracePeriodHours) external",
+    "function triggerImmediateSettlement() external",
+    "event JobCreated(uint256 indexed jobId, string title, uint256 hourlyRate, address employer)",
+    "event JobClosed(uint256 indexed jobId, address employer, uint256 refundAmount)",
+    "event ApplicationSubmitted(uint256 indexed employmentId, uint256 indexed jobId, address student)",
+    "event ApplicationApproved(uint256 indexed employmentId, address student)",
+    "event ApplicationRejected(uint256 indexed employmentId, address student)",
+    "event StudentResigned(uint256 indexed employmentId, address student)",
+    "event ClockedIn(uint256 indexed clockInId, uint256 indexed employmentId, address student, uint256 workMinutes)",
+    "event HoursConfirmed(uint256 indexed clockInId, uint256 indexed employmentId, uint256 workMinutes)",
+    "event SalarySettled(uint256 indexed settlementId, uint256 indexed employmentId, address student, uint256 amount)"
+];
+
+// ======================== 初始化 ========================
+window.onload = () => {
+    initAvatars();
+    const saved = localStorage.getItem('campusUser');
+    if (saved) {
+        currentUser = JSON.parse(saved);
+        loginSuccess();
+        switchPage(localStorage.getItem('currentPage') || 'hall');
+    }
+    fetchHallJobs();
+};
+
+function initAvatars() {
+    const picker = document.getElementById('avatarPicker');
+    ['Felix','Aria','Jack','Luna','Max','Zoe','Sam','Mia'].forEach(seed => {
+        const img = document.createElement('img');
+        img.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+        img.onclick = () => {
+            selectedAvatarUrl = img.src;
+            document.querySelectorAll('.avatar-picker img').forEach(i => i.classList.remove('selected'));
+            img.classList.add('selected');
+        };
+        picker.appendChild(img);
+    });
+}
+
+// ======================== 页面切换 ========================
+function switchPage(p) {
+    document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
+    document.getElementById(p + 'Page').classList.add('active');
+    document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+    const navMap = { hall: 0, contracts: 1, salary: 2, autoSettle: 3, admin: 4 };
+    if (navMap[p] !== undefined) document.querySelectorAll('.nav-links span')[navMap[p]].classList.add('active');
+    localStorage.setItem('currentPage', p);
+    if (p === 'hall') fetchHallJobs();
+    if (p === 'contracts') loadContractsPage();
+    if (p === 'salary') loadSalaryPage();
+    if (p === 'autoSettle') loadAutoSettlePage();
+    if (p === 'admin') loadAdminPage();
+    if (p === 'mine') loadProfile();
+}
+
+// ======================== 认证 ========================
+async function checkAndSwitchNetwork() {
+    if (!window.ethereum) throw new Error("请安装 MetaMask");
+    // 先检查geth节点是否在运行
+    try {
+        const testRes = await fetch('http://127.0.0.1:8545', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({jsonrpc:'2.0',method:'eth_chainId',params:[],id:1})
+        });
+        const testData = await testRes.json();
+        const gethChainId = parseInt(testData.result, 16);
+        if (gethChainId !== 887766) throw new Error("geth节点chainId不匹配，当前: " + gethChainId);
+    } catch (e) {
+        throw new Error("⚠️ geth节点未启动！请先运行 start.bat 启动系统");
+    }
+    // 检查合约是否真的部署在链上（防止向空地址转账：部署失败或节点重启后旧地址会变成死地址）
+    try {
+        const codeRes = await fetch('http://127.0.0.1:8545', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({jsonrpc:'2.0', method:'eth_getCode', params:[CONTRACT_ADDR, 'latest'], id:1})
+        });
+        const codeData = await codeRes.json();
+        if (!codeData.result || codeData.result === '0x' || codeData.result === '0x0') {
+            throw new Error("⚠️ 合约未部署！地址 " + CONTRACT_ADDR + " 上没有合约代码。\n\n请运行 start.bat 重新部署合约（切勿直接发交易，ETH会丢失）");
+        }
+    } catch (e) {
+        if (e.message && e.message.indexOf('合约未部署') >= 0) throw e;
+        throw new Error("⚠️ 无法检查合约状态，请确认 geth 节点运行正常");
+    }
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const network = await provider.getNetwork();
+    const chainId = Number(network.chainId);
+    if (chainId !== 887766) {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0xD8BD6' }],
+            });
+        } catch (e) {
+            if (e.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0xD8BD6',
+                        chainName: 'Geth Dev Chain',
+                        rpcUrls: ['http://127.0.0.1:8545'],
+                        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }
+                    }]
+                });
+            } else {
+                throw new Error("请在MetaMask中手动添加网络: chainId=887766, RPC=http://127.0.0.1:8545");
+            }
+        }
+    }
+}
+
+async function connectWallet() {
+    if (!window.ethereum) return alert("请安装 MetaMask 钱包插件");
+    try {
+        await checkAndSwitchNetwork();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const addr = await signer.getAddress();
+        if (!currentUser) {
+            const res = await fetch(`${API}/login_by_wallet`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({wallet_address:addr}) });
+            const d = await res.json();
+            if (d.success) { currentUser = d.data; loginSuccess(); closeModal('authModal'); }
+            else alert("此钱包未绑定账号，请先使用账号密码登录后再连接钱包");
+        } else {
+            const res = await fetch(`${API}/bind_wallet`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:currentUser.username, wallet_address:addr}) });
+            const d = await res.json();
+            if (!d.success) return alert(d.msg);
+            currentUser.wallet_address = addr;
+            localStorage.setItem('campusUser', JSON.stringify(currentUser));
+            loginSuccess();
+            alert("钱包已连接并绑定！");
+        }
+    } catch (e) { alert("钱包连接失败：" + (e.message || e)); }
+}
+
+async function ensureWalletBound() {
+    if (!window.ethereum) throw new Error("请安装 MetaMask");
+    await checkAndSwitchNetwork();
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const addr = await signer.getAddress();
+    if (currentUser && (!currentUser.wallet_address || currentUser.wallet_address.toLowerCase() !== addr.toLowerCase())) {
+        const res = await fetch(`${API}/bind_wallet`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:currentUser.username, wallet_address:addr}) });
+        const d = await res.json();
+        if (!d.success) throw new Error(d.msg);
+        currentUser.wallet_address = addr;
+        localStorage.setItem('campusUser', JSON.stringify(currentUser));
+        loginSuccess();
+    }
+    return addr;
+}
+
+async function handleAuth() {
+    const u = document.getElementById('u').value.trim();
+    const p = document.getElementById('p').value.trim();
+    if (!u || !p) return alert("请输入账号和密码");
+    const r = document.getElementById('r').value;
+    const endpoint = isLogin ? '/login' : '/register';
+    const body = isLogin ? {username:u, password:p} : {username:u, password:p, role:r};
+    try {
+        const res = await fetch(API + endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+        const d = await res.json();
+        if (d.success) { currentUser = d.data; loginSuccess(); closeModal('authModal'); switchPage('hall'); }
+        else alert(d.msg);
+    } catch (e) { alert("请求失败，请检查后端是否启动"); }
+}
+
+function loginSuccess() {
+    localStorage.setItem('campusUser', JSON.stringify(currentUser));
+    document.getElementById('navLinks').style.display = 'flex';
+    const shortAddr = currentUser.wallet_address ? currentUser.wallet_address.slice(0,6)+'...'+currentUser.wallet_address.slice(-4) : '🔌 连接钱包';
+    document.getElementById('userTopArea').innerHTML = `
+        <button class="btn btn-outline btn-sm" onclick="connectWallet()">${shortAddr}</button>
+        <img src="${currentUser.avatar || DEFAULT_AVATAR}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--border);cursor:pointer;" onclick="switchPage('mine')" title="个人中心">
+    `;
+    if (currentUser.role === 'TEACHER') {
+        document.getElementById('teacherPublish').style.display = 'block';
+        document.getElementById('teacherContracts').style.display = 'block';
+        document.getElementById('studentContracts').style.display = 'none';
+        if (currentUser.wallet_address) registerTeacherOnChain();
+    } else if (currentUser.role === 'ADMIN') {
+        document.getElementById('teacherPublish').style.display = 'none';
+        document.getElementById('teacherContracts').style.display = 'none';
+        document.getElementById('studentContracts').style.display = 'block';
+    } else {
+        document.getElementById('teacherPublish').style.display = 'none';
+        document.getElementById('teacherContracts').style.display = 'none';
+        document.getElementById('studentContracts').style.display = 'block';
+    }
+    document.getElementById('navAdmin').style.display = currentUser.role === 'ADMIN' ? 'inline' : 'none';
+    document.getElementById('navAutoSettle').style.display = (currentUser.role === 'ADMIN' || currentUser.role === 'TEACHER') ? 'inline' : 'none';
+}
+
+async function registerTeacherOnChain() {
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        const tx = await contract.registerAsTeacher();
+        await tx.wait();
+    } catch (e) { /* 已注册则忽略 */ }
+}
+
+function switchAuth() {
+    isLogin = !isLogin;
+    document.getElementById('mTitle').innerText = isLogin ? '用户登录' : '用户注册';
+    document.getElementById('roleSelect').style.display = isLogin ? 'none' : 'block';
+    document.getElementById('toggleLink').innerText = isLogin ? '没有账号？点击注册' : '已有账号？点击登录';
+}
+function logout() { localStorage.clear(); currentUser = null; location.reload(); }
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function toggleEdit() { const p = document.getElementById('editPanel'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; }
+
+// ======================== 任务大厅 ========================
+async function fetchHallJobs() {
+    const grid = document.getElementById('jobGrid');
+    try {
+        const res = await fetch(`${API}/public_jobs`);
+        if (!res.ok) { grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>后端错误: '+res.status+'</p></div>'; return; }
+        const data = await res.json();
+        if (!Array.isArray(data) || !data.length) { grid.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>暂无岗位发布</p></div>'; return; }
+        grid.innerHTML = data.map(j => `
+            <div class="card job-card">
+                <div class="job-title">${escHtml(j.title)}</div>
+                <div><span class="badge badge-${j.status.toLowerCase()}">${statusText(j.status)}</span></div>
+                <div class="job-meta"><span>🏢 ${escHtml(j.department||'未设置')}</span><span>👥 ${j.applicant_count}人申请</span></div>
+                <div class="job-salary">💰 ${j.salary} ETH</div>
+                <div class="job-employer">发布者: ${j.employer}</div>
+                ${j.description ? `<p style="font-size:13px;color:#777;margin:10px 0 0;">${escHtml(j.description)}</p>` : ''}
+                <div style="display:flex;gap:8px;margin-top:14px;">
+                    <button class="btn btn-primary" style="flex:1;" onclick="applyForJob(${j.id},${j.chain_job_id||0})" ${!currentUser||currentUser.role!=='STUDENT'?'disabled':''}>
+                        ${!currentUser?'请先登录':currentUser.role!=='STUDENT'?'仅学生可申请':'📝 申请岗位'}
+                    </button>
+                    ${currentUser&&(currentUser.role==='ADMIN'||currentUser.role==='TEACHER')?`<button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})">🗑️ 删除</button>`:''}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) { grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败: '+e.message+'</p></div>'; }
+}
+
+async function applyForJob(dbJobId, chainJobId) {
+    if (!currentUser) return alert("请先登录！");
+    if (currentUser.role !== 'STUDENT') return alert("只有学生才能申请岗位");
+    if (!chainJobId || chainJobId <= 0) return alert("该岗位链上ID无效，请联系教师重新发布");
+    if (!confirm("确认申请该岗位？")) return;
+    try {
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        // 先检查链上岗位状态
+        try {
+            const job = await contract.getJob(chainJobId);
+            const status = Number(job.status); // 0=OPEN, 1=FILLED, 2=CLOSED
+            if (status === 1) {
+                alert("该岗位已被其他同学占用，无法申请");
+                return;
+            } else if (status === 2) {
+                alert("该岗位已关闭，无法申请");
+                return;
+            }
+        } catch(e) { console.warn("查询岗位状态失败:", e); }
+        alert("🦊 请在 MetaMask 中确认交易...");
+        const tx = await contract.applyForJob(chainJobId);
+        const receipt = await tx.wait();
+        console.log("applyForJob receipt:", receipt);
+        // 获取链上合约ID：多重保障
+        let chainEmpId = 0;
+        // 方法1：BigInt 比较 topics
+        try {
+            const eventHash = BigInt(ethers.id('ApplicationSubmitted(uint256,uint256,address)'));
+            for (const log of receipt.logs) {
+                if (log.topics && log.topics.length >= 2) {
+                    if (BigInt(log.topics[0]) === eventHash) {
+                        chainEmpId = Number(BigInt(log.topics[1]));
+                        console.log("empId from topics:", chainEmpId);
+                        break;
+                    }
+                }
+            }
+        } catch(e) { console.warn("方法1失败:", e); }
+        // 方法2：原始 JSON-RPC 查询 employmentCount()
+        if (!chainEmpId || chainEmpId <= 0) {
+            try {
+                const selector = ethers.id('employmentCount()').slice(0, 10);
+                const rpcRes = await fetch('http://127.0.0.1:8545', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({jsonrpc:'2.0', method:'eth_call', params:[{to:CONTRACT_ADDR, data:selector}, 'latest'], id:1})
+                });
+                const rpcData = await rpcRes.json();
+                if (rpcData.result && rpcData.result !== '0x') {
+                    chainEmpId = Number(BigInt(rpcData.result));
+                    console.log("empId from rpc:", chainEmpId);
+                }
+            } catch(e) { console.warn("方法2失败:", e); }
+        }
+        const res = await fetch(`${API}/apply_job`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({job_id:dbJobId, student:currentUser.wallet_address, chain_employment_id:chainEmpId}) });
+        const d = await res.json();
+        if (d.success) { alert("🎉 申请成功！等待教师审批"); fetchHallJobs(); }
+        else alert("⚠️ " + d.msg);
+    } catch (e) {
+        if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
+            alert("你取消了交易");
+        } else {
+            alert("申请失败：" + (e.reason || e.message || e));
+        }
+    }
+}
+
+async function publishJob() {
+    const title = document.getElementById('jobTitle').value.trim();
+    const dept = document.getElementById('jobDept').value.trim();
+    const hourlyRate = document.getElementById('jobHourlyRate').value;
+    const budget = document.getElementById('jobBudget').value;
+    const desc = document.getElementById('jobDesc').value.trim();
+    if (!title || !hourlyRate || !budget) return alert("请填写完整信息");
+    if (parseFloat(budget) <= 0 || parseFloat(hourlyRate) <= 0) return alert("金额必须大于0");
+    try {
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        try { const regTx = await contract.registerAsTeacher(); await regTx.wait(); } catch(e) {}
+        const hourlyRateWei = ethers.parseEther(hourlyRate.toString());
+        const budgetWei = ethers.parseEther(budget.toString());
+        alert("🦊 请在 MetaMask 中确认交易（将锁定预算到合约）...");
+        const tx = await contract.createJob(title, dept||'', hourlyRateWei, {value:budgetWei});
+        const receipt = await tx.wait();
+        console.log("createJob receipt status:", receipt.status, "logs:", receipt.logs);
+        if (receipt.status === 0) {
+            return alert("❌ 链上交易执行失败（状态0），可能是余额不足或合约报错");
+        }
+        // 获取链上岗位ID：用原始 JSON-RPC 查询 jobCount()（最可靠）
+        let chainJobId = 0;
+        // 方法1（首选）：ethers 直接调用 jobCount()
+        try {
+            chainJobId = Number(await contract.jobCount());
+            console.log("chainJobId from contract.jobCount():", chainJobId);
+        } catch(e) { console.warn("contract.jobCount()失败:", e.message || e); }
+        // 方法2：原始 JSON-RPC eth_call
+        if (!chainJobId || chainJobId <= 0) {
+            try {
+                const selector = ethers.id('jobCount()').slice(0, 10);
+                const rpcRes = await fetch('http://127.0.0.1:8545', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({jsonrpc:'2.0', method:'eth_call', params:[{to:CONTRACT_ADDR, data:selector}, 'latest'], id:1})
+                });
+                const rpcData = await rpcRes.json();
+                console.log("RPC jobCount response:", rpcData);
+                if (rpcData.result && rpcData.result !== '0x') {
+                    chainJobId = Number(BigInt(rpcData.result));
+                    console.log("chainJobId from RPC:", chainJobId);
+                }
+            } catch(e) { console.warn("RPC jobCount失败:", e); }
+        }
+        // 方法3：从 receipt.logs 的 topics 提取
+        if (!chainJobId || chainJobId <= 0) {
+            try {
+                const eventHash = BigInt(ethers.id('JobCreated(uint256,string,uint256,address)'));
+                for (const log of (receipt.logs||[])) {
+                    if (log.topics && log.topics.length >= 2) {
+                        if (BigInt(log.topics[0]) === eventHash) {
+                            chainJobId = Number(BigInt(log.topics[1]));
+                            console.log("chainJobId from topics:", chainJobId);
+                            break;
+                        }
+                    }
+                }
+            } catch(e) { console.warn("topics解析失败:", e); }
+        }
+        if (!chainJobId || chainJobId <= 0) {
+            console.error("所有方法均失败! receipt:", receipt);
+            // 最后兜底：检查合约是否存在
+            try {
+                const codeRes = await fetch('http://127.0.0.1:8545', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({jsonrpc:'2.0', method:'eth_getCode', params:[CONTRACT_ADDR, 'latest'], id:1})
+                });
+                const codeData = await codeRes.json();
+                console.log("合约代码检查:", codeData.result ? codeData.result.substring(0,20)+'...' : '无');
+            } catch(e) {}
+            return alert("⚠️ 获取链上岗位ID失败！\n\n请按F12打开控制台，截图发给开发者\n\n提示：请先运行 start.bat 重新部署合约");
+        }
+        await fetch(`${API}/save_job`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title, department:dept, description:desc, hourly_rate:hourlyRateWei.toString(), salary:budgetWei.toString(), employer:await signer.getAddress(), chain_job_id:chainJobId}) });
+        alert("✅ 岗位发布成功！预算已锁仓到智能合约");
+        ['jobTitle','jobDept','jobHourlyRate','jobBudget','jobDesc'].forEach(id => document.getElementById(id).value='');
+        fetchHallJobs();
+    } catch (e) {
+        // 区分交易被用户取消和真正的失败
+        if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
+            alert("你取消了交易");
+        } else {
+            alert("发布失败：" + (e.reason || e.message || e));
+        }
+    }
+}
+
+// ======================== 我的合约 ========================
+async function loadContractsPage() {
+    if (!currentUser) return;
+    if (currentUser.role === 'ADMIN') {
+        await loadAdminContracts();
+        return;
+    }
+    if (!currentUser.wallet_address) {
+        const list = document.getElementById('myContractsList');
+        if (list) list.innerHTML = '<div class="empty-state"><div class="icon">🦊</div><p>请先连接钱包</p></div>';
+        return;
+    }
+    if (currentUser.role === 'STUDENT') await loadStudentContracts();
+    else if (currentUser.role === 'TEACHER') await loadTeacherContracts();
+}
+
+async function loadStudentContracts() {
+    try {
+        const res = await fetch(`${API}/my_applications/${currentUser.wallet_address}`);
+        const data = await res.json();
+        const list = document.getElementById('myContractsList');
+        if (!data.length) { list.innerHTML = '<div class="empty-state"><div class="icon">📄</div><p>暂无合约，去任务大厅申请岗位</p></div>'; return; }
+        list.innerHTML = data.map(c => `
+            <div class="card" style="border-left:3px solid ${statusColor(c.status)};">
+                <div style="display:flex;justify-content:space-between;align-items:start;">
+                    <div>
+                        <div style="font-weight:700;font-size:15px;">${escHtml(c.title)}</div>
+                        <div style="font-size:13px;color:#666;margin:4px 0;">🏢 ${escHtml(c.department||'未设置')} | 时薪: ${c.hourly_rate} ETH</div>
+                        <div style="font-size:12px;color:#999;">申请时间: ${c.applied_at}</div>
+                        <div style="font-size:13px;margin-top:6px;">已确认工时: <b>${c.total_minutes}</b> 分钟</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="badge badge-${c.status.toLowerCase()}">${statusText(c.status)}</span>
+                        ${c.status==='APPROVED'?`<div style="margin-top:10px;display:flex;gap:6px;"><button class="btn btn-success btn-sm" onclick="openClockModal(${c.employment_id},${c.chain_employment_id||0})">⏰ 打卡</button><button class="btn btn-danger btn-sm" onclick="resignJob(${c.employment_id},${c.chain_employment_id||0})">📤 辞职</button></div>`:''}
+                        ${c.status==='PENDING'?`<div style="margin-top:10px;"><button class="btn btn-danger btn-sm" onclick="resignJob(${c.employment_id},${c.chain_employment_id||0})">📤 撤回申请</button></div>`:''}
+                    </div>
+                </div>
+                ${c.status==='APPROVED'?`<div style="margin-top:12px;border-top:1px solid #f0f0f0;padding-top:12px;"><button class="btn btn-outline btn-sm" onclick="loadClockRecords(${c.employment_id},this)">📋 查看打卡记录</button><div id="clockRecords_${c.employment_id}" style="margin-top:8px;"></div></div>`:''}
+            </div>
+        `).join('');
+    } catch (e) { document.getElementById('myContractsList').innerHTML = '<div class="empty-state">加载失败</div>'; }
+}
+
+async function loadTeacherContracts() {
+    try {
+        // 加载待审批申请
+        const res = await fetch(`${API}/pending_applications/${currentUser.wallet_address}`);
+        const pending = await res.json();
+        const pendingDiv = document.getElementById('pendingApplications');
+        const badge = document.getElementById('pendingBadge');
+        if (pending.length) {
+            badge.style.display = 'inline'; badge.innerText = pending.length;
+            pendingDiv.innerHTML = pending.map(p => `
+                <div class="card" style="border-left:3px solid var(--warning);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div style="font-weight:700;">📝 ${escHtml(p.job_title)}</div>
+                            <div style="font-size:13px;color:#666;">申请者: ${escHtml(p.student_nickname||'未知')} (${p.student_address.slice(0,8)}...)</div>
+                            <div style="font-size:12px;color:#999;">申请时间: ${p.applied_at}</div>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-success btn-sm" onclick="approveApplication(${p.employment_id},${p.chain_employment_id||0})">✅ 批准</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectApplication(${p.employment_id},${p.chain_employment_id||0})">❌ 拒绝</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else { badge.style.display='none'; pendingDiv.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>暂无待审批申请</p></div>'; }
+
+        // 加载待确认工时记录
+        const clockRes = await fetch(`${API}/pending_clock_ins/${currentUser.wallet_address}`);
+        const pendingClocks = await clockRes.json();
+        const unconfDiv = document.getElementById('unconfirmedHours');
+        if (pendingClocks.length) {
+            unconfDiv.innerHTML = `<p style="color:#666;margin-bottom:12px;">📋 待确认工时: <b>${pendingClocks.length}</b> 条</p>` + pendingClocks.map(c => `
+                <div class="card" style="border-left:3px solid var(--info);margin-bottom:8px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div style="font-weight:700;">⏰ ${escHtml(c.job_title)}</div>
+                            <div style="font-size:13px;color:#666;">学生: ${escHtml(c.student_nickname)} (${c.student_address.slice(0,8)}...)</div>
+                            <div style="font-size:12px;color:#999;">上班: ${c.clock_in_time} → 下班: ${c.clock_out_time}</div>
+                            <div style="font-size:14px;font-weight:600;color:var(--primary);margin-top:4px;">本次工时: ${c.work_minutes} 分钟</div>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-success btn-sm" onclick="confirmHours(${c.clock_in_id},${c.chain_clock_in_id||0})">✅ 确认工时</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectClockIn(${c.clock_in_id})">❌ 驳回</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            unconfDiv.innerHTML = '<div class="empty-state"><div class="icon">✅</div><p>暂无待确认工时</p></div>';
+        }
+
+        // 加载待结算薪酬
+        const settleRes = await fetch(`${API}/pending_settlements/${currentUser.wallet_address}`);
+        const pendingSettlements = await settleRes.json();
+        const settleDiv = document.getElementById('pendingSettlements');
+        if (pendingSettlements.length) {
+            settleDiv.innerHTML = `<p style="color:#666;margin-bottom:12px;">💰 待结算: <b>${pendingSettlements.length}</b> 个合约</p>` + pendingSettlements.map(s => `
+                <div class="card" style="border-left:3px solid var(--success);margin-bottom:8px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div style="font-weight:700;">💼 ${escHtml(s.job_title)}</div>
+                            <div style="font-size:13px;color:#666;">学生: ${escHtml(s.student_nickname)} (${s.student_address.slice(0,8)}...)</div>
+                            <div style="font-size:13px;margin-top:4px;">已确认工时: <b>${s.total_minutes}</b> 分钟 | 应付薪酬: <b style="color:var(--success);">${s.salary_ether} ETH</b></div>
+                        </div>
+                        <button class="btn btn-success btn-sm" onclick="settleSalary(${s.employment_id},${s.chain_employment_id})">💰 结算薪酬</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            settleDiv.innerHTML = '<div class="empty-state"><div class="icon">✅</div><p>暂无待结算薪酬</p></div>';
+        }
+    } catch (e) { document.getElementById('pendingApplications').innerHTML='<div class="empty-state">加载失败</div>'; }
+}
+
+async function loadAdminContracts() {
+    // 管理员查看所有合约
+    try {
+        const list = document.getElementById('myContractsList');
+        const res = await fetch(`${API}/admin/employments`);
+        const data = await res.json();
+        if (!data.length) { list.innerHTML = '<div class="empty-state"><div class="icon">📄</div><p>暂无合约记录</p></div>'; return; }
+        list.innerHTML = data.map(e => `
+            <div class="card" style="border-left:3px solid ${statusColor(e.status)};">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="font-weight:700;">${escHtml(e.job_title)}</div>
+                        <div style="font-size:13px;color:#666;">学生: ${e.student.slice(0,10)}... | 教师: ${e.employer.slice(0,10)}...</div>
+                        <div style="font-size:13px;margin-top:4px;">累计工时: <b>${e.minutes}</b> 分钟</div>
+                    </div>
+                    <span class="badge badge-${e.status.toLowerCase()}">${statusText(e.status)}</span>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) { document.getElementById('myContractsList').innerHTML = '<div class="empty-state">加载失败</div>'; }
+}
+
+async function approveApplication(dbEmpId, chainEmpId) {
+    if (!confirm("确认批准？")) return;
+    try {
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        alert("🦊 请在 MetaMask 中确认...");
+        const tx = await contract.approveApplication(chainEmpId);
+        await tx.wait();
+        await fetch(`${API}/approve_application`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:dbEmpId}) });
+        alert("✅ 已批准"); loadTeacherContracts();
+    } catch (e) { alert("操作失败：" + (e.reason||e.message)); }
+}
+
+async function rejectApplication(dbEmpId, chainEmpId) {
+    if (!confirm("确认拒绝？")) return;
+    try {
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        alert("🦊 请在 MetaMask 中确认...");
+        const tx = await contract.rejectApplication(chainEmpId);
+        await tx.wait();
+        await fetch(`${API}/reject_application`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:dbEmpId}) });
+        alert("已拒绝"); loadTeacherContracts();
+    } catch (e) { alert("操作失败：" + (e.reason||e.message)); }
+}
+
+// ======================== 打卡 ========================
+async function openClockModal(empId, chainEmpId) {
+    currentEmploymentId = empId; currentChainEmploymentId = chainEmpId; currentClockInId = null; currentChainClockInId = 0;
+    document.getElementById('clockIcon').innerText='🕐'; document.getElementById('clockText').innerText='加载中...';
+    document.getElementById('clockInPanel').style.display='none'; document.getElementById('clockOutPanel').style.display='none';
+    openModal('clockModal');
+    // 查询是否有未下班的打卡记录
+    try {
+        const res = await fetch(`${API}/clock_ins/${empId}`);
+        const records = await res.json();
+        const active = records.find(r => !r.clock_out_time);
+        if (active) {
+            currentClockInId = active.id;
+            currentChainClockInId = active.chain_clock_in_id || 0;
+            document.getElementById('clockIcon').innerText='🟢';
+            document.getElementById('clockText').innerText=`上次上班打卡: ${active.clock_in_time}，请下班打卡`;
+            document.getElementById('clockOutPanel').style.display='block';
+        } else {
+            document.getElementById('clockIcon').innerText='🕐';
+            document.getElementById('clockText').innerText='准备打卡';
+            document.getElementById('clockInPanel').style.display='block';
+        }
+    } catch(e) {
+        document.getElementById('clockIcon').innerText='🕐';
+        document.getElementById('clockText').innerText='准备打卡';
+        document.getElementById('clockInPanel').style.display='block';
+    }
+}
+
+async function doClockIn() {
+    if (!currentEmploymentId) return;
+    if (!currentChainEmploymentId || currentChainEmploymentId <= 0) return alert("链上合约ID无效，请重新申请岗位");
+    try {
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        alert("🦊 请在 MetaMask 中确认打卡...");
+        const tx = await contract.clockIn(currentChainEmploymentId);
+        const receipt = await tx.wait();
+        console.log("clockIn receipt:", receipt);
+        // 获取链上打卡ID：多重保障
+        let chainClockInId = 0;
+        // 方法1：BigInt 比较 topics
+        try {
+            const eventHash = BigInt(ethers.id('ClockedIn(uint256,uint256,address,uint256)'));
+            for (const log of receipt.logs) {
+                if (log.topics && log.topics.length >= 2) {
+                    if (BigInt(log.topics[0]) === eventHash) {
+                        chainClockInId = Number(BigInt(log.topics[1]));
+                        console.log("clockInId from topics:", chainClockInId);
+                        break;
+                    }
+                }
+            }
+        } catch(e) { console.warn("方法1失败:", e); }
+        // 方法2：原始 JSON-RPC 查询 clockInCount()
+        if (!chainClockInId || chainClockInId <= 0) {
+            try {
+                const selector = ethers.id('clockInCount()').slice(0, 10);
+                const rpcRes = await fetch('http://127.0.0.1:8545', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({jsonrpc:'2.0', method:'eth_call', params:[{to:CONTRACT_ADDR, data:selector}, 'latest'], id:1})
+                });
+                const rpcData = await rpcRes.json();
+                if (rpcData.result && rpcData.result !== '0x') {
+                    chainClockInId = Number(BigInt(rpcData.result));
+                    console.log("clockInId from rpc:", chainClockInId);
+                }
+            } catch(e) { console.warn("方法2失败:", e); }
+        }
+        console.log("链上打卡ID:", chainClockInId, "数据库合约ID:", currentEmploymentId);
+        if (chainClockInId === 0) console.error("⚠️ 未能解析链上打卡ID！receipt:", receipt.logs);
+        const res = await fetch(`${API}/clock_in`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:currentEmploymentId, student:currentUser.wallet_address, chain_clock_in_id:chainClockInId}) });
+        const d = await res.json();
+        if (d.success) {
+            currentClockInId = d.clock_in_id;
+            currentChainClockInId = chainClockInId;
+            document.getElementById('clockIcon').innerText='🟢'; document.getElementById('clockText').innerText=`已上班打卡 (链上#${chainClockInId})，工作中...`;
+            document.getElementById('clockInPanel').style.display='none'; document.getElementById('clockOutPanel').style.display='block';
+        } else alert(d.msg);
+    } catch (e) { alert("打卡失败：" + (e.reason||e.message)); }
+}
+
+async function doClockOut() {
+    const minutes = parseInt(document.getElementById('workMinutes').value);
+    if (!minutes || minutes<=0 || minutes>480) return alert("请输入有效工时(1-480分钟)");
+    if (!currentClockInId) return alert("未找到打卡记录，请重新打开打卡窗口");
+    try {
+        // 获取链上打卡ID（优先用内存值，其次查后端）
+        let chainClockInId = currentChainClockInId;
+        if (!chainClockInId || chainClockInId <= 0) {
+            try {
+                const stateRes = await fetch(`${API}/clock_ins/${currentEmploymentId}`);
+                const records = await stateRes.json();
+                const active = records.find(r => !r.clock_out_time);
+                if (active && active.chain_clock_in_id) chainClockInId = active.chain_clock_in_id;
+            } catch(e) {}
+        }
+        if (!chainClockInId || chainClockInId <= 0) {
+            alert("❌ 链上打卡ID无效！\n\n上班打卡时链上交易可能未成功，请重新打卡。");
+            return;
+        }
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        alert("🦊 请在 MetaMask 中确认下班打卡...");
+        const tx = await contract.clockOut(chainClockInId, minutes);
+        await tx.wait();
+        // 链上成功后同步数据库
+        const res = await fetch(`${API}/clock_out`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({clock_in_id:currentClockInId, work_minutes:minutes}) });
+        const d = await res.json();
+        if (d.success) {
+            document.getElementById('clockIcon').innerText='🔴';
+            document.getElementById('clockText').innerText=`下班成功！本次工时 ${minutes} 分钟`;
+            document.getElementById('clockOutPanel').style.display='none';
+            currentClockInId = null; currentChainClockInId = 0;
+            setTimeout(() => { closeModal('clockModal'); loadStudentContracts(); }, 1500);
+        } else {
+            alert("下班打卡失败：" + (d.msg || "请重试"));
+        }
+    } catch (e) { alert("打卡失败：" + (e.reason||e.message)); }
+}
+
+async function loadClockRecords(empId, btn) {
+    const div = document.getElementById(`clockRecords_${empId}`);
+    if (div.innerHTML) { div.innerHTML=''; return; }
+    try {
+        const res = await fetch(`${API}/clock_ins/${empId}`);
+        const data = await res.json();
+        if (!data.length) { div.innerHTML='<p style="color:#999;font-size:13px;">暂无打卡记录</p>'; return; }
+        const isTeacher = currentUser && currentUser.role === 'TEACHER';
+        const unconfirmed = data.filter(r => !r.confirmed && r.clock_out_time);
+        let html = `<table style="font-size:12px;"><tr><th>上班</th><th>下班</th><th>工时</th><th>状态</th>${isTeacher?'<th>操作</th>':''}</tr>${data.map(r=>`<tr><td>${r.clock_in_time}</td><td>${r.clock_out_time||'进行中'}</td><td>${r.work_minutes}分钟</td><td>${r.confirmed?'<span class="badge badge-confirmed">已确认</span>':'<span class="badge badge-pending">待确认</span>'}</td>${isTeacher?`<td>${!r.confirmed&&r.clock_out_time?`<button class="btn btn-success btn-sm" onclick="confirmHours(${r.id},${r.chain_clock_in_id||0})">✅ 确认</button> <button class="btn btn-danger btn-sm" onclick="rejectClockIn(${r.id})">❌ 驳回</button>`:'-'}</td>`:''}</tr>`).join('')}</table>`;
+        if (!isTeacher && unconfirmed.length > 0) {
+            html += `<p style="color:#856404;font-size:12px;margin-top:8px;background:#fff3cd;padding:6px 10px;border-radius:4px;">⏳ 有 ${unconfirmed.length} 条打卡记录等待教师确认，确认后工时才会累计</p>`;
+        }
+        div.innerHTML = html;
+    } catch (e) { div.innerHTML='<p style="color:red;">加载失败</p>'; }
+}
+
+// ======================== 薪酬记录 ========================
+async function loadSalaryPage() {
+    if (!currentUser || !currentUser.wallet_address) return;
+    try {
+        const res = await fetch(`${API}/settlements/${currentUser.wallet_address}`);
+        const data = await res.json();
+        let total = 0; data.forEach(r => total += parseFloat(r.amount_ether));
+        document.getElementById('totalEarnings').innerText = total.toFixed(4);
+        document.getElementById('settleCount').innerText = data.length;
+        const tbody = document.getElementById('settlementTable');
+        if (!data.length) { tbody.innerHTML='<tr><td colspan="7" class="empty-state">暂无薪酬记录</td></tr>'; return; }
+        tbody.innerHTML = data.map(r=>`<tr><td><b>${escHtml(r.job_title)}</b></td><td>${escHtml(r.department||'-')}</td><td>${r.hours}小时</td><td style="color:var(--success);font-weight:700;">${r.amount_ether} ETH</td><td>${r.tx_hash?`<a class="tx-link" href="#" onclick="event.preventDefault()">${r.tx_hash.slice(0,12)}...</a>`:'<span style="color:#999;">数据库记录</span>'}</td><td>${r.settled_at}</td><td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td></tr>`).join('');
+    } catch (e) { document.getElementById('settlementTable').innerHTML='<tr><td colspan="7" class="empty-state">加载失败</td></tr>'; }
+}
+
+// ======================== 管理员 ========================
+async function loadAdminPage() {
+    if (!currentUser || currentUser.role !== 'ADMIN') return;
+    try {
+        // 系统信息
+        const infoRes = await fetch(`${API}/admin/system_info`);
+        const info = await infoRes.json();
+        document.getElementById('adminUserCount').innerText = info.users.total;
+        document.getElementById('adminActiveJobs').innerText = info.jobs.active;
+        document.getElementById('adminActiveEmp').innerText = info.employments.active;
+        document.getElementById('adminPaid').innerText = info.settlements.total_paid_ether + ' ETH';
+        document.getElementById('sysRpc').innerText = info.rpc_url;
+        document.getElementById('sysChainId').innerText = info.chain_id;
+        document.getElementById('sysBalance').innerText = info.contract.balance_ether;
+        document.getElementById('sysHours').innerText = (info.employments.total_hours_minutes / 60).toFixed(1);
+        document.getElementById('sysTeachers').innerText = info.users.teachers;
+        document.getElementById('sysStudents').innerText = info.users.students;
+
+        // 岗位列表
+        const jobsRes = await fetch(`${API}/admin/jobs`);
+        const jobs = await jobsRes.json();
+        document.getElementById('adminJobTable').innerHTML = jobs.length ? jobs.map(j=>`
+            <tr>
+                <td>${j.id}</td><td>${j.chain_job_id||'-'}</td><td>${escHtml(j.title)}</td><td>${escHtml(j.department||'-')}</td>
+                <td class="wallet-addr">${j.employer.slice(0,10)}...</td>
+                <td><span class="badge badge-${j.status.toLowerCase()}">${statusText(j.status)}</span></td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})">🗑️</button></td>
+            </tr>
+        `).join('') : '<tr><td colspan="7" class="empty-state">暂无岗位</td></tr>';
+
+        // 合约列表
+        const empsRes = await fetch(`${API}/admin/employments`);
+        const emps = await empsRes.json();
+        document.getElementById('adminEmpTable').innerHTML = emps.length ? emps.map(e=>`
+            <tr>
+                <td>${e.id}</td><td>${escHtml(e.job_title)}</td>
+                <td class="wallet-addr">${e.student.slice(0,10)}...</td>
+                <td class="wallet-addr">${e.employer.slice(0,10)}...</td>
+                <td><span class="badge badge-${e.status.toLowerCase()}">${statusText(e.status)}</span></td>
+                <td>${e.minutes}分钟</td>
+            </tr>
+        `).join('') : '<tr><td colspan="6" class="empty-state">暂无合约</td></tr>';
+
+        // 用户列表（含删除按钮）
+        const usersRes = await fetch(`${API}/admin/users`);
+        const users = await usersRes.json();
+        document.getElementById('adminUserTable').innerHTML = users.map(u=>`
+            <tr>
+                <td>${u.id}</td><td>${escHtml(u.username)}</td><td>${escHtml(u.nickname||'-')}</td>
+                <td><select onchange="updateUserRole(${u.id},this.value)" style="width:auto;padding:4px 8px;margin:0;">
+                    <option value="STUDENT" ${u.role==='STUDENT'?'selected':''}>学生</option>
+                    <option value="TEACHER" ${u.role==='TEACHER'?'selected':''}>教师</option>
+                    <option value="ADMIN" ${u.role==='ADMIN'?'selected':''}>管理员</option>
+                </select></td>
+                <td class="wallet-addr">${u.wallet_address||'未绑定'}</td>
+                <td>${u.created_at}</td>
+                <td>${u.role!=='ADMIN'?`<button class="btn btn-danger btn-sm" onclick="adminDeleteUser(${u.id},'${escHtml(u.username)}')">🗑️</button>`:'-'}</td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error("Admin load error:", e); }
+}
+
+async function adminDeleteAllJobs() {
+    if (!confirm("⚠️ 确认清空所有岗位？将删除所有岗位、合约、打卡和薪酬记录！")) return;
+    if (!confirm("再次确认：此操作不可恢复！")) return;
+    try {
+        const res = await fetch(`${API}/admin/delete_all_jobs`, { method:'POST', headers:{'Content-Type':'application/json'} });
+        const d = await res.json();
+        if (d.success) { alert("✅ 已清空"); loadAdminPage(); fetchHallJobs(); }
+        else alert("失败：" + d.msg);
+    } catch (e) { alert("失败：" + e.message); }
+}
+
+async function adminDeleteUser(userId, username) {
+    if (!confirm(`确认删除用户 [${username}]？相关数据将一并删除！`)) return;
+    try {
+        const res = await fetch(`${API}/admin/delete_user`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:userId}) });
+        const d = await res.json();
+        if (d.success) { alert("✅ " + d.msg); loadAdminPage(); }
+        else alert("失败：" + d.msg);
+    } catch (e) { alert("失败：" + e.message); }
+}
+
+async function updateUserRole(userId, role) {
+    try { await fetch(`${API}/admin/update_user_role`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:userId, role}) }); alert("角色更新成功"); } catch (e) { alert("更新失败"); }
+}
+
+// ======================== 删除岗位 ========================
+async function deleteJob(dbJobId) {
+    if (!confirm("确认删除该岗位？此操作将删除所有相关记录且不可恢复！")) return;
+    try {
+        // 链上关闭（教师身份）
+        if (currentUser.role === 'TEACHER' && currentUser.wallet_address) {
+            await ensureWalletBound();
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+                alert("🦊 请在 MetaMask 中确认关闭岗位...");
+                const tx = await contract.closeJob(dbJobId);
+                await tx.wait();
+            } catch (e) { console.log("链上关闭失败，继续删除数据库记录:", e.reason || e.message); }
+        }
+        // 链下删除
+        const res = await fetch(`${API}/delete_job`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({job_id:dbJobId}) });
+        const d = await res.json();
+        if (d.success) { alert("✅ 岗位已删除"); fetchHallJobs(); if (currentUser.role==='ADMIN') loadAdminPage(); }
+        else alert("删除失败：" + d.msg);
+    } catch (e) { alert("删除失败：" + (e.message || e)); }
+}
+
+// ======================== 教师确认/驳回工时 ========================
+async function confirmHours(clockInId, chainClockInId) {
+    if (!confirm("确认该工时记录？确认后将计入可结算工时。")) return;
+    try {
+        // 必须先在链上确认成功，才能同步数据库（否则结算时链上无工时）
+        if (!chainClockInId || chainClockInId <= 0) {
+            alert("❌ 该打卡记录无链上ID，无法在链上确认工时！\n\n请让学生重新打卡，确保链上交易成功后再确认。");
+            return;
+        }
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        alert("🦊 请在 MetaMask 中确认工时...");
+        const tx = await contract.confirmHours(chainClockInId);
+        await tx.wait();
+        console.log("链上确认成功, chainClockInId:", chainClockInId);
+        // 链上成功后才同步数据库
+        const res = await fetch(`${API}/confirm_hours`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({clock_in_id:clockInId}) });
+        const d = await res.json();
+        if (d.success) { alert("✅ 链上+数据库均已确认：" + d.msg); loadTeacherContracts(); }
+        else alert("⚠️ 链上已确认但数据库更新失败：" + d.msg);
+    } catch (e) {
+        if (e.code === 'ACTION_REJECTED' || e.code === 4001) alert("你取消了交易");
+        else alert("❌ 确认工时失败：" + (e.reason || e.message) + "\n\n数据库未更新，请重试。");
+    }
+}
+
+async function rejectClockIn(clockInId) {
+    if (!confirm("确认驳回该工时记录？驳回后将被删除。")) return;
+    try {
+        const res = await fetch(`${API}/reject_clock_in`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({clock_in_id:clockInId}) });
+        const d = await res.json();
+        if (d.success) { alert("✅ " + d.msg); loadTeacherContracts(); }
+        else alert(d.msg);
+    } catch (e) { alert("操作失败：" + e.message); }
+}
+
+async function settleSalary(empId, chainEmpId) {
+    if (!confirm("确认结算薪酬？将从合约中转账给学生。")) return;
+    try {
+        if (!chainEmpId || chainEmpId <= 0) return alert("链上合约ID无效，无法结算");
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+        // 先检查链上工时
+        try {
+            const emp = await contract.getEmployment(chainEmpId);
+            const chainHours = Number(emp.totalHours);
+            console.log("链上合约工时:", chainHours, "分钟");
+            if (chainHours === 0) {
+                alert("❌ 链上工时为0！\n\n这说明教师确认工时时链上交易没有成功。\n\n请重新操作：\n1. 让学生重新打卡\n2. 教师确认工时时注意MetaMask弹窗\n3. 确认MetaMask交易成功后再结算");
+                return;
+            }
+        } catch(e) { console.warn("查询链上工时失败:", e); }
+        alert("🦊 请在MetaMask中确认薪酬结算...");
+        const tx = await contract.settleSalary(chainEmpId);
+        const receipt = await tx.wait();
+        const txHash = receipt.hash;
+        // 同步数据库
+        const res = await fetch(`${API}/settle_salary`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:empId, tx_hash:txHash}) });
+        const d = await res.json();
+        if (d.success) { alert("✅ 薪酬结算成功！金额: " + (d.amount_ether||'') + " ETH\n交易哈希: " + txHash.slice(0,16) + "..."); loadTeacherContracts(); }
+        else alert("结算失败：" + d.msg);
+    } catch (e) {
+        if (e.code === 'ACTION_REJECTED' || e.code === 4001) alert("你取消了交易");
+        else alert("结算失败：" + (e.reason || e.message || e));
+    }
+}
+
+// ======================== 学生辞职 ========================
+async function resignJob(empId, chainEmpId) {
+    if (!confirm("确认辞职/撤回申请？")) return;
+    try {
+        await ensureWalletBound();
+        // 链上辞职 - 必须用链上合约ID
+        if (chainEmpId && chainEmpId > 0) {
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+                alert("🦊 请在 MetaMask 中确认...");
+                const tx = await contract.resignFromJob(chainEmpId);
+                await tx.wait();
+            } catch (e) { console.log("链上辞职失败，继续更新数据库:", e.reason || e.message); }
+        }
+        // 链下更新
+        const res = await fetch(`${API}/resign`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:empId, student:currentUser.wallet_address}) });
+        const d = await res.json();
+        if (d.success) { alert("✅ 操作成功"); loadStudentContracts(); fetchHallJobs(); }
+        else alert(d.msg);
+    } catch (e) { alert("操作失败：" + (e.message || e)); }
+}
+
+// ======================== 个人中心 ========================
+function loadProfile() {
+    if (!currentUser) return;
+    document.getElementById('myAvatar').src = currentUser.avatar || DEFAULT_AVATAR;
+    document.getElementById('myNickname').innerText = currentUser.nickname || '新同学';
+    document.getElementById('myUsername').innerText = currentUser.username;
+    document.getElementById('myRoleTag').innerText = `[${roleText(currentUser.role)}]`;
+    document.getElementById('myWallet').innerText = currentUser.wallet_address || '未连接';
+}
+
+async function doUpload(e) {
+    const fd = new FormData(); fd.append('file', e.target.files[0]);
+    try { const res = await fetch(`${API}/upload_avatar`, {method:'POST', body:fd}); const d = await res.json(); if (d.success) { uploadedAvatarUrl=d.url; document.getElementById('uploadPreview').src=d.url; document.getElementById('uploadPreview').style.display='inline'; } } catch(e) { alert("上传失败"); }
+}
+
+async function saveProfile() {
+    const nick = document.getElementById('newNickname').value.trim();
+    const av = uploadedAvatarUrl || selectedAvatarUrl || currentUser.avatar || DEFAULT_AVATAR;
+    try {
+        const res = await fetch(`${API}/update_profile`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:currentUser.username, nickname:nick||currentUser.nickname, avatar:av}) });
+        const d = await res.json();
+        if (d.success) { currentUser.nickname=nick||currentUser.nickname; currentUser.avatar=av; localStorage.setItem('campusUser',JSON.stringify(currentUser)); loadProfile(); loginSuccess(); toggleEdit(); alert("保存成功"); }
+    } catch (e) { alert("保存失败"); }
+}
+
+// ======================== 工具函数 ========================
+function escHtml(s) { const d=document.createElement('div'); d.innerText=s; return d.innerHTML; }
+function statusText(s) { return {'PENDING':'待审批','PUBLISHED':'已发布','APPROVED':'已批准','TAKEN':'已接单','COMPLETED':'已完成','PAID':'已支付','REJECTED':'已拒绝','CONFIRMED':'已确认'}[s]||s; }
+function statusColor(s) { return {'PENDING':'#f39c12','APPROVED':'#2980b9','REJECTED':'#e74c3c','COMPLETED':'#27ae60','PAID':'#27ae60'}[s]||'#999'; }
+function roleText(r) { return {'STUDENT':'学生','TEACHER':'教师','ADMIN':'管理员'}[r]||r; }
+
+// ======================== 自动结算管理 ========================
+async function loadAutoSettlePage() {
+    try {
+        // 获取结算状态
+        const statusRes = await fetch(`${API}/auto_settlement_status`);
+        const st = await statusRes.json();
+        document.getElementById('asStatus').innerText = st.is_due ? '⏳ 待结算' : '✅ 正常';
+        document.getElementById('asStatus').className = st.is_due ? 'stat-value orange' : 'stat-value green';
+        document.getElementById('asCycle').innerText = st.cycle_days;
+        document.getElementById('asPending').innerText = st.pending_count;
+        document.getElementById('asAmount').innerText = st.pending_amount_ether;
+        document.getElementById('asLastSettle').innerText = st.last_settlement;
+        document.getElementById('asNextSettle').innerText = st.next_settlement;
+        document.getElementById('asEnabled').innerText = st.auto_enabled ? '✅ 已开启' : '❌ 已关闭';
+        document.getElementById('asEnabled').className = st.auto_enabled ? 'badge badge-published' : 'badge badge-rejected';
+        document.getElementById('asGrace').innerText = st.grace_period_hours;
+
+        // 管理员显示配置卡片
+        if (currentUser && currentUser.role === 'ADMIN') {
+            document.getElementById('settleConfigCard').style.display = 'block';
+            document.getElementById('cfgCycleDays').value = st.cycle_days;
+            document.getElementById('cfgGraceHours').value = st.grace_period_hours;
+            document.getElementById('cfgAutoEnabled').value = st.auto_enabled ? 'true' : 'false';
+        }
+
+        // 加载审计日志
+        loadAuditLogs();
+    } catch (e) {
+        console.error("加载自动结算状态失败:", e);
+    }
+}
+
+async function triggerAutoSettlement() {
+    if (!confirm('确认立即执行自动结算？\n\n系统将自动核算并发放所有待结算薪酬给学生。')) return;
+    try {
+        const res = await fetch(`${API}/trigger_auto_settlement`, { method: 'POST', headers: {'Content-Type':'application/json'} });
+        const d = await res.json();
+        if (d.success) {
+            alert('✅ 自动结算执行成功！\n交易哈希: ' + (d.tx_hash || '').slice(0, 20) + '...');
+            loadAutoSettlePage();
+        } else {
+            alert('❌ 结算失败: ' + d.msg);
+        }
+    } catch (e) {
+        alert('操作失败: ' + e.message);
+    }
+}
+
+async function saveSettlementConfig() {
+    const cycleDays = parseInt(document.getElementById('cfgCycleDays').value);
+    const graceHours = parseInt(document.getElementById('cfgGraceHours').value);
+    const autoEnabled = document.getElementById('cfgAutoEnabled').value === 'true';
+    if (!cycleDays || cycleDays < 1) return alert('请输入有效的结算周期');
+    if (!graceHours || graceHours < 1) return alert('请输入有效的宽限期');
+    try {
+        const res = await fetch(`${API}/settlement_config`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ cycle_days: cycleDays, grace_period_hours: graceHours, auto_enabled: autoEnabled })
+        });
+        const d = await res.json();
+        alert('✅ ' + d.msg);
+        loadAutoSettlePage();
+    } catch (e) {
+        alert('保存失败: ' + e.message);
+    }
+}
+
+async function loadAuditLogs() {
+    try {
+        const res = await fetch(`${API}/audit_logs?limit=50`);
+        const logs = await res.json();
+        const tbody = document.getElementById('auditLogTable');
+        if (!logs.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">暂无审计日志</td></tr>';
+            return;
+        }
+        const actionText = {
+            'JOB_CREATED': '📢 发布岗位', 'APPLICATION_APPROVED': '✅ 批准申请',
+            'APPLICATION_REJECTED': '❌ 拒绝申请', 'HOURS_CONFIRMED': '⏰ 确认工时',
+            'SETTLEMENT': '💰 薪酬结算', 'AUTO_SETTLEMENT_TRIGGERED': '🤖 自动结算触发',
+            'AUTO_SETTLEMENT_SUCCESS': '✅ 自动结算成功', 'AUTO_SETTLEMENT_FAILED': '❌ 自动结算失败',
+            'AUTO_SETTLEMENT_ERROR': '⚠️ 自动结算异常', 'MANUAL_SETTLEMENT_TRIGGER': '⚡ 手动触发结算',
+            'MANUAL_SETTLEMENT_SUCCESS': '✅ 手动结算成功', 'MANUAL_SETTLEMENT_FAILED': '❌ 手动结算失败',
+            'CONFIG_UPDATED': '⚙️ 配置更新', 'SETTLEMENT_SYNCED': '🔄 结算同步'
+        };
+        tbody.innerHTML = logs.map(l => `
+            <tr>
+                <td>${l.id}</td>
+                <td>${actionText[l.action] || l.action}</td>
+                <td style="font-family:monospace;font-size:11px;">${l.actor ? l.actor.slice(0,10)+'...' : '-'}</td>
+                <td>${escHtml(l.target || '-')}</td>
+                <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(l.detail||'')}">${escHtml(l.detail || '-')}</td>
+                <td>${l.tx_hash ? `<span style="font-family:monospace;font-size:11px;color:var(--info);">${l.tx_hash.slice(0,12)}...</span>` : '-'}</td>
+                <td style="font-size:11px;">${l.created_at}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        document.getElementById('auditLogTable').innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>';
+    }
+}
+
+// ======================== 系统诊断 ========================
+async function runDiagnosis() {
+    let report = '🔍 系统诊断报告\n' + '='.repeat(40) + '\n\n';
+    // 1. 检查geth节点
+    try {
+        const res = await fetch('http://127.0.0.1:8545', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({jsonrpc:'2.0',method:'eth_blockNumber',params:[],id:1})
+        });
+        const data = await res.json();
+        report += '✅ Geth节点运行中 (区块: ' + parseInt(data.result, 16) + ')\n';
+    } catch (e) {
+        report += '❌ Geth节点未启动！请运行 start.bat\n';
+    }
+    // 2. 检查合约
+    try {
+        const res = await fetch('http://127.0.0.1:8545', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({jsonrpc:'2.0',method:'eth_getCode',params:[CONTRACT_ADDR,'latest'],id:2})
+        });
+        const data = await res.json();
+        if (data.result && data.result !== '0x') {
+            report += '✅ 合约存在: ' + CONTRACT_ADDR + '\n';
+        } else {
+            report += '❌ 合约不存在！地址无效或合约未部署\n';
+        }
+    } catch (e) {
+        report += '❌ 无法检查合约\n';
+    }
+    // 3. 检查MetaMask
+    if (window.ethereum) {
+        report += '✅ MetaMask已安装\n';
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const network = await provider.getNetwork();
+            const chainId = Number(network.chainId);
+            if (chainId === 887766) {
+                report += '✅ MetaMask网络: Geth Dev (887766)\n';
+            } else {
+                report += '⚠️ MetaMask网络: chainId=' + chainId + ' (应为887766)\n';
+            }
+            const signer = await provider.getSigner();
+            const addr = await signer.getAddress();
+            const balance = await provider.getBalance(addr);
+            report += '🦊 钱包地址: ' + addr + '\n';
+            report += '💰 钱包余额: ' + ethers.formatEther(balance) + ' ETH\n';
+            if (parseFloat(ethers.formatEther(balance)) < 0.01) {
+                report += '⚠️ 余额不足！请导入Hardhat测试账户\n';
+            }
+        } catch (e) {
+            report += '⚠️ MetaMask未连接: ' + e.message + '\n';
+        }
+    } else {
+        report += '❌ MetaMask未安装\n';
+    }
+    // 4. 检查后端
+    try {
+        const res = await fetch(API + '/admin/stats');
+        const data = await res.json();
+        report += '✅ 后端运行中 (用户:' + data.user_count + ' 岗位:' + data.job_count + ')\n';
+    } catch (e) {
+        report += '❌ 后端未启动\n';
+    }
+    report += '\n' + '='.repeat(40) + '\n';
+    report += '💡 如果钱包交易失败，请确认:\n';
+    report += '   1. 已运行 start.bat 启动geth节点\n';
+    report += '   2. MetaMask已切换到Geth Dev网络(887766)\n';
+    report += '   3. 使用的是geth开发账户(密码: 12345678)\n';
+    report += '   4. 导入方法: MetaMask → 账户菜单 → 导入账户\n';
+    report += '      导入geth keystore文件或私钥\n';
+    alert(report);
+}
+</script>
+</body>
+</html>
