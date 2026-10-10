@@ -629,8 +629,8 @@ function stopClockTimer() {
 }
 
 const API = "http://127.0.0.1:8000/api";
-const CONTRACT_ADDR = "0xb0d14e32f03436b220f85d586716ba4a675288f8";
-const SBT_CONTRACT_ADDR = "0x26275eff3ccbf3dc091f4d0bc9953546c85e6d24"; // 部署后自动更新
+const CONTRACT_ADDR = "0x5b163b797d7b7fcd61392b9a8bfdc5d901fe1156";
+const SBT_CONTRACT_ADDR = "0x7d378ce8fb044cc00429e445c363a308b23cb48e"; // 部署后自动更新
 const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=1";
 
 const CONTRACT_ABI = [
@@ -658,6 +658,7 @@ const CONTRACT_ABI = [
     "function getPendingSettlementIds() view returns (uint256[])",
     "function updateSettlementConfig(uint256 _cycleDays, bool _autoEnabled, uint256 _gracePeriodHours) external",
     "function triggerImmediateSettlement() external",
+    "function adminConfirmClockIn(uint256 _clockInId, uint256 _workMinutes) external",
     "event JobCreated(uint256 indexed jobId, string title, uint256 hourlyRate, address employer)",
     "event JobClosed(uint256 indexed jobId, address employer, uint256 refundAmount)",
     "event ApplicationSubmitted(uint256 indexed employmentId, uint256 indexed jobId, address student)",
@@ -679,6 +680,7 @@ const SBT_CONTRACT_ABI = [
     "function totalSupply() view returns (uint256)",
     "function badgeCount() view returns (uint256)",
     "function revokeBadge(uint256 tokenId) external",
+    "function canIssue(address account) view returns (bool)",
     "event BadgeIssued(uint256 indexed tokenId, address indexed student, string jobTitle, uint256 totalHours)",
     "event BadgeRevoked(uint256 indexed tokenId, address indexed student)"
 ];
@@ -1973,17 +1975,29 @@ async function issueBadge(studentAddr, jobTitle, department, totalMinutes) {
         alert('SBT合约尚未部署，请先运行 npx hardhat run scripts/deploy.js --network localhost');
         return;
     }
-    const comment = prompt('请输入教师评语：');
-    if (!comment) return;
-    const ratingStr = prompt('请给出星级评分（1-5）：', '5');
-    const rating = parseInt(ratingStr);
-    if (!rating || rating < 1 || rating > 5) { alert('评分必须在1-5之间'); return; }
-
     try {
         await ensureWalletBound();
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
+        const addr = await signer.getAddress();
         const sbtContract = new ethers.Contract(SBT_CONTRACT_ADDR, SBT_CONTRACT_ABI, signer);
+
+        // 颁发权限预检：SBT 仅授权 admin / WorkStudy 注册教师
+        let allowed = false;
+        try { allowed = await sbtContract.canIssue(addr); } catch (e) { /* 旧合约无此方法则直接尝试注册 */ }
+        if (!allowed) {
+            const workStudy = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
+            alert('🦊 首次颁发需注册链上教师身份，请在 MetaMask 中确认...');
+            const regTx = await workStudy.registerAsTeacher();
+            await regTx.wait();
+        }
+
+        const comment = prompt('请输入教师评语：');
+        if (!comment) return;
+        const ratingStr = prompt('请给出星级评分（1-5）：', '5');
+        const rating = parseInt(ratingStr);
+        if (!rating || rating < 1 || rating > 5) { alert('评分必须在1-5之间'); return; }
+
         alert('🦊 请在 MetaMask 中确认颁发勋章...');
         const tx = await sbtContract.issueBadge(
             studentAddr, jobTitle, department, BigInt(totalMinutes), comment, rating
@@ -1991,7 +2005,10 @@ async function issueBadge(studentAddr, jobTitle, department, totalMinutes) {
         await tx.wait();
         alert('✅ 履约勋章颁发成功！');
     } catch (e) {
-        alert('颁发失败: ' + (e.reason || e.message));
+        const msg = (e.reason || e.message || String(e));
+        alert('颁发失败: ' + (msg.includes('Unauthorized')
+            ? '当前账户无颁发权限，请用已绑定钱包的教师账号登录后重试'
+            : msg));
     }
 }
 

@@ -2,6 +2,13 @@
 pragma solidity ^0.8.20;
 
 /**
+ * @dev WorkStudy 合约的教师注册表接口（public mapping isTeacher 的 getter）
+ */
+interface IWorkStudy {
+    function isTeacher(address account) external view returns (bool);
+}
+
+/**
  * @title WorkStudySBT - 勤工助学履约勋章（ERC-5192 Soulbound Token）
  * @notice 不可转让的链上履约证书，绑定学生钱包地址
  * @dev 遵循ERC-5192规范（Locked Soulbound Token）
@@ -53,7 +60,7 @@ contract WorkStudySBT {
     }
 
     modifier onlyAuthorized() {
-        require(msg.sender == workStudyContract || msg.sender == admin, "Unauthorized");
+        require(_canIssue(msg.sender), "Unauthorized");
         _;
     }
 
@@ -114,6 +121,32 @@ contract WorkStudySBT {
     }
 
     // ============ 业务逻辑 ============
+
+    /**
+     * @dev 颁发权限：SBT 管理员 / WorkStudy 合约 / WorkStudy 注册教师
+     */
+    function _canIssue(address account) internal view returns (bool) {
+        return account == admin || account == workStudyContract || _isRegisteredTeacher(account);
+    }
+
+    /**
+     * @dev 查询 WorkStudy 合约上的教师注册表；合约缺失或调用失败时返回 false
+     */
+    function _isRegisteredTeacher(address account) internal view returns (bool) {
+        if (workStudyContract == address(0)) return false;
+        try IWorkStudy(workStudyContract).isTeacher(account) returns (bool ok) {
+            return ok;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * @notice 公开查询某地址是否具备颁发权限（前端预检 / 验真用）
+     */
+    function canIssue(address account) external view returns (bool) {
+        return _canIssue(account);
+    }
 
     function issueBadge(
         address _student,

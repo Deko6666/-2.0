@@ -199,7 +199,17 @@ def init_database():
             except Exception:
                 pass
 
-        # 功能二：工时统计缓存表
+        # 功能四：争议申诉 — clock_ins表扩展驳回标记（软删除，保留记录供申诉）
+        for col, col_def in [
+            ("rejected", "BOOLEAN DEFAULT FALSE"),
+            ("original_work_minutes", "INT DEFAULT 0"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE clock_ins ADD COLUMN {col} {col_def}"))
+            except Exception:
+                pass
+
+        # 功能二：工时统计缓存表（每行=一个学生的一周统计，月工时由周记录汇总计算）
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS hour_limits (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -208,10 +218,14 @@ def init_database():
                 month_start DATE NOT NULL,
                 weekly_minutes INT DEFAULT 0,
                 monthly_minutes INT DEFAULT 0,
-                UNIQUE KEY idx_week (student_address, week_start),
-                UNIQUE KEY idx_month (student_address, month_start)
+                UNIQUE KEY idx_week (student_address, week_start)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """))
+        # 修复已有数据：移除旧的 idx_month 唯一键（若存在），防止同月多周插入冲突
+        try:
+            conn.execute(text("ALTER TABLE hour_limits DROP INDEX idx_month"))
+        except Exception:
+            pass
 
         # 功能四：争议申诉表
         conn.execute(text("""
@@ -291,6 +305,18 @@ def get_contract_address() -> str:
         pass
     return get_config("contract_address", "0x83432380f1b9bdbc4b4e2ca3a35f8cb4e0154c6e")
 
+def get_sbt_contract_address() -> str:
+    """读取 SBT 勋章合约地址"""
+    try:
+        if os.path.exists("sbt_address.txt"):
+            with open("sbt_address.txt", "r") as f:
+                addr = f.read().strip()
+                if addr and addr.startswith("0x"):
+                    return addr
+    except Exception:
+        pass
+    return "0x0000000000000000000000000000000000000000"
+
 # 链上岗位查询 ABI
 JOB_QUERY_ABI = json.loads('''[
     {"inputs":[],"name":"jobCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
@@ -345,7 +371,14 @@ AUTO_SETTLE_ABI = json.loads('''[
     {"inputs":[{"type":"uint256"}],"name":"getEmployment","outputs":[{"type":"tuple","components":[{"type":"uint256"},{"type":"uint256"},{"type":"address"},{"type":"uint8"},{"type":"uint256"},{"type":"uint256"},{"type":"uint256"}]}],"stateMutability":"view","type":"function"},
     {"inputs":[],"name":"jobCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
     {"inputs":[],"name":"employmentCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
-    {"inputs":[{"type":"uint256"}],"name":"getClockIn","outputs":[{"type":"tuple","components":[{"type":"uint256"},{"type":"uint256"},{"type":"address"},{"type":"uint256"},{"type":"uint256"},{"type":"uint256"},{"type":"bool"}]}],"stateMutability":"view","type":"function"}
+    {"inputs":[{"type":"uint256"}],"name":"getClockIn","outputs":[{"type":"tuple","components":[{"type":"uint256"},{"type":"uint256"},{"type":"address"},{"type":"uint256"},{"type":"uint256"},{"type":"uint256"},{"type":"bool"}]}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"type":"uint256"},{"type":"uint256"}],"name":"adminConfirmClockIn","outputs":[],"stateMutability":"nonpayable","type":"function"}
+]''')
+
+SBT_ABI = json.loads('''[
+    {"inputs":[{"type":"address"}],"name":"getStudentBadges","outputs":[{"type":"uint256[]"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"type":"uint256"}],"name":"getBadge","outputs":[{"type":"tuple","components":[{"type":"uint256"},{"type":"address"},{"type":"string"},{"type":"string"},{"type":"uint256"},{"type":"string"},{"type":"uint8"},{"type":"uint256"},{"type":"bool"}]}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"type":"address"}],"name":"canIssue","outputs":[{"type":"bool"}],"stateMutability":"view","type":"function"}
 ]''')
 
 def call_contract_function(fn_name: str, args: list = None):
@@ -358,6 +391,20 @@ def call_contract_function(fn_name: str, args: list = None):
         return fn(*(args or [])).call()
     except Exception as e:
         print(f"[CONTRACT VIEW ERROR] {fn_name}: {e}")
+        return None
+
+def call_sbt_function(fn_name: str, args: list = None):
+    """调用 SBT 勋章合约视图函数"""
+    try:
+        w3 = get_web3()
+        addr = get_sbt_contract_address()
+        if not addr or addr == "0x0000000000000000000000000000000000000000":
+            return None
+        contract = w3.eth.contract(address=Web3.to_checksum_address(addr), abi=SBT_ABI)
+        fn = getattr(contract.functions, fn_name)
+        return fn(*(args or [])).call()
+    except Exception as e:
+        print(f"[SBT VIEW ERROR] {fn_name}: {e}")
         return None
 
 def send_contract_tx(fn_name: str, args: list = None):
@@ -1026,9 +1073,12 @@ def reject_clock_in(data: RejectClockIn):
         ), {"c": data.clock_in_id}).fetchone()
         if not record:
             return {"success": False, "msg": "记录不存在或已处理"}
-        # 删除该打卡记录（驳回）；链上由前端先调用 rejectClockIn 墓碑，保证不被自动计薪
+        # 软删除：标记为驳回（保留记录供争议申诉使用），work_minutes 清零避免计入工时
+        # original_work_minutes 保存原值，供管理员裁决"强制通过"时恢复
+        conn.execute(text(
+            "UPDATE clock_ins SET confirmed=TRUE, rejected=TRUE, original_work_minutes=work_minutes, work_minutes=0 WHERE id=:c"
+        ), {"c": data.clock_in_id})
         log_audit("CLOCK_IN_REJECTED", "", f"clock_in#{data.clock_in_id}", f"驳回工时: {record[2]}分钟")
-        conn.execute(text("DELETE FROM clock_ins WHERE id=:c"), {"c": data.clock_in_id})
         conn.commit()
         return {"success": True, "msg": f"已驳回{record[2]}分钟工时记录"}
 
@@ -1645,21 +1695,19 @@ def check_hour_limits(student_address: str) -> dict:
     MAX_MONTHLY = 2400  # 40小时
 
     with engine.connect() as conn:
+        # 本周工时：直接读当前周记录
         row = conn.execute(text("""
-            SELECT COALESCE(weekly_minutes,0), COALESCE(monthly_minutes,0)
+            SELECT COALESCE(weekly_minutes,0)
             FROM hour_limits WHERE student_address=:sa AND week_start=:ws
         """), {"sa": student_address, "ws": str(week_start)}).fetchone()
-
         weekly = row[0] if row else 0
-        monthly = row[1] if row else 0
 
-        # 也统计本月
-        if not row or row[1] == 0:
-            row2 = conn.execute(text("""
-                SELECT COALESCE(monthly_minutes,0) FROM hour_limits
-                WHERE student_address=:sa AND month_start=:ms
-            """), {"sa": student_address, "ms": str(month_start)}).fetchone()
-            monthly = row2[0] if row2 else 0
+        # 本月工时：汇总本月所有周记录的 weekly_minutes（不再依赖 idx_month 唯一键）
+        month_row = conn.execute(text("""
+            SELECT COALESCE(SUM(weekly_minutes),0) FROM hour_limits
+            WHERE student_address=:sa AND month_start=:ms
+        """), {"sa": student_address, "ms": str(month_start)}).fetchone()
+        monthly = month_row[0] if month_row else 0
 
     return {
         "weekly_minutes": weekly,
@@ -1719,12 +1767,14 @@ def create_dispute(data: DisputeCreate):
     """学生发起争议申诉（被驳回后72小时内）"""
     with engine.connect() as conn:
         ci = conn.execute(text("""
-            SELECT c.employment_id, c.student_address, c.clock_in_time, c.work_minutes, c.confirmed
+            SELECT c.employment_id, c.student_address, c.clock_in_time, c.work_minutes, c.confirmed, COALESCE(c.rejected, FALSE)
             FROM clock_ins c WHERE c.id=:cid
         """), {"cid": data.clock_in_id}).fetchone()
         if not ci:
             return {"success": False, "msg": "打卡记录不存在"}
-        if ci[4]:  # confirmed
+        if ci[5]:  # rejected — 允许申诉（驳回记录）
+            pass
+        elif ci[4]:  # confirmed 且未驳回 — 已确认的正常记录，不可申诉
             return {"success": False, "msg": "该记录已确认，无法申诉"}
 
         emp = conn.execute(text(
@@ -1813,17 +1863,32 @@ def admin_resolve_dispute(data: DisputeResolve):
         new_status = "RESOLVED_UPHELD" if data.uphold else "RESOLVED_OVERTURNED"
 
         if not data.uphold:
-            # 强制通过：恢复打卡记录，标记为已确认，累加工时
+            # 强制通过：恢复打卡记录，同步链上+数据库
             ci = conn.execute(text(
-                "SELECT work_minutes, employment_id FROM clock_ins WHERE id=:cid"
+                "SELECT COALESCE(original_work_minutes, work_minutes, 0), employment_id, COALESCE(chain_clock_in_id, 0) FROM clock_ins WHERE id=:cid"
             ), {"cid": dispute[0]}).fetchone()
             if ci:
+                work_min = ci[0]
+                chain_cid = ci[2]
+                # 1) 链上恢复：调用 adminConfirmClockIn 恢复被墓碑的打卡记录（绕过雇主权限）
+                chain_ok = False
+                if chain_cid > 0 and work_min > 0:
+                    try:
+                        tx_hash, err = send_contract_tx("adminConfirmClockIn", [chain_cid, work_min])
+                        chain_ok = bool(tx_hash)
+                        if not chain_ok:
+                            print(f"[DISPUTE] 链上恢复失败 clock_in#{chain_cid}: {err}")
+                    except Exception as e:
+                        print(f"[DISPUTE] 链上恢复异常 clock_in#{chain_cid}: {e}")
+                # 2) 数据库恢复：标记为已确认（链上已确认+工时已累加），教师无需再操作
                 conn.execute(text(
-                    "UPDATE clock_ins SET confirmed=TRUE, risk_flag=NULL WHERE id=:cid"
-                ), {"cid": dispute[0]})
-                conn.execute(text(
-                    "UPDATE employments SET total_minutes = total_minutes + :m WHERE id=:eid"
-                ), {"m": ci[0], "eid": ci[1]})
+                    "UPDATE clock_ins SET confirmed=TRUE, rejected=FALSE, risk_flag=NULL, work_minutes=:wm WHERE id=:cid"
+                ), {"cid": dispute[0], "wm": work_min})
+                if not chain_ok and chain_cid > 0:
+                    # 链上恢复失败时，仍需更新 DB 工时（教师端无法再操作链上）
+                    conn.execute(text(
+                        "UPDATE employments SET total_minutes = total_minutes + :m WHERE id=:eid"
+                    ), {"m": work_min, "eid": ci[1]})
 
         conn.execute(text("""
             UPDATE disputes SET status=:s, admin_decision=:d, resolved_at=NOW() WHERE id=:did
@@ -1845,11 +1910,11 @@ def issue_badge():
 def get_badges(wallet: str):
     """查询某学生的勋章列表（从链上读取）"""
     try:
-        badges = call_contract_function("getStudentBadges", [wallet])
+        badges = call_sbt_function("getStudentBadges", [wallet])
         if badges:
             result = []
             for token_id in badges:
-                badge = call_contract_function("getBadge", [token_id])
+                badge = call_sbt_function("getBadge", [token_id])
                 if badge:
                     result.append({
                         "token_id": token_id, "job_title": badge[2], "department": badge[3],
@@ -1865,7 +1930,7 @@ def get_badges(wallet: str):
 def verify_badge(token_id: int):
     """公开验真接口：验证勋章真伪"""
     try:
-        badge = call_contract_function("getBadge", [token_id])
+        badge = call_sbt_function("getBadge", [token_id])
         if badge and badge[0] > 0:
             return {
                 "valid": not badge[8],  # not revoked

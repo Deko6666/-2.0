@@ -397,6 +397,24 @@ contract WorkStudy {
         emit ClockInRejected(_clockInId, record.employmentId, record.student);
     }
 
+    /**
+     * @notice 管理员裁决"强制通过"：恢复被驳回的打卡记录，重新计入工时
+     * @dev 解决链上 rejectClockIn 不可逆的问题，仅管理员可调用
+     * @param _clockInId 打卡记录ID
+     * @param _workMinutes 恢复的工时（取自数据库 original_work_minutes）
+     */
+    function adminConfirmClockIn(uint256 _clockInId, uint256 _workMinutes) external onlyAdmin {
+        ClockInRecord storage record = clockIns[_clockInId];
+        require(record.id != 0, "Clock-in record does not exist");
+        require(record.workMinutes == 0, "Record not rejected");
+
+        record.workMinutes = _workMinutes;
+        record.confirmed = true;
+        employments[record.employmentId].totalHours += _workMinutes;
+
+        emit HoursConfirmed(_clockInId, record.employmentId, _workMinutes);
+    }
+
     // ======================== 学生功能 ========================
 
     /**
