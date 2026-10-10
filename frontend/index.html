@@ -228,6 +228,7 @@
             <span class="active" onclick="switchPage('hall')">📋 任务大厅</span>
             <span onclick="switchPage('contracts')">📄 我的合约</span>
             <span onclick="switchPage('salary')">💰 薪酬记录</span>
+            <span id="navProfile" style="display:none" onclick="switchPage('profile')">👤 个人画像</span>
             <span id="navAutoSettle" style="display:none" onclick="switchPage('autoSettle')">🤖 自动结算</span>
             <span id="navAdmin" style="display:none" onclick="switchPage('admin')">⚙️ 系统管理</span>
             <span onclick="runDiagnosis()" style="color:var(--warning);">🔍 诊断</span>
@@ -436,6 +437,31 @@
                 </table>
             </div>
         </div>
+        <!-- 画像审核（精准资助） -->
+        <div class="card">
+            <div class="card-title">🎯 待审核学生画像 <span id="profileVerifyBadge" class="badge badge-pending" style="display:none;">0</span></div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>学生</th><th>困难等级</th><th>可用工时</th><th>佐证哈希</th><th>提交时间</th><th>操作</th></tr></thead>
+                    <tbody id="adminProfileTable"><tr><td colspan="7" class="empty-state">暂无待审核画像</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 风控监控 -->
+        <div class="card">
+            <div class="card-title">🛡️ 风控监控（异常打卡）</div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>学生</th><th>岗位</th><th>打卡时间</th><th>工时</th><th>风险类型</th><th>上班IP</th><th>下班IP</th></tr></thead>
+                    <tbody id="adminRiskTable"><tr><td colspan="8" class="empty-state">暂无风险记录</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 争议仲裁 -->
+        <div class="card">
+            <div class="card-title">⚖️ 争议仲裁 <span id="disputeBadge" class="badge badge-pending" style="display:none;">0</span></div>
+            <div id="adminDisputes"><div class="empty-state">暂无争议</div></div>
+        </div>
     </div>
 
     <!-- ==================== 个人中心 ==================== -->
@@ -466,6 +492,51 @@
                 <div class="avatar-picker" id="avatarPicker"></div>
                 <button class="btn btn-primary" onclick="saveProfile()">💾 保存</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ==================== 个人画像（精准资助） ==================== -->
+    <div id="profilePage" class="page">
+        <div class="card">
+            <div class="card-title">🎯 困难生认证与画像</div>
+            <p style="font-size:13px;color:#666;margin-bottom:16px;">完善个人画像信息，系统将根据算法为您智能推荐匹配岗位，困难生享有优先录用权。</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div>
+                    <label>家庭经济困难等级</label>
+                    <select id="profileFinancialLevel">
+                        <option value="NORMAL">普通</option>
+                        <option value="C">C级（一般困难）</option>
+                        <option value="B">B级（比较困难）</option>
+                        <option value="A">A级（特别困难）</option>
+                    </select>
+                </div>
+                <div>
+                    <label>每周可用工时（小时）</label>
+                    <input type="number" id="profileAvailHours" value="10" min="1" max="40">
+                </div>
+                <div>
+                    <label>佐证材料哈希（IPFS/文件哈希）</label>
+                    <input type="text" id="profileCertHash" placeholder="如：QmXxx... 或 0xabc...">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveStudentProfile()" style="margin-top:16px;">💾 提交画像</button>
+            <div id="profileStatus" style="margin-top:12px;font-size:13px;"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">📊 我的画像信息</div>
+            <div id="profileInfo" style="font-size:14px;"><div class="loading">加载中...</div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">⏱ 工时配额</div>
+            <div id="hourQuota" style="font-size:14px;"><div class="loading">加载中...</div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">🏆 我的履约勋章</div>
+            <div id="myBadges" style="font-size:14px;"><div class="loading">加载中...</div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">⚖️ 我的申诉</div>
+            <div id="myDisputes" style="font-size:14px;"><div class="loading">加载中...</div></div>
         </div>
     </div>
 </div>
@@ -558,7 +629,8 @@ function stopClockTimer() {
 }
 
 const API = "http://127.0.0.1:8000/api";
-const CONTRACT_ADDR = "0xe8b1f34dbb171382520647e6abb90b201d4b3345";
+const CONTRACT_ADDR = "0xb0d14e32f03436b220f85d586716ba4a675288f8";
+const SBT_CONTRACT_ADDR = "0x26275eff3ccbf3dc091f4d0bc9953546c85e6d24"; // 部署后自动更新
 const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=1";
 
 const CONTRACT_ABI = [
@@ -598,6 +670,19 @@ const CONTRACT_ABI = [
     "event SalarySettled(uint256 indexed settlementId, uint256 indexed employmentId, address student, uint256 amount)"
 ];
 
+// SBT 履约勋章合约 ABI（ERC-5192）
+const SBT_CONTRACT_ABI = [
+    "function issueBadge(address _student, string _jobTitle, string _department, uint256 _totalHours, string _teacherComment, uint8 _starRating) external returns (uint256)",
+    "function getBadge(uint256 tokenId) view returns (tuple(uint256 tokenId, address student, string jobTitle, string department, uint256 totalHours, string teacherComment, uint8 starRating, uint256 issuedAt, bool revoked))",
+    "function getStudentBadges(address _student) view returns (uint256[])",
+    "function locked(uint256 tokenId) view returns (bool)",
+    "function totalSupply() view returns (uint256)",
+    "function badgeCount() view returns (uint256)",
+    "function revokeBadge(uint256 tokenId) external",
+    "event BadgeIssued(uint256 indexed tokenId, address indexed student, string jobTitle, uint256 totalHours)",
+    "event BadgeRevoked(uint256 indexed tokenId, address indexed student)"
+];
+
 // ======================== 初始化 ========================
 window.onload = () => {
     initAvatars();
@@ -629,12 +714,13 @@ function switchPage(p) {
     document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
     document.getElementById(p + 'Page').classList.add('active');
     document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-    const navMap = { hall: 0, contracts: 1, salary: 2, autoSettle: 3, admin: 4 };
+    const navMap = { hall: 0, contracts: 1, salary: 2, profile: 3, autoSettle: 4, admin: 5 };
     if (navMap[p] !== undefined) document.querySelectorAll('.nav-links span')[navMap[p]].classList.add('active');
     localStorage.setItem('currentPage', p);
     if (p === 'hall') fetchHallJobs();
     if (p === 'contracts') loadContractsPage();
     if (p === 'salary') loadSalaryPage();
+    if (p === 'profile') loadProfilePage();
     if (p === 'autoSettle') loadAutoSettlePage();
     if (p === 'admin') loadAdminPage();
     if (p === 'mine') loadProfile();
@@ -778,6 +864,7 @@ function loginSuccess() {
     }
     document.getElementById('navAdmin').style.display = currentUser.role === 'ADMIN' ? 'inline' : 'none';
     document.getElementById('navAutoSettle').style.display = (currentUser.role === 'ADMIN' || currentUser.role === 'TEACHER') ? 'inline' : 'none';
+    document.getElementById('navProfile').style.display = currentUser.role === 'STUDENT' ? 'inline' : 'none';
 }
 
 async function registerTeacherOnChain() {
@@ -1036,28 +1123,43 @@ async function loadStudentContracts() {
 
 async function loadTeacherContracts() {
     try {
-        // 加载待审批申请
+        // 加载待审批申请（含算法匹配度）
         const res = await fetch(`${API}/pending_applications/${currentUser.wallet_address}`);
         const pending = await res.json();
         const pendingDiv = document.getElementById('pendingApplications');
         const badge = document.getElementById('pendingBadge');
         if (pending.length) {
             badge.style.display = 'inline'; badge.innerText = pending.length;
-            pendingDiv.innerHTML = pending.map(p => `
-                <div class="card" style="border-left:3px solid var(--warning);">
+            // 获取匹配度
+            const withScores = await Promise.all(pending.map(async (p) => {
+                try {
+                    const sRes = await fetch(`${API}/match_score/${p.employment_id}`);
+                    const score = await sRes.json();
+                    return { ...p, match_score: score.score || 0, reason: score.reason || '' };
+                } catch { return { ...p, match_score: 0, reason: '' }; }
+            }));
+            withScores.sort((a, b) => b.match_score - a.match_score);
+            pendingDiv.innerHTML = withScores.map(p => {
+                const scoreColor = p.match_score >= 80 ? 'var(--success)' : p.match_score >= 60 ? 'var(--warning)' : 'var(--text-light)';
+                return `
+                <div class="card" style="border-left:3px solid ${p.match_score >= 80 ? 'var(--success)' : 'var(--warning)'};">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <div>
+                        <div style="flex:1;">
                             <div style="font-weight:700;">📝 ${escHtml(p.job_title)}</div>
                             <div style="font-size:13px;color:#666;">申请者: ${escHtml(p.student_nickname||'未知')} (${p.student_address.slice(0,8)}...)</div>
                             <div style="font-size:12px;color:#999;">申请时间: ${p.applied_at}</div>
+                            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+                                <span style="background:${scoreColor};color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700;">🎯 匹配度: ${p.match_score}%</span>
+                                <span style="font-size:12px;color:#666;">${escHtml(p.reason)}</span>
+                            </div>
                         </div>
                         <div style="display:flex;gap:8px;">
                             <button class="btn btn-success btn-sm" onclick="approveApplication(${p.employment_id},${p.chain_employment_id||0})">✅ 批准</button>
                             <button class="btn btn-danger btn-sm" onclick="rejectApplication(${p.employment_id},${p.chain_employment_id||0})">❌ 拒绝</button>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         } else { badge.style.display='none'; pendingDiv.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>暂无待审批申请</p></div>'; }
 
         // 加载待确认工时记录
@@ -1098,7 +1200,10 @@ async function loadTeacherContracts() {
                             <div style="font-size:13px;color:#666;">学生: ${escHtml(s.student_nickname)} (${s.student_address.slice(0,8)}...)</div>
                             <div style="font-size:13px;margin-top:4px;">已确认工时: <b>${s.total_minutes}</b> 分钟 | 应付薪酬: <b style="color:var(--success);">${s.salary_ether} ETH</b></div>
                         </div>
-                        <button class="btn btn-success btn-sm" onclick="settleSalary(${s.employment_id},${s.chain_employment_id})">💰 结算薪酬</button>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="btn btn-success btn-sm" onclick="settleSalary(${s.employment_id},${s.chain_employment_id})">💰 结算薪酬</button>
+                            <button class="btn btn-gold btn-sm" onclick="issueBadge('${s.student_address}','${escHtml(s.job_title)}','${escHtml(s.department||'')}',${s.total_minutes})">🏅 颁发勋章</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -1194,6 +1299,9 @@ async function openClockModal(empId, chainEmpId) {
 async function doClockIn() {
     if (!currentEmploymentId) return;
     if (!currentChainEmploymentId || currentChainEmploymentId <= 0) return alert("链上合约ID无效，请重新申请岗位");
+    // 教育部工时红线检查
+    const canClock = await checkHourQuotaBeforeClockIn();
+    if (!canClock) return;
     try {
         await ensureWalletBound();
         const provider = new ethers.BrowserProvider(window.ethereum);
@@ -1298,9 +1406,19 @@ async function loadClockRecords(empId, btn) {
         if (!data.length) { div.innerHTML='<p style="color:#999;font-size:13px;">暂无打卡记录</p>'; return; }
         const isTeacher = currentUser && currentUser.role === 'TEACHER';
         const unconfirmed = data.filter(r => !r.confirmed && r.clock_out_time);
-        let html = `<table style="font-size:12px;"><tr><th>上班</th><th>下班</th><th>工时</th><th>状态</th>${isTeacher?'<th>操作</th>':''}</tr>${data.map(r=>`<tr><td>${r.clock_in_time}</td><td>${r.clock_out_time||'进行中'}</td><td>${r.work_minutes}分钟</td><td>${r.confirmed?'<span class="badge badge-confirmed">已确认</span>':'<span class="badge badge-pending">待确认</span>'}</td>${isTeacher?`<td>${!r.confirmed&&r.clock_out_time?`<button class="btn btn-success btn-sm" onclick="confirmHours(${r.id},${r.chain_clock_in_id||0})">✅ 确认</button> <button class="btn btn-danger btn-sm" onclick="rejectClockIn(${r.id},${r.chain_clock_in_id||0})">❌ 驳回</button>`:'-'}</td>`:''}</tr>`).join('')}</table>`;
+        const rejected = data.filter(r => r.confirmed && r.work_minutes === 0 && r.clock_out_time);
+        let html = `<table style="font-size:12px;"><tr><th>上班</th><th>下班</th><th>工时</th><th>状态</th>${isTeacher?'<th>操作</th>':''}${!isTeacher?'<th>操作</th>':''}</tr>${data.map(r=>{
+            const isRejected = r.confirmed && r.work_minutes === 0 && r.clock_out_time;
+            const statusHtml = r.confirmed ? (r.work_minutes === 0 && r.clock_out_time ? '<span class="badge" style="background:var(--danger);color:#fff;">已驳回</span>' : '<span class="badge badge-confirmed">已确认</span>') : '<span class="badge badge-pending">待确认</span>';
+            const teacherCol = isTeacher ? `<td>${!r.confirmed&&r.clock_out_time?`<button class="btn btn-success btn-sm" onclick="confirmHours(${r.id},${r.chain_clock_in_id||0})">✅ 确认</button> <button class="btn btn-danger btn-sm" onclick="rejectClockIn(${r.id},${r.chain_clock_in_id||0})">❌ 驳回</button>`:'-'}</td>` : '';
+            const studentCol = !isTeacher ? `<td>${isRejected?`<button class="btn btn-warning btn-sm" onclick="createDispute(${r.id})">⚖️ 发起申诉</button>`:'-'}</td>` : '';
+            return `<tr><td>${r.clock_in_time}</td><td>${r.clock_out_time||'进行中'}</td><td>${r.work_minutes}分钟</td><td>${statusHtml}</td>${teacherCol}${studentCol}</tr>`;
+        }).join('')}</table>`;
         if (!isTeacher && unconfirmed.length > 0) {
             html += `<p style="color:#856404;font-size:12px;margin-top:8px;background:#fff3cd;padding:6px 10px;border-radius:4px;">⏳ 有 ${unconfirmed.length} 条打卡记录等待教师确认，确认后工时才会累计</p>`;
+        }
+        if (!isTeacher && rejected.length > 0) {
+            html += `<p style="color:#721c24;font-size:12px;margin-top:8px;background:#f8d7da;padding:6px 10px;border-radius:4px;">❌ 有 ${rejected.length} 条记录被驳回，如不服可在72小时内点击"发起申诉"</p>`;
         }
         div.innerHTML = html;
     } catch (e) { div.innerHTML='<p style="color:red;">加载失败</p>'; }
@@ -1847,6 +1965,423 @@ async function runDiagnosis() {
     report += '      导入geth keystore文件或私钥\n';
     alert(report);
 }
+
+// ======================== 功能三：SBT 履约勋章颁发 ========================
+
+async function issueBadge(studentAddr, jobTitle, department, totalMinutes) {
+    if (!SBT_CONTRACT_ADDR || SBT_CONTRACT_ADDR === "0x0000000000000000000000000000000000000000") {
+        alert('SBT合约尚未部署，请先运行 npx hardhat run scripts/deploy.js --network localhost');
+        return;
+    }
+    const comment = prompt('请输入教师评语：');
+    if (!comment) return;
+    const ratingStr = prompt('请给出星级评分（1-5）：', '5');
+    const rating = parseInt(ratingStr);
+    if (!rating || rating < 1 || rating > 5) { alert('评分必须在1-5之间'); return; }
+
+    try {
+        await ensureWalletBound();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const sbtContract = new ethers.Contract(SBT_CONTRACT_ADDR, SBT_CONTRACT_ABI, signer);
+        alert('🦊 请在 MetaMask 中确认颁发勋章...');
+        const tx = await sbtContract.issueBadge(
+            studentAddr, jobTitle, department, BigInt(totalMinutes), comment, rating
+        );
+        await tx.wait();
+        alert('✅ 履约勋章颁发成功！');
+    } catch (e) {
+        alert('颁发失败: ' + (e.reason || e.message));
+    }
+}
+
+// ======================== 功能一：精准资助 — 学生画像 ========================
+
+async function saveStudentProfile() {
+    if (!currentUser || !currentUser.wallet_address) {
+        alert('请先连接钱包'); return;
+    }
+    const data = {
+        wallet_address: currentUser.wallet_address,
+        financial_level: document.getElementById('profileFinancialLevel').value,
+        available_hours_per_week: parseInt(document.getElementById('profileAvailHours').value) || 10,
+        certification_hash: document.getElementById('profileCertHash').value.trim()
+    };
+    try {
+        const res = await fetch(API + '/student_profile', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data)
+        });
+        const r = await res.json();
+        document.getElementById('profileStatus').innerHTML = r.success
+            ? '<span style="color:var(--success);">✅ ' + escHtml(r.msg) + '</span>'
+            : '<span style="color:var(--danger);">❌ ' + escHtml(r.msg) + '</span>';
+        if (r.success) loadProfilePage();
+    } catch (e) {
+        document.getElementById('profileStatus').innerHTML = '<span style="color:var(--danger);">❌ 请求失败</span>';
+    }
+}
+
+async function loadProfilePage() {
+    if (!currentUser || !currentUser.wallet_address) return;
+    const wallet = currentUser.wallet_address;
+
+    // 加载画像信息
+    try {
+        const res = await fetch(API + '/student_profile/' + wallet);
+        const p = await res.json();
+        const levelMap = {A:'A级（特别困难）🔴', B:'B级（比较困难）🟠', C:'C级（一般困难）🟡', NORMAL:'普通 🟢'};
+        document.getElementById('profileInfo').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>困难等级: <strong>${levelMap[p.financial_level] || p.financial_level}</strong></div>
+                <div>每周可用工时: <strong>${p.available_hours_per_week} 小时</strong></div>
+                <div>信誉分: <strong style="color:${p.reputation_score>=80?'var(--success)':'var(--warning)'};">${p.reputation_score}/100</strong></div>
+                <div>本月已获助学金: <strong>${p.monthly_aid_received} 元</strong></div>
+                <div>认证状态: ${p.verified ? '<span style="color:var(--success);">✅ 已认证</span>' : '<span style="color:var(--warning);">⏳ 待认证</span>'}</div>
+            </div>
+        `;
+        // 预填表单
+        document.getElementById('profileFinancialLevel').value = p.financial_level || 'NORMAL';
+        document.getElementById('profileAvailHours').value = p.available_hours_per_week || 10;
+    } catch (e) {
+        document.getElementById('profileInfo').innerHTML = '<span style="color:#999;">暂无画像数据，请先提交</span>';
+    }
+
+    // 加载工时配额
+    try {
+        const res = await fetch(API + '/student_hour_status/' + wallet);
+        const h = await res.json();
+        const weeklyPct = Math.round((h.weekly_minutes / h.max_weekly) * 100);
+        const monthlyPct = Math.round((h.monthly_minutes / h.max_monthly) * 100);
+        document.getElementById('hourQuota').innerHTML = `
+            <div style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span>本周工时</span><span>${Math.floor(h.weekly_minutes/60)}h${h.weekly_minutes%60}m / 8h</span>
+                </div>
+                <div style="background:#e8e8e8;border-radius:8px;height:20px;overflow:hidden;">
+                    <div style="width:${Math.min(weeklyPct,100)}%;background:${weeklyPct>=100?'var(--danger)':weeklyPct>=80?'var(--warning)':'var(--success)'};height:100%;border-radius:8px;transition:width 0.5s;"></div>
+                </div>
+                <div style="font-size:12px;color:#999;margin-top:2px;">剩余 ${Math.floor(h.weekly_remaining/60)}h${h.weekly_remaining%60}m</div>
+            </div>
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span>本月工时</span><span>${Math.floor(h.monthly_minutes/60)}h${h.monthly_minutes%60}m / 40h</span>
+                </div>
+                <div style="background:#e8e8e8;border-radius:8px;height:20px;overflow:hidden;">
+                    <div style="width:${Math.min(monthlyPct,100)}%;background:${monthlyPct>=100?'var(--danger)':monthlyPct>=80?'var(--warning)':'var(--success)'};height:100%;border-radius:8px;transition:width 0.5s;"></div>
+                </div>
+                <div style="font-size:12px;color:#999;margin-top:2px;">剩余 ${Math.floor(h.monthly_remaining/60)}h${h.monthly_remaining%60}m</div>
+            </div>
+        `;
+    } catch (e) {
+        document.getElementById('hourQuota').innerHTML = '<span style="color:#999;">加载失败</span>';
+    }
+
+    // 加载勋章
+    try {
+        const res = await fetch(API + '/badges/' + wallet);
+        const badges = await res.json();
+        if (!badges || badges.length === 0) {
+            document.getElementById('myBadges').innerHTML = '<div class="empty-state">暂无勋章，完成岗位后由教师颁发</div>';
+        } else {
+            document.getElementById('myBadges').innerHTML = badges.map(b => `
+                <div class="card" style="border-left:4px solid var(--gold);margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div style="font-weight:700;font-size:16px;">🏅 ${escHtml(b.job_title)}</div>
+                            <div style="font-size:13px;color:#666;margin-top:4px;">部门: ${escHtml(b.department)} · 累计工时: ${Math.floor(b.total_hours/60)}小时</div>
+                            <div style="font-size:13px;margin-top:4px;">评语: ${escHtml(b.teacher_comment)}</div>
+                            <div style="margin-top:4px;">${'⭐'.repeat(b.star_rating)}${'☆'.repeat(5-b.star_rating)}</div>
+                            <div style="font-size:12px;color:#999;margin-top:4px;">颁发时间: ${new Date(b.issued_at * 1000).toLocaleDateString()}</div>
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="font-size:36px;">🏅</div>
+                            <div style="font-size:11px;color:#999;">Token #${b.token_id}</div>
+                            <a href="/verify?token_id=${b.token_id}" style="font-size:12px;color:var(--primary);" target="_blank">🔗 验真</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        document.getElementById('myBadges').innerHTML = '<span style="color:#999;">勋章加载失败</span>';
+    }
+
+    // 加载申诉记录
+    try {
+        const res = await fetch(API + '/disputes/' + wallet);
+        const disputes = await res.json();
+        if (!disputes || disputes.length === 0) {
+            document.getElementById('myDisputes').innerHTML = '<div class="empty-state">暂无申诉记录</div>';
+        } else {
+            const statusMap = {PENDING:'⏳ 待裁决', IN_DISPUTE:'🔴 争议中', RESOLVED_UPHELD:'✅ 维持驳回', RESOLVED_OVERTURNED:'🔄 申诉成功'};
+            const statusColor = {PENDING:'var(--warning)', IN_DISPUTE:'var(--danger)', RESOLVED_UPHELD:'var(--text-light)', RESOLVED_OVERTURNED:'var(--success)'};
+            document.getElementById('myDisputes').innerHTML = disputes.map(d => `
+                <div class="card" style="border-left:4px solid ${statusColor[d.status]||'var(--border)'};margin-bottom:8px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div style="font-weight:600;">申诉 #${d.id} — ${escHtml(d.job_title)}</div>
+                            <div style="font-size:12px;color:#999;margin:4px 0;">打卡时间: ${d.clock_in_time} · 工时: ${d.work_minutes}分钟</div>
+                            <div style="font-size:13px;margin-top:4px;">理由: ${escHtml(d.reason)}</div>
+                            ${d.admin_decision ? '<div style="font-size:12px;color:var(--primary);margin-top:4px;">裁决说明: ' + escHtml(d.admin_decision) + '</div>' : ''}
+                        </div>
+                        <span style="background:${statusColor[d.status]};color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;white-space:nowrap;">${statusMap[d.status]}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        document.getElementById('myDisputes').innerHTML = '<span style="color:#999;">加载失败</span>';
+    }
+}
+
+// ======================== 功能一：教师审批增强 — 匹配度展示 ========================
+
+// 修改原有的 pendingApplications 渲染，增加匹配度
+async function loadPendingWithScore(employer) {
+    try {
+        const res = await fetch(API + '/pending_applications/' + employer);
+        const apps = await res.json();
+        const container = document.getElementById('pendingApplications');
+        if (!apps || apps.length === 0) {
+            container.innerHTML = '<div class="empty-state">暂无待审批申请</div>';
+            return;
+        }
+
+        // 获取每个申请的匹配度
+        const withScores = await Promise.all(apps.map(async (a) => {
+            try {
+                const sRes = await fetch(API + '/match_score/' + a.employment_id);
+                const score = await sRes.json();
+                return { ...a, match_score: score.score || 0, reason: score.reason || '' };
+            } catch { return { ...a, match_score: 0, reason: '' }; }
+        }));
+
+        // 按匹配度降序排列
+        withScores.sort((a, b) => b.match_score - a.match_score);
+
+        container.innerHTML = withScores.map(p => {
+            const scoreColor = p.match_score >= 80 ? 'var(--success)' : p.match_score >= 60 ? 'var(--warning)' : 'var(--danger)';
+            return `
+                <div class="card" style="border-left:3px solid ${p.match_score >= 80 ? 'var(--success)' : 'var(--warning)'};">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div style="flex:1;">
+                            <div style="font-weight:700;">📝 ${escHtml(p.job_title)}</div>
+                            <div style="font-size:13px;color:#666;">申请者: ${escHtml(p.student_nickname||'未知')} (${p.student_address.slice(0,8)}...)</div>
+                            <div style="font-size:12px;color:#999;">申请时间: ${p.applied_at}</div>
+                            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+                                <span style="background:${scoreColor};color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700;">算法匹配度: ${p.match_score}%</span>
+                                <span style="font-size:12px;color:#666;">${escHtml(p.reason)}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-success btn-sm" onclick="approveApplication(${p.employment_id}, ${p.chain_employment_id})">✅ 批准</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectApplication(${p.employment_id}, ${p.chain_employment_id})">❌ 拒绝</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        document.getElementById('pendingApplications').innerHTML = '<div class="empty-state">加载失败</div>';
+    }
+}
+
+// ======================== 功能二：工时配额检查（打卡时） ========================
+
+async function checkHourQuotaBeforeClockIn() {
+    if (!currentUser || !currentUser.wallet_address) return true;
+    try {
+        const res = await fetch(API + '/student_hour_status/' + currentUser.wallet_address);
+        const h = await res.json();
+        if (h.weekly_exceeded) {
+            alert('⚠️ 本周工时已达教育部规定上限（8小时），无法继续打卡。\n请合理安排学业。');
+            return false;
+        }
+        if (h.monthly_exceeded) {
+            alert('⚠️ 本月工时已达教育部规定上限（40小时），无法继续打卡。\n请合理安排学业。');
+            return false;
+        }
+        // 接近上限时警告
+        if (h.weekly_remaining <= 60) {
+            if (!confirm(`⚠️ 本周剩余工时仅 ${h.weekly_remaining} 分钟，打卡后可能接近上限。\n确定继续？`)) return false;
+        }
+        return true;
+    } catch { return true; } // 检查失败不阻断
+}
+
+// ======================== 功能四：争议申诉 ========================
+
+async function createDispute(clockInId) {
+    const reason = prompt('请输入申诉理由：');
+    if (!reason || !reason.trim()) return;
+    try {
+        const res = await fetch(API + '/disputes', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ clock_in_id: clockInId, reason: reason.trim() })
+        });
+        const r = await res.json();
+        alert(r.msg);
+        if (r.success) loadContractsPage();
+    } catch (e) { alert('申诉提交失败'); }
+}
+
+async function loadAdminDisputes() {
+    try {
+        const res = await fetch(API + '/admin/disputes');
+        const disputes = await res.json();
+        const pending = disputes.filter(d => d.status === 'PENDING' || d.status === 'IN_DISPUTE');
+        const badge = document.getElementById('disputeBadge');
+        if (pending.length > 0) { badge.textContent = pending.length; badge.style.display = 'inline'; }
+        else { badge.style.display = 'none'; }
+
+        const container = document.getElementById('adminDisputes');
+        if (!disputes || disputes.length === 0) {
+            container.innerHTML = '<div class="empty-state">暂无争议</div>';
+            return;
+        }
+        container.innerHTML = disputes.map(d => {
+            const statusMap = {PENDING:'⏳ 待裁决', IN_DISPUTE:'🔴 争议中', RESOLVED_UPHELD:'✅ 维持驳回', RESOLVED_OVERTURNED:'🔄 已翻转'};
+            const statusColor = (d.status === 'PENDING' || d.status === 'IN_DISPUTE') ? 'var(--warning)' : 'var(--success)';
+            const canResolve = d.status === 'PENDING' || d.status === 'IN_DISPUTE';
+            return `
+                <div class="card" style="border-left:4px solid ${statusColor};margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div style="flex:1;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                <strong>争议 #${d.id}</strong>
+                                <span style="background:${statusColor};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">${statusMap[d.status]}</span>
+                            </div>
+                            <div style="font-size:13px;color:#666;">学生: ${escHtml(d.student_nickname||'')} (${d.student.slice(0,10)}...)</div>
+                            <div style="font-size:13px;color:#666;">教师: ${escHtml(d.teacher_nickname||'')} (${d.employer.slice(0,10)}...)</div>
+                            <div style="font-size:13px;color:#666;">岗位: ${escHtml(d.job_title)} · 打卡时间: ${d.clock_in_time} · 工时: ${d.work_minutes}分钟</div>
+                            <div style="margin-top:8px;padding:10px;background:#f8f8f8;border-radius:6px;font-size:13px;">
+                                <strong>申诉理由：</strong>${escHtml(d.reason)}
+                                ${d.evidence_hash ? '<br><strong>佐证哈希：</strong>' + escHtml(d.evidence_hash) : ''}
+                            </div>
+                            ${d.admin_decision ? '<div style="margin-top:6px;font-size:13px;color:var(--primary);"><strong>裁决：</strong>' + escHtml(d.admin_decision) + '</div>' : ''}
+                        </div>
+                        ${canResolve ? `
+                        <div style="display:flex;flex-direction:column;gap:6px;margin-left:12px;">
+                            <button class="btn btn-success btn-sm" onclick="resolveDispute(${d.id}, false)">✅ 强制通过</button>
+                            <button class="btn btn-danger btn-sm" onclick="resolveDispute(${d.id}, true)">❌ 维持驳回</button>
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        document.getElementById('adminDisputes').innerHTML = '<div class="empty-state">加载失败</div>';
+    }
+}
+
+async function resolveDispute(disputeId, uphold) {
+    const decision = prompt(uphold ? '请输入维持驳回的理由：' : '请输入强制通过的说明：');
+    if (!decision) return;
+    try {
+        const res = await fetch(API + '/admin/resolve_dispute', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ dispute_id: disputeId, uphold: uphold, decision: decision })
+        });
+        const r = await res.json();
+        alert(r.msg);
+        if (r.success) loadAdminDisputes();
+    } catch (e) { alert('裁决失败'); }
+}
+
+// ======================== 功能一/二：管理员画像审核与风控 ========================
+
+async function loadAdminVerifyProfiles() {
+    try {
+        const res = await fetch(API + '/admin/verify_profiles');
+        const profiles = await res.json();
+        const badge = document.getElementById('profileVerifyBadge');
+        if (profiles.length > 0) { badge.textContent = profiles.length; badge.style.display = 'inline'; }
+        else { badge.style.display = 'none'; }
+
+        const levelMap = {A:'A级 🔴', B:'B级 🟠', C:'C级 🟡', NORMAL:'普通 🟢'};
+        const tbody = document.getElementById('adminProfileTable');
+        if (!profiles.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">暂无待审核画像</td></tr>';
+            return;
+        }
+        tbody.innerHTML = profiles.map(p => `
+            <tr>
+                <td>${p.id}</td>
+                <td>${escHtml(p.nickname)}<br><span class="wallet-addr">${p.wallet.slice(0,10)}...</span></td>
+                <td>${levelMap[p.financial_level] || p.financial_level}</td>
+                <td>${p.available_hours}h/周</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;">${p.cert_hash || '-'}</td>
+                <td>${p.created_at}</td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="verifyProfile(${p.id}, true)">✅ 通过</button>
+                    <button class="btn btn-danger btn-sm" onclick="verifyProfile(${p.id}, false)">❌ 驳回</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        document.getElementById('adminProfileTable').innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>';
+    }
+}
+
+async function verifyProfile(profileId, approved) {
+    let reputation = 80, monthlyAid = 0;
+    if (approved) {
+        const repInput = prompt('设定信誉分（0-100，默认80）：', '80');
+        if (repInput === null) return;
+        reputation = parseInt(repInput) || 80;
+        const aidInput = prompt('本月已获助学金（元，默认0）：', '0');
+        if (aidInput === null) return;
+        monthlyAid = parseFloat(aidInput) || 0;
+    }
+    try {
+        const res = await fetch(API + '/admin/verify_profile', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ profile_id: profileId, approved: approved, reputation_score: reputation, monthly_aid: monthlyAid })
+        });
+        const r = await res.json();
+        alert(r.msg);
+        loadAdminVerifyProfiles();
+    } catch (e) { alert('操作失败'); }
+}
+
+async function loadAdminRiskAlerts() {
+    try {
+        const res = await fetch(API + '/risk_alerts');
+        const alerts = await res.json();
+        const tbody = document.getElementById('adminRiskTable');
+        if (!alerts.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">暂无风险记录 ✅</td></tr>';
+            return;
+        }
+        tbody.innerHTML = alerts.map(a => `
+            <tr style="background:${a.risk_flag==='IP_MISMATCH'?'#fff3cd':''};">
+                <td>${a.id}</td>
+                <td>${escHtml(a.nickname)}<br><span class="wallet-addr">${a.student.slice(0,10)}...</span></td>
+                <td>${escHtml(a.job_title)}</td>
+                <td>${a.clock_in}</td>
+                <td>${a.minutes}分钟</td>
+                <td><span style="color:var(--danger);font-weight:700;">⚠️ ${a.risk_flag}</span></td>
+                <td style="font-size:12px;">${a.in_ip || '-'}</td>
+                <td style="font-size:12px;">${a.out_ip || '-'}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        document.getElementById('adminRiskTable').innerHTML = '<tr><td colspan="8" class="empty-state">加载失败</td></tr>';
+    }
+}
+
+// loadAdminPage 已在上方定义，新功能数据由 adminPage 加载时自动触发
+// 通过监听 admin page 展示来加载额外数据
+const _origSwitchPage = switchPage;
+switchPage = function(p) {
+    _origSwitchPage(p);
+    if (p === 'admin') {
+        loadAdminVerifyProfiles();
+        loadAdminRiskAlerts();
+        loadAdminDisputes();
+    }
+};
 </script>
 </body>
 </html>

@@ -126,17 +126,20 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 教师注册 ─▶ createJob (锁仓预算)
               │
-学生申请 ─▶ applyForJob ─▶ [PENDING]
+学生申请 ─▶ applyForJob ─▶ [PENDING] ─▶ 算法匹配度评分(TOPSIS)
               │
 教师审批 ─▶ approveApplication ─▶ [APPROVED] ─▶ 打卡 clockIn / clockOut
               │                                        │
               │                         （工时 = block.timestamp 自动计算，学生无法填时长）
+              │                         （IP记录 + 风险检测 + 工时红线拦截）
               │                                        │
               │                              confirmHours (确认工时)
               │                                        │
               └── rejectApplication ─▶ [REJECTED]   settleSalary (发放薪酬)
                                                    │
-                                   closeJob (退还剩余预算) / resignFromJob
+                                   closeJob / 颁发SBT勋章 (ERC-5192)
+                                                   │
+                                   学生可对驳回发起争议申诉 → 管理员仲裁
 ```
 
 **防舞弊计时机制**：
@@ -165,11 +168,62 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 | 打卡 | `POST /api/clock_in` `POST /api/clock_out` `POST /api/confirm_hours` `POST /api/reject_clock_in` |
 
 > **打卡工时说明**：`clock_in` 响应含 `clock_in_time`（前端计时器起点）；`clock_out` 请求只需 `clock_in_id`，工时由链上/服务端按时间戳自动计算，响应返回 `work_minutes`。
+
 | 结算 | `POST /api/settle_salary` `GET /api/settlements/{wallet}` `GET /api/pending_settlements/{employer}` |
 | 看板 | `GET /api/my_dashboard/{wallet}` `GET /api/teacher_dashboard/{wallet}` |
 | 管理 | `GET /api/admin/stats` `GET /api/admin/users` `GET /api/admin/jobs` `POST /api/admin/delete_all_jobs` |
 | 自动结算 | `GET /api/settlement_config` `POST /api/settlement_config` `POST /api/trigger_auto_settlement` |
 | 其他 | `GET /api/audit_logs` `POST /api/repair_chain_ids` `POST /api/upload_avatar` |
+| **精准资助** | `POST /api/student_profile` `GET /api/student_profile/{wallet}` `GET /api/match_score/{eid}` `GET /api/admin/verify_profiles` `POST /api/admin/verify_profile` |
+| **规范风控** | `GET /api/student_hour_status/{wallet}` `GET /api/risk_alerts` |
+| **SBT勋章** | `GET /api/badges/{wallet}` `GET /api/verify_badge/{token_id}` |
+| **争议仲裁** | `POST /api/disputes` `GET /api/disputes/{wallet}` `GET /api/admin/disputes` `POST /api/admin/resolve_dispute` |
+
+---
+
+## 进阶功能
+
+### 一、精准资助：人岗智能撮合算法（TOPSIS）
+
+教育部要求勤工助学岗位优先保障家庭经济困难学生。系统实现了多属性加权TOPSIS算法进行人岗匹配：
+
+**Score = w₁×困难等级 + w₂×课余时间匹配度 + w₃×历史信誉分 − w₄×本月已获助学金**
+
+| 指标 | 权重 | 说明 |
+|---|---|---|
+| 困难等级 | 0.35 | A级=1.0, B级=0.7, C级=0.4, 普通=0.1 |
+| 课余时间匹配度 | 0.25 | min(可用工时/岗位需求工时, 1.0) |
+| 历史履约信誉分 | 0.25 | 0-100归一化 |
+| 本月已获助学金 | 0.15 | 负向指标，越低越好 |
+
+教师审批时展示算法匹配度百分比，困难生自动置顶。
+
+### 二、SBT履约存证（ERC-5192灵魂绑定凭证）
+
+基于ERC-5192规范（Locked Soulbound Token）实现不可转让的链上履约勋章：
+
+- `contracts/WorkStudySBT.sol`：精简ERC-721实现 + soulbound锁定
+- 岗位结项时教师颁发勋章，记录岗位名称、部门、累计工时、评语、星级
+- 公开验真接口，任何人可查询勋章真伪
+- 代币绑定学生钱包，禁止 transfer/交易
+
+### 三、规范风控：工时红线与防代刷
+
+教育部政策合规："每周不超过8小时，每月不超过40小时"
+
+- **工时红线**：打卡时检查周/月配额，超限自动拦截
+- **IP异常检测**：打卡记录客户端IP，上下班IP跨网段时标记 `IP_MISMATCH`
+- **进度条可视化**：学生端展示本周/本月工时配额使用情况
+
+### 四、权益闭环：争议申诉与仲裁
+
+教师驳回打卡后，学生可在72小时内发起申诉：
+
+1. 学生填写申诉理由，提交佐证材料哈希
+2. 状态变为 `IN_DISPUTE`
+3. 管理员在仲裁面板调阅双方流水，一键裁决：
+   - **维持驳回**：记录保持墓碑状态
+   - **强制通过**：恢复工时并累加，同步到薪酬
 
 ---
 

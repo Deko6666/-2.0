@@ -120,13 +120,65 @@ async function main() {
   fs.writeFileSync(configPath, address, "utf8");
   console.log(`✅ 合约地址已保存到 contract_address.txt（供后端自动结算使用）`);
 
+  // ==================== 部署 SBT 合约（ERC-5192 灵魂绑定凭证） ====================
+  console.log(`\n🏅 正在部署 WorkStudySBT 合约...`);
+  let sbtAddress = null;
+  try {
+    const sbtArtifactPath = path.join(__dirname, "..", "artifacts", "contracts", "WorkStudySBT.sol", "WorkStudySBT.json");
+    const sbtArtifact = JSON.parse(fs.readFileSync(sbtArtifactPath, "utf8"));
+    const sbtDeployData = sbtArtifact.bytecode;
+
+    // 构造器参数：workStudy合约地址
+    const { Interface } = require("ethers");
+    const sbtIface = new Interface(sbtArtifact.abi);
+    const encodedArgs = sbtIface.encodeDeploy([address]);
+    const fullSbtData = sbtDeployData + encodedArgs.slice(2);
+
+    let sbtGas = "0x7A1200"; // 8M 兜底
+    try {
+      const est = await rpc("eth_estimateGas", [{ from: deployer, data: fullSbtData }]);
+      sbtGas = "0x" + Math.ceil(parseInt(est, 16) * 1.3).toString(16);
+      console.log(`⛽ SBT 预估 gas: ${parseInt(est, 16)}`);
+    } catch (e) {
+      console.log(`⛽ SBT gas 估算失败，使用兜底值`);
+    }
+
+    const sbtReceipt = await sendTx({ from: deployer, data: fullSbtData, gas: sbtGas });
+    if (sbtReceipt.status !== "0x1") {
+      throw new Error(`SBT 部署失败 (status=${sbtReceipt.status})`);
+    }
+    sbtAddress = sbtReceipt.contractAddress;
+    const sbtCode = await rpc("eth_getCode", [sbtAddress, "latest"]);
+    if (!sbtCode || sbtCode === "0x") throw new Error("SBT 地址上无代码");
+
+    console.log(`✅ SBT 合约部署成功！`);
+    console.log(`📍 SBT 地址: ${sbtAddress}`);
+
+    // 保存SBT地址
+    fs.writeFileSync(path.join(__dirname, "..", "sbt_address.txt"), sbtAddress, "utf8");
+
+    // 更新前端 SBT 地址
+    const indexPath2 = path.join(__dirname, "..", "frontend", "index.html");
+    if (fs.existsSync(indexPath2)) {
+      let content = fs.readFileSync(indexPath2, "utf8");
+      content = content.replace(
+        /const SBT_CONTRACT_ADDR = "0x[a-fA-F0-9]{40}"/,
+        `const SBT_CONTRACT_ADDR = "${sbtAddress}"`
+      );
+      fs.writeFileSync(indexPath2, content, "utf8");
+    }
+  } catch (e) {
+    console.log(`⚠️ SBT 合约部署跳过: ${e.message}`);
+  }
+
   const chainId = await rpc("eth_chainId");
   console.log(`\n📋 部署信息汇总:`);
-  console.log(`   合约地址: ${address}`);
-  console.log(`   部署者:   ${deployer}`);
-  console.log(`   网络:     Geth Dev Chain`);
-  console.log(`   Chain ID: ${parseInt(chainId, 16)}`);
-  console.log(`   自动结算: ✅ 已启用（默认30天周期）`);
+  console.log(`   WorkStudy:  ${address}`);
+  console.log(`   SBT勋章:    ${sbtAddress || '(未部署)'}`);
+  console.log(`   部署者:     ${deployer}`);
+  console.log(`   网络:       Geth Dev Chain`);
+  console.log(`   Chain ID:   ${parseInt(chainId, 16)}`);
+  console.log(`   自动结算:   ✅ 已启用（默认30天周期）`);
 }
 
 main().catch((error) => {

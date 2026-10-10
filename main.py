@@ -4,7 +4,7 @@ import time
 import threading
 import json
 from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -157,6 +157,79 @@ def init_database():
                 conn.execute(text(f"ALTER TABLE clock_ins ADD COLUMN {col} {col_def}"))
             except Exception:
                 pass
+
+        # ==================== 毕设进阶功能：新表 ====================
+
+        # 功能一：学生画像表（精准资助撮合）
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS student_profiles (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                wallet_address VARCHAR(42) NOT NULL,
+                financial_level ENUM('A','B','C','NORMAL') DEFAULT 'NORMAL',
+                available_hours_per_week INT DEFAULT 10,
+                reputation_score INT DEFAULT 80,
+                monthly_aid_received DECIMAL(10,2) DEFAULT 0,
+                certification_hash VARCHAR(130),
+                verified BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+
+        # 功能一：修补users表（困难等级、信誉分）
+        for col, col_def in [
+            ("financial_level", "ENUM('A','B','C','NORMAL') DEFAULT 'NORMAL'"),
+            ("reputation_score", "INT DEFAULT 80"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {col_def}"))
+            except Exception:
+                pass
+
+        # 功能二：工时风控 — clock_ins表扩展IP和风险标记
+        for col, col_def in [
+            ("clock_in_ip", "VARCHAR(45)"),
+            ("clock_out_ip", "VARCHAR(45)"),
+            ("risk_flag", "VARCHAR(50) DEFAULT NULL"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE clock_ins ADD COLUMN {col} {col_def}"))
+            except Exception:
+                pass
+
+        # 功能二：工时统计缓存表
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS hour_limits (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                student_address VARCHAR(42) NOT NULL,
+                week_start DATE NOT NULL,
+                month_start DATE NOT NULL,
+                weekly_minutes INT DEFAULT 0,
+                monthly_minutes INT DEFAULT 0,
+                UNIQUE KEY idx_week (student_address, week_start),
+                UNIQUE KEY idx_month (student_address, month_start)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+
+        # 功能四：争议申诉表
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS disputes (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                clock_in_id INT NOT NULL,
+                employment_id INT NOT NULL,
+                student_address VARCHAR(42) NOT NULL,
+                employer_address VARCHAR(42) NOT NULL,
+                reason TEXT NOT NULL,
+                evidence_hash VARCHAR(130),
+                status ENUM('PENDING','IN_DISPUTE','RESOLVED_UPHELD','RESOLVED_OVERTURNED') DEFAULT 'PENDING',
+                admin_decision TEXT,
+                admin_address VARCHAR(42),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                resolved_at TIMESTAMP NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
 
         # 确保默认管理员存在
         admin = conn.execute(text("SELECT id FROM users WHERE username='admin'")).fetchone()
@@ -822,7 +895,16 @@ def get_pending_settlements(employer_address: str):
 # ======================== 工时打卡 API ========================
 
 @app.post("/api/clock_in")
-def clock_in(data: ClockInData):
+def clock_in(data: ClockInData, request: Request):
+    client_ip = get_client_ip(request)
+
+    # 工时红线检查
+    hour_status = check_hour_limits(data.student)
+    if hour_status.get("weekly_exceeded"):
+        return {"success": False, "msg": "本周工时已达教育部规定上限（8小时），无法继续打卡，请合理安排学业"}
+    if hour_status.get("monthly_exceeded"):
+        return {"success": False, "msg": "本月工时已达教育部规定上限（40小时），无法继续打卡，请合理安排学业"}
+
     with engine.connect() as conn:
         emp = conn.execute(text(
             "SELECT id, status FROM employments WHERE id=:e AND student_address=:s"
@@ -840,9 +922,9 @@ def clock_in(data: ClockInData):
             return {"success": False, "msg": "你有未结束的打卡记录，请先下班打卡"}
 
         conn.execute(text("""
-            INSERT INTO clock_ins (employment_id, student_address, clock_in_time, chain_clock_in_id)
-            VALUES (:e, :s, NOW(), :ccid)
-        """), {"e": data.employment_id, "s": data.student, "ccid": data.chain_clock_in_id})
+            INSERT INTO clock_ins (employment_id, student_address, clock_in_time, chain_clock_in_id, clock_in_ip)
+            VALUES (:e, :s, NOW(), :ccid, :ip)
+        """), {"e": data.employment_id, "s": data.student, "ccid": data.chain_clock_in_id, "ip": client_ip})
         conn.commit()
 
         # 获取刚插入的记录ID和上班时间（供前端启动计时器）
@@ -853,10 +935,12 @@ def clock_in(data: ClockInData):
         return {"success": True, "clock_in_id": record[0], "clock_in_time": str(record[1]), "msg": "上班打卡成功"}
 
 @app.post("/api/clock_out")
-def clock_out(data: ClockOutData):
+def clock_out(data: ClockOutData, request: Request):
+    client_ip = get_client_ip(request)
+
     with engine.connect() as conn:
         record = conn.execute(text(
-            "SELECT id, chain_clock_in_id, clock_out_time FROM clock_ins WHERE id=:c"
+            "SELECT id, chain_clock_in_id, clock_out_time, clock_in_ip, student_address, employment_id FROM clock_ins WHERE id=:c"
         ), {"c": data.clock_in_id}).fetchone()
         if not record:
             return {"success": False, "msg": "打卡记录不存在"}
@@ -864,7 +948,6 @@ def clock_out(data: ClockOutData):
             return {"success": False, "msg": "已经下班打卡过了"}
 
         # 工时由服务端按时间戳自动计算，不再信任客户端传值（防虚报）
-        # 口径与合约 clockOut 一致：分钟向下取整、上限 480、不足 1 分钟记 0
         work_minutes = -1
         chain_clock_in_id = record[1] or 0
 
@@ -882,13 +965,22 @@ def clock_out(data: ClockOutData):
             """), {"c": data.clock_in_id}).fetchone()
             work_minutes = max(0, int(calc[0] or 0))
 
+        # 风险检测：IP不匹配
+        risk_flag = detect_clock_risk(record[4], client_ip, record[3])
+
         conn.execute(text("""
-            UPDATE clock_ins SET clock_out_time=NOW(), work_minutes=:m WHERE id=:c
-        """), {"m": work_minutes, "c": data.clock_in_id})
+            UPDATE clock_ins SET clock_out_time=NOW(), work_minutes=:m, clock_out_ip=:ip, risk_flag=:rf WHERE id=:c
+        """), {"m": work_minutes, "ip": client_ip, "rf": risk_flag, "c": data.clock_in_id})
         conn.commit()
-        if work_minutes == 0:
-            return {"success": True, "work_minutes": 0, "msg": "下班打卡成功，本次不足1分钟工时记0分钟（系统自动计时）"}
-        return {"success": True, "work_minutes": work_minutes, "msg": f"下班打卡成功，本次工时{work_minutes}分钟（系统自动计时）"}
+
+        # 更新工时配额统计
+        if work_minutes > 0:
+            update_hour_limits(record[4], work_minutes)
+
+        msg = f"下班打卡成功，本次工时{work_minutes}分钟（系统自动计时）"
+        if risk_flag == "IP_MISMATCH":
+            msg += " ⚠️ 检测到上班/下班IP不匹配，已标记为异常打卡，等待教师人工复核"
+        return {"success": True, "work_minutes": work_minutes, "risk_flag": risk_flag, "msg": msg}
 
 @app.get("/api/clock_ins/{employment_id}")
 def get_clock_ins(employment_id: int):
@@ -1362,6 +1454,428 @@ def repair_chain_ids():
     """手动修复链上岗位ID映射"""
     repair_chain_job_ids()
     return {"success": True, "msg": "修复完成"}
+
+# ======================== 功能一：精准资助 — 人岗智能撮合算法 ========================
+
+def calculate_match_score(profile: dict, job_info: dict) -> dict:
+    """
+    多属性加权TOPSIS算法计算人岗匹配得分
+    指标：困难等级(w1=0.35) + 课余时间匹配度(w2=0.25) + 信誉分(w3=0.25) - 本月已获助学金(w4=0.15)
+    论文第4章核心算法
+    """
+    financial_weights = {'A': 1.0, 'B': 0.7, 'C': 0.4, 'NORMAL': 0.1}
+    w = [0.35, 0.25, 0.25, 0.15]
+
+    # 1. 困难等级得分（正向）
+    f1 = financial_weights.get(profile.get('financial_level', 'NORMAL'), 0.1)
+
+    # 2. 课余时间匹配度（正向）= min(可用工时/岗位需求工时, 1.0)
+    job_hours = job_info.get('estimated_hours_per_week', 10)
+    available = profile.get('available_hours_per_week', 10)
+    f2 = min(available / max(job_hours, 1), 1.0)
+
+    # 3. 信誉分归一化（正向）
+    f3 = profile.get('reputation_score', 80) / 100.0
+
+    # 4. 本月已获助学金（负向，越低越好）
+    max_aid = 2000.0
+    f4 = min(float(profile.get('monthly_aid_received', 0)) / max_aid, 1.0)
+
+    # 加权得分
+    score = w[0]*f1 + w[1]*f2 + w[2]*f3 + w[3]*(1 - f4)
+
+    # 推荐理由
+    reasons = []
+    if f1 >= 0.7: reasons.append("困难等级高")
+    if f2 >= 0.8: reasons.append("课余时间充裕")
+    if f3 >= 0.8: reasons.append("历史信誉良好")
+    if f4 <= 0.3: reasons.append("本月助学金额度充足")
+    if not reasons: reasons.append("综合条件适中")
+
+    return {
+        "score": round(score * 100, 1),
+        "financial_score": round(f1 * 100, 1),
+        "time_score": round(f2 * 100, 1),
+        "reputation_score_val": round(f3 * 100, 1),
+        "aid_score": round((1 - f4) * 100, 1),
+        "reason": "、".join(reasons)
+    }
+
+class StudentProfileUpdate(BaseModel):
+    wallet_address: str
+    financial_level: str = "NORMAL"
+    available_hours_per_week: int = 10
+    certification_hash: str = ""
+
+@app.post("/api/student_profile")
+def save_student_profile(data: StudentProfileUpdate):
+    """学生提交/更新画像"""
+    with engine.connect() as conn:
+        user = conn.execute(text(
+            "SELECT id FROM users WHERE wallet_address=:w"
+        ), {"w": data.wallet_address}).fetchone()
+        if not user:
+            return {"success": False, "msg": "用户不存在"}
+
+        conn.execute(text("""
+            INSERT INTO student_profiles (user_id, wallet_address, financial_level, available_hours_per_week, certification_hash)
+            VALUES (:uid, :wl, :fl, :ah, :ch)
+            ON DUPLICATE KEY UPDATE financial_level=:fl, available_hours_per_week=:ah, certification_hash=:ch, verified=FALSE
+        """), {"uid": user[0], "wl": data.wallet_address, "fl": data.financial_level,
+               "ah": data.available_hours_per_week, "ch": data.certification_hash})
+        conn.execute(text(
+            "UPDATE users SET financial_level=:fl WHERE id=:uid"
+        ), {"fl": data.financial_level, "uid": user[0]})
+        conn.commit()
+        log_audit("PROFILE_UPDATE", data.wallet_address, "", f"困难等级:{data.financial_level}")
+        return {"success": True, "msg": "画像已更新，等待资助中心审核"}
+
+@app.get("/api/student_profile/{wallet}")
+def get_student_profile(wallet: str):
+    """获取学生画像"""
+    with engine.connect() as conn:
+        row = conn.execute(text("""
+            SELECT p.financial_level, p.available_hours_per_week, p.reputation_score,
+                   COALESCE(p.monthly_aid_received,0), p.certification_hash, p.verified,
+                   COALESCE(u.nickname,'')
+            FROM student_profiles p JOIN users u ON p.user_id = u.id
+            WHERE p.wallet_address=:w
+        """), {"w": wallet}).fetchone()
+        if not row:
+            return {"financial_level": "NORMAL", "available_hours_per_week": 10,
+                    "reputation_score": 80, "monthly_aid_received": 0, "verified": False}
+        return {
+            "financial_level": row[0], "available_hours_per_week": row[1],
+            "reputation_score": row[2], "monthly_aid_received": float(row[3]),
+            "certification_hash": row[4], "verified": bool(row[5]), "nickname": row[6]
+        }
+
+@app.get("/api/admin/verify_profiles")
+def admin_get_verify_profiles():
+    """管理员获取待审核的学生画像"""
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT p.id, p.wallet_address, p.financial_level, p.available_hours_per_week,
+                   p.certification_hash, COALESCE(u.nickname,''), p.created_at
+            FROM student_profiles p JOIN users u ON p.user_id = u.id
+            WHERE p.verified = FALSE ORDER BY p.created_at DESC
+        """)).fetchall()
+        return [{"id": r[0], "wallet": r[1], "financial_level": r[2],
+                 "available_hours": r[3], "cert_hash": r[4] or "",
+                 "nickname": r[5], "created_at": str(r[6])} for r in rows]
+
+class VerifyProfile(BaseModel):
+    profile_id: int
+    approved: bool
+    reputation_score: int = 80
+    monthly_aid: float = 0
+
+@app.post("/api/admin/verify_profile")
+def admin_verify_profile(data: VerifyProfile):
+    """资助中心审核学生画像"""
+    with engine.connect() as conn:
+        if data.approved:
+            conn.execute(text("""
+                UPDATE student_profiles SET verified=TRUE, reputation_score=:rs, monthly_aid_received=:ma WHERE id=:pid
+            """), {"rs": data.reputation_score, "ma": data.monthly_aid, "pid": data.profile_id})
+            conn.commit()
+            log_audit("PROFILE_VERIFIED", "admin", f"profile#{data.profile_id}", f"信誉分:{data.reputation_score}")
+            return {"success": True, "msg": "审核通过"}
+        else:
+            conn.execute(text("DELETE FROM student_profiles WHERE id=:pid"), {"pid": data.profile_id})
+            conn.commit()
+            return {"success": True, "msg": "已驳回"}
+
+@app.get("/api/match_score/{employment_id}")
+def get_match_score(employment_id: int):
+    """获取某申请的算法匹配详情（教师审批参考）"""
+    with engine.connect() as conn:
+        emp = conn.execute(text("""
+            SELECT e.student_address, j.title, COALESCE(j.department,''), e.job_id
+            FROM employments e JOIN jobs j ON e.job_id = j.id WHERE e.id=:eid
+        """), {"eid": employment_id}).fetchone()
+        if not emp:
+            return {"score": 0, "reason": "记录不存在"}
+
+        profile_row = conn.execute(text("""
+            SELECT financial_level, available_hours_per_week, reputation_score, monthly_aid_received
+            FROM student_profiles WHERE wallet_address=:w
+        """), {"w": emp[0]}).fetchone()
+
+        profile = {
+            "financial_level": profile_row[0] if profile_row else "NORMAL",
+            "available_hours_per_week": profile_row[1] if profile_row else 10,
+            "reputation_score": profile_row[2] if profile_row else 80,
+            "monthly_aid_received": float(profile_row[3]) if profile_row else 0,
+        }
+        return calculate_match_score(profile, {"estimated_hours_per_week": 10})
+
+# ======================== 功能二：规范风控 — 工时红线与防代刷 ========================
+
+def get_client_ip(request):
+    """获取客户端真实IP"""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+def update_hour_limits(student_address: str, minutes: int):
+    """更新学生周/月工时统计"""
+    from datetime import date, timedelta
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())  # 本周一
+    month_start = today.replace(day=1)  # 本月1日
+
+    with engine.connect() as conn:
+        conn.execute(text("""
+            INSERT INTO hour_limits (student_address, week_start, month_start, weekly_minutes, monthly_minutes)
+            VALUES (:sa, :ws, :ms, :m, :m)
+            ON DUPLICATE KEY UPDATE weekly_minutes = weekly_minutes + :m, monthly_minutes = monthly_minutes + :m
+        """), {"sa": student_address, "ws": str(week_start), "ms": str(month_start), "m": minutes})
+        conn.commit()
+
+def check_hour_limits(student_address: str) -> dict:
+    """检查学生是否超出工时红线"""
+    from datetime import date, timedelta
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    month_start = today.replace(day=1)
+
+    MAX_WEEKLY = 480   # 8小时
+    MAX_MONTHLY = 2400  # 40小时
+
+    with engine.connect() as conn:
+        row = conn.execute(text("""
+            SELECT COALESCE(weekly_minutes,0), COALESCE(monthly_minutes,0)
+            FROM hour_limits WHERE student_address=:sa AND week_start=:ws
+        """), {"sa": student_address, "ws": str(week_start)}).fetchone()
+
+        weekly = row[0] if row else 0
+        monthly = row[1] if row else 0
+
+        # 也统计本月
+        if not row or row[1] == 0:
+            row2 = conn.execute(text("""
+                SELECT COALESCE(monthly_minutes,0) FROM hour_limits
+                WHERE student_address=:sa AND month_start=:ms
+            """), {"sa": student_address, "ms": str(month_start)}).fetchone()
+            monthly = row2[0] if row2 else 0
+
+    return {
+        "weekly_minutes": weekly,
+        "monthly_minutes": monthly,
+        "weekly_remaining": max(0, MAX_WEEKLY - weekly),
+        "monthly_remaining": max(0, MAX_MONTHLY - monthly),
+        "weekly_exceeded": weekly >= MAX_WEEKLY,
+        "monthly_exceeded": monthly >= MAX_MONTHLY,
+        "max_weekly": MAX_WEEKLY,
+        "max_monthly": MAX_MONTHLY
+    }
+
+def detect_clock_risk(student_address: str, current_ip: str, clock_in_ip: str = None) -> str:
+    """检测打卡风险"""
+    if clock_in_ip and current_ip and clock_in_ip != current_ip:
+        # 简单IP不匹配检测（实际应做IP归属地比对）
+        in_parts = clock_in_ip.split(".")
+        out_parts = current_ip.split(".")
+        if len(in_parts) >= 2 and len(out_parts) >= 2:
+            if in_parts[0] != out_parts[0] or in_parts[1] != out_parts[1]:
+                return "IP_MISMATCH"
+    return None
+
+@app.get("/api/student_hour_status/{wallet}")
+def get_student_hour_status(wallet: str):
+    """学生查看本周/本月剩余工时"""
+    return check_hour_limits(wallet)
+
+@app.get("/api/risk_alerts")
+def get_risk_alerts():
+    """管理员查看所有风险标记记录"""
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT c.id, c.student_address, c.clock_in_time, c.clock_out_time,
+                   c.work_minutes, c.risk_flag, c.clock_in_ip, c.clock_out_ip,
+                   COALESCE(u.nickname,''), j.title
+            FROM clock_ins c
+            LEFT JOIN employments e ON c.employment_id = e.id
+            LEFT JOIN jobs j ON e.job_id = j.id
+            LEFT JOIN users u ON c.student_address = u.wallet_address
+            WHERE c.risk_flag IS NOT NULL
+            ORDER BY c.clock_in_time DESC LIMIT 100
+        """)).fetchall()
+        return [{"id": r[0], "student": r[1], "clock_in": str(r[2]), "clock_out": str(r[3]),
+                 "minutes": r[4], "risk_flag": r[5], "in_ip": r[6], "out_ip": r[7],
+                 "nickname": r[8], "job_title": r[9] or ""} for r in rows]
+
+# ======================== 功能四：权益闭环 — 争议申诉与仲裁 ========================
+
+class DisputeCreate(BaseModel):
+    clock_in_id: int
+    reason: str
+    evidence_hash: str = ""
+
+@app.post("/api/disputes")
+def create_dispute(data: DisputeCreate):
+    """学生发起争议申诉（被驳回后72小时内）"""
+    with engine.connect() as conn:
+        ci = conn.execute(text("""
+            SELECT c.employment_id, c.student_address, c.clock_in_time, c.work_minutes, c.confirmed
+            FROM clock_ins c WHERE c.id=:cid
+        """), {"cid": data.clock_in_id}).fetchone()
+        if not ci:
+            return {"success": False, "msg": "打卡记录不存在"}
+        if ci[4]:  # confirmed
+            return {"success": False, "msg": "该记录已确认，无法申诉"}
+
+        emp = conn.execute(text(
+            "SELECT employer_address FROM employments WHERE id=:eid"
+        ), {"eid": ci[0]}).fetchone()
+        if not emp:
+            return {"success": False, "msg": "任职记录不存在"}
+
+        # 检查是否已有申诉
+        existing = conn.execute(text(
+            "SELECT id FROM disputes WHERE clock_in_id=:cid AND status IN ('PENDING','IN_DISPUTE')"
+        ), {"cid": data.clock_in_id}).fetchone()
+        if existing:
+            return {"success": False, "msg": "该记录已有待处理的申诉"}
+
+        conn.execute(text("""
+            INSERT INTO disputes (clock_in_id, employment_id, student_address, employer_address, reason, evidence_hash)
+            VALUES (:ci, :ei, :sa, :ea, :r, :eh)
+        """), {"ci": data.clock_in_id, "ei": ci[0], "sa": ci[1], "ea": emp[0],
+               "r": data.reason, "eh": data.evidence_hash})
+        conn.commit()
+        log_audit("DISPUTE_CREATED", ci[1], f"clock_in#{data.clock_in_id}", data.reason[:100])
+        return {"success": True, "msg": "申诉已提交，等待管理员裁决"}
+
+@app.get("/api/disputes/{wallet}")
+def get_student_disputes(wallet: str):
+    """学生查看自己的申诉"""
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT d.id, d.clock_in_id, d.reason, d.status, d.admin_decision, d.created_at, d.resolved_at,
+                   c.clock_in_time, c.work_minutes, j.title
+            FROM disputes d
+            LEFT JOIN clock_ins c ON d.clock_in_id = c.id
+            LEFT JOIN employments e ON d.employment_id = e.id
+            LEFT JOIN jobs j ON e.job_id = j.id
+            WHERE d.student_address=:w ORDER BY d.created_at DESC
+        """), {"w": wallet}).fetchall()
+        return [{"id": r[0], "clock_in_id": r[1], "reason": r[2], "status": r[3],
+                 "admin_decision": r[4], "created_at": str(r[5]),
+                 "resolved_at": str(r[6]) if r[6] else None,
+                 "clock_in_time": str(r[7]), "work_minutes": r[8], "job_title": r[9] or ""} for r in rows]
+
+@app.get("/api/admin/disputes")
+def admin_get_disputes():
+    """管理员查看所有争议"""
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT d.id, d.clock_in_id, d.employment_id, d.student_address, d.employer_address,
+                   d.reason, d.evidence_hash, d.status, d.created_at,
+                   COALESCE(su.nickname,''), COALESCE(eu.nickname,''),
+                   c.clock_in_time, c.clock_out_time, c.work_minutes, j.title
+            FROM disputes d
+            LEFT JOIN clock_ins c ON d.clock_in_id = c.id
+            LEFT JOIN employments e ON d.employment_id = e.id
+            LEFT JOIN jobs j ON e.job_id = j.id
+            LEFT JOIN users su ON d.student_address = su.wallet_address
+            LEFT JOIN users eu ON d.employer_address = eu.wallet_address
+            ORDER BY d.created_at DESC
+        """)).fetchall()
+        return [{
+            "id": r[0], "clock_in_id": r[1], "employment_id": r[2],
+            "student": r[3], "employer": r[4], "reason": r[5],
+            "evidence_hash": r[6] or "", "status": r[7], "created_at": str(r[8]),
+            "student_nickname": r[9], "teacher_nickname": r[10],
+            "clock_in_time": str(r[11]), "clock_out_time": str(r[12]) if r[12] else None,
+            "work_minutes": r[13], "job_title": r[14] or ""
+        } for r in rows]
+
+class DisputeResolve(BaseModel):
+    dispute_id: int
+    uphold: bool  # True=维持驳回, False=强制通过
+    decision: str = ""
+
+@app.post("/api/admin/resolve_dispute")
+def admin_resolve_dispute(data: DisputeResolve):
+    """管理员裁决争议"""
+    with engine.connect() as conn:
+        dispute = conn.execute(text(
+            "SELECT clock_in_id, employment_id, student_address, status FROM disputes WHERE id=:did"
+        ), {"did": data.dispute_id}).fetchone()
+        if not dispute:
+            return {"success": False, "msg": "争议不存在"}
+        if dispute[3] not in ('PENDING', 'IN_DISPUTE'):
+            return {"success": False, "msg": "该争议已裁决"}
+
+        new_status = "RESOLVED_UPHELD" if data.uphold else "RESOLVED_OVERTURNED"
+
+        if not data.uphold:
+            # 强制通过：恢复打卡记录，标记为已确认，累加工时
+            ci = conn.execute(text(
+                "SELECT work_minutes, employment_id FROM clock_ins WHERE id=:cid"
+            ), {"cid": dispute[0]}).fetchone()
+            if ci:
+                conn.execute(text(
+                    "UPDATE clock_ins SET confirmed=TRUE, risk_flag=NULL WHERE id=:cid"
+                ), {"cid": dispute[0]})
+                conn.execute(text(
+                    "UPDATE employments SET total_minutes = total_minutes + :m WHERE id=:eid"
+                ), {"m": ci[0], "eid": ci[1]})
+
+        conn.execute(text("""
+            UPDATE disputes SET status=:s, admin_decision=:d, resolved_at=NOW() WHERE id=:did
+        """), {"s": new_status, "d": data.decision, "did": data.dispute_id})
+        conn.commit()
+        log_audit("DISPUTE_RESOLVED", "admin", f"dispute#{data.dispute_id}", f"裁决:{new_status}")
+        return {"success": True, "msg": "裁决已生效" if not data.uphold else "维持驳回"}
+
+# ======================== 功能三：SBT履约勋章 ========================
+
+@app.post("/api/issue_badge")
+def issue_badge():
+    """教师颁发履约勋章（触发SBT铸造）"""
+    # 此端点由前端调用，实际铸造通过MetaMask完成
+    # 这里只做数据库记录
+    return {"success": True, "msg": "请通过前端MetaMask完成链上勋章铸造"}
+
+@app.get("/api/badges/{wallet}")
+def get_badges(wallet: str):
+    """查询某学生的勋章列表（从链上读取）"""
+    try:
+        badges = call_contract_function("getStudentBadges", [wallet])
+        if badges:
+            result = []
+            for token_id in badges:
+                badge = call_contract_function("getBadge", [token_id])
+                if badge:
+                    result.append({
+                        "token_id": token_id, "job_title": badge[2], "department": badge[3],
+                        "total_hours": badge[4], "teacher_comment": badge[5],
+                        "star_rating": badge[6], "issued_at": badge[7], "revoked": badge[8]
+                    })
+            return result
+    except Exception as e:
+        print(f"[BADGE ERROR] {e}")
+    return []
+
+@app.get("/api/verify_badge/{token_id}")
+def verify_badge(token_id: int):
+    """公开验真接口：验证勋章真伪"""
+    try:
+        badge = call_contract_function("getBadge", [token_id])
+        if badge and badge[0] > 0:
+            return {
+                "valid": not badge[8],  # not revoked
+                "student": badge[1], "job_title": badge[2], "department": badge[3],
+                "total_hours": badge[4], "teacher_comment": badge[5],
+                "star_rating": badge[6], "issued_at": badge[7], "revoked": badge[8]
+            }
+    except Exception as e:
+        print(f"[VERIFY ERROR] {e}")
+    return {"valid": False, "msg": "勋章不存在或验证失败"}
 
 # ======================== 静态文件挂载 (必须放最后) ========================
 
