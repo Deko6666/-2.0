@@ -10,8 +10,15 @@ echo.
 
 cd /d "%~dp0"
 
-echo [1/4] Cleaning stale database records...
-call venv\Scripts\activate.bat && python -c "from main import engine; from sqlalchemy import text; conn = engine.connect(); conn.execute(text('DELETE FROM settlements')); conn.execute(text('DELETE FROM clock_ins')); conn.execute(text('DELETE FROM employments')); conn.execute(text('DELETE FROM jobs')); conn.commit(); print('  Database synced')"
+echo [1/4] Database check
+echo       NOTE: clearing wipes jobs / employments / clock_ins / settlements (users are kept).
+set "CLEAR_DB=N"
+set /p CLEAR_DB=  Clear business tables? [Y/N, default N]:
+if /i "%CLEAR_DB%"=="Y" (
+    call venv\Scripts\activate.bat && python -c "from main import engine; from sqlalchemy import text; conn = engine.connect(); conn.execute(text('DELETE FROM settlements')); conn.execute(text('DELETE FROM clock_ins')); conn.execute(text('DELETE FROM employments')); conn.execute(text('DELETE FROM jobs')); conn.commit(); print('  Business tables cleared (users kept)')"
+) else (
+    echo       Keeping existing data.
+)
 echo.
 
 echo [2/4] Deploying smart contract...
