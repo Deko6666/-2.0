@@ -271,7 +271,8 @@ AUTO_SETTLE_ABI = json.loads('''[
     {"inputs":[{"type":"uint256"},{"type":"bool"},{"type":"uint256"}],"name":"updateSettlementConfig","outputs":[],"stateMutability":"nonpayable","type":"function"},
     {"inputs":[{"type":"uint256"}],"name":"getEmployment","outputs":[{"type":"tuple","components":[{"type":"uint256"},{"type":"uint256"},{"type":"address"},{"type":"uint8"},{"type":"uint256"},{"type":"uint256"},{"type":"uint256"}]}],"stateMutability":"view","type":"function"},
     {"inputs":[],"name":"jobCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
-    {"inputs":[],"name":"employmentCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"}
+    {"inputs":[],"name":"employmentCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"type":"uint256"}],"name":"getClockIn","outputs":[{"type":"tuple","components":[{"type":"uint256"},{"type":"uint256"},{"type":"address"},{"type":"uint256"},{"type":"uint256"},{"type":"uint256"},{"type":"bool"}]}],"stateMutability":"view","type":"function"}
 ]''')
 
 def call_contract_function(fn_name: str, args: list = None):
@@ -443,7 +444,6 @@ class ClockInData(BaseModel):
 
 class ClockOutData(BaseModel):
     clock_in_id: int
-    work_minutes: int
 
 class ConfirmHoursData(BaseModel):
     clock_in_id: int
@@ -845,29 +845,50 @@ def clock_in(data: ClockInData):
         """), {"e": data.employment_id, "s": data.student, "ccid": data.chain_clock_in_id})
         conn.commit()
 
-        # 获取刚插入的记录ID
+        # 获取刚插入的记录ID和上班时间（供前端启动计时器）
         record = conn.execute(text(
-            "SELECT id FROM clock_ins WHERE employment_id=:e ORDER BY id DESC LIMIT 1"
+            "SELECT id, clock_in_time FROM clock_ins WHERE employment_id=:e ORDER BY id DESC LIMIT 1"
         ), {"e": data.employment_id}).fetchone()
 
-        return {"success": True, "clock_in_id": record[0], "msg": "上班打卡成功"}
+        return {"success": True, "clock_in_id": record[0], "clock_in_time": str(record[1]), "msg": "上班打卡成功"}
 
 @app.post("/api/clock_out")
 def clock_out(data: ClockOutData):
     with engine.connect() as conn:
         record = conn.execute(text(
-            "SELECT id, clock_out_time FROM clock_ins WHERE id=:c"
+            "SELECT id, chain_clock_in_id, clock_out_time FROM clock_ins WHERE id=:c"
         ), {"c": data.clock_in_id}).fetchone()
         if not record:
             return {"success": False, "msg": "打卡记录不存在"}
-        if record[1] is not None:
+        if record[2] is not None:
             return {"success": False, "msg": "已经下班打卡过了"}
+
+        # 工时由服务端按时间戳自动计算，不再信任客户端传值（防虚报）
+        # 口径与合约 clockOut 一致：分钟向下取整、上限 480、不足 1 分钟记 0
+        work_minutes = -1
+        chain_clock_in_id = record[1] or 0
+
+        # 优先取链上值（结算以链上为准，保证 DB 与链上口径一致）
+        if chain_clock_in_id > 0:
+            chain_record = call_contract_function("getClockIn", [chain_clock_in_id])
+            if chain_record is not None:
+                work_minutes = int(chain_record[5])  # ClockInRecord.workMinutes
+
+        # 链上不可用时按数据库时间戳兜底
+        if work_minutes < 0:
+            calc = conn.execute(text("""
+                SELECT LEAST(TIMESTAMPDIFF(MINUTE, clock_in_time, NOW()), 480)
+                FROM clock_ins WHERE id=:c
+            """), {"c": data.clock_in_id}).fetchone()
+            work_minutes = max(0, int(calc[0] or 0))
 
         conn.execute(text("""
             UPDATE clock_ins SET clock_out_time=NOW(), work_minutes=:m WHERE id=:c
-        """), {"m": data.work_minutes, "c": data.clock_in_id})
+        """), {"m": work_minutes, "c": data.clock_in_id})
         conn.commit()
-        return {"success": True, "msg": f"下班打卡成功，本次工时{data.work_minutes}分钟"}
+        if work_minutes == 0:
+            return {"success": True, "work_minutes": 0, "msg": "下班打卡成功，本次不足1分钟工时记0分钟（系统自动计时）"}
+        return {"success": True, "work_minutes": work_minutes, "msg": f"下班打卡成功，本次工时{work_minutes}分钟（系统自动计时）"}
 
 @app.get("/api/clock_ins/{employment_id}")
 def get_clock_ins(employment_id: int):
@@ -913,7 +934,8 @@ def reject_clock_in(data: RejectClockIn):
         ), {"c": data.clock_in_id}).fetchone()
         if not record:
             return {"success": False, "msg": "记录不存在或已处理"}
-        # 删除该打卡记录（驳回）
+        # 删除该打卡记录（驳回）；链上由前端先调用 rejectClockIn 墓碑，保证不被自动计薪
+        log_audit("CLOCK_IN_REJECTED", "", f"clock_in#{data.clock_in_id}", f"驳回工时: {record[2]}分钟")
         conn.execute(text("DELETE FROM clock_ins WHERE id=:c"), {"c": data.clock_in_id})
         conn.commit()
         return {"success": True, "msg": f"已驳回{record[2]}分钟工时记录"}
@@ -1152,6 +1174,55 @@ def admin_delete_user(data: AdminDeleteUser):
         conn.execute(text("DELETE FROM users WHERE id=:i"), {"i": data.user_id})
         conn.commit()
         return {"success": True, "msg": f"用户 [{user[1]}] 已删除"}
+
+@app.get("/api/admin/charts_data")
+def admin_charts_data():
+    """管理员可视化图表数据"""
+    with engine.connect() as conn:
+        # 1. 用户角色分布（饼图）
+        roles = conn.execute(text(
+            "SELECT role, COUNT(*) FROM users GROUP BY role"
+        )).fetchall()
+        user_roles = {r[0]: int(r[1]) for r in roles}
+
+        # 2. 岗位数量按部门分布（柱状图）
+        depts = conn.execute(text(
+            "SELECT COALESCE(NULLIF(department,''),'未指定'), COUNT(*) FROM jobs GROUP BY COALESCE(NULLIF(department,''),'未指定') ORDER BY COUNT(*) DESC"
+        )).fetchall()
+        jobs_by_dept = [{"dept": d[0], "count": int(d[1])} for d in depts]
+
+        # 3. 近7天打卡趋势（折线图）
+        daily = conn.execute(text(
+            "SELECT DATE(clock_in_time), COUNT(*) FROM clock_ins "
+            "WHERE clock_in_time >= DATE_SUB(NOW(), INTERVAL 7 DAY) "
+            "GROUP BY DATE(clock_in_time) ORDER BY DATE(clock_in_time)"
+        )).fetchall()
+        daily_clock_ins = [{"date": str(r[0]), "count": int(r[1])} for r in daily]
+
+        # 4. 任职状态分布（辅助饼图）
+        emp_status = conn.execute(text(
+            "SELECT status, COUNT(*) FROM employments GROUP BY status"
+        )).fetchall()
+        employment_status = {r[0]: int(r[1]) for r in emp_status}
+
+        # 5. 近7天结算趋势（辅助折线图）
+        settles = conn.execute(text(
+            "SELECT DATE(settled_at), COUNT(*), COALESCE(SUM(CAST(amount_wei AS UNSIGNED)),0) "
+            "FROM settlements WHERE settled_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) "
+            "GROUP BY DATE(settled_at) ORDER BY DATE(settled_at)"
+        )).fetchall()
+        daily_settlements = [{
+            "date": str(r[0]), "count": int(r[1]),
+            "amount_eth": str(Web3.from_wei(int(r[2]), 'ether'))
+        } for r in settles]
+
+        return {
+            "user_roles": user_roles,
+            "jobs_by_dept": jobs_by_dept,
+            "daily_clock_ins": daily_clock_ins,
+            "employment_status": employment_status,
+            "daily_settlements": daily_settlements
+        }
 
 @app.get("/api/admin/system_info")
 def admin_system_info():

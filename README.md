@@ -130,6 +130,8 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
               │
 教师审批 ─▶ approveApplication ─▶ [APPROVED] ─▶ 打卡 clockIn / clockOut
               │                                        │
+              │                         （工时 = block.timestamp 自动计算，学生无法填时长）
+              │                                        │
               │                              confirmHours (确认工时)
               │                                        │
               └── rejectApplication ─▶ [REJECTED]   settleSalary (发放薪酬)
@@ -137,9 +139,14 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
                                    closeJob (退还剩余预算) / resignFromJob
 ```
 
+**防舞弊计时机制**：
+- `clockOut` 不再接受手动传入的工时，由合约按 `block.timestamp - clockInTime` 自动计算（向下取整到分钟），前端仅展示实时计时器
+- 单次打卡上限 8 小时（480 分钟）：超出部分截断而非回滚，忘记下班不会卡死学生
+- `rejectClockIn` 链上墓碑（`workMinutes=0, confirmed=true`）：教师驳回的记录不会被宽限期自动确认、不会计薪
+
 **自动结算机制**：
 - `settlementConfig.cycleDays`：结算周期（天）
-- `gracePeriodHours`：工时确认宽限期，超时由 `autoConfirmStaleClockIns()` 自动确认
+- `gracePeriodHours`：工时确认宽限期，超时由 `autoConfirmStaleClockIns()` 自动确认（被 `rejectClockIn` 驳回的记录因墓碑标记不会命中）
 - `isSettlementDue()` 到期后由 `autoSettler` 调用 `executeAutoSettlement()` 批量结算
 
 主要事件：`JobCreated` / `ApplicationSubmitted` / `ApplicationApproved` / `ClockedIn` / `HoursConfirmed` / `SalarySettled` / `AutoSettlementExecuted`
@@ -156,6 +163,8 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 | 岗位 | `POST /api/save_job` `GET /api/public_jobs` `GET /api/job/{id}` `POST /api/delete_job` |
 | 申请 | `POST /api/apply_job` `POST /api/approve_application` `POST /api/reject_application` `POST /api/resign` |
 | 打卡 | `POST /api/clock_in` `POST /api/clock_out` `POST /api/confirm_hours` `POST /api/reject_clock_in` |
+
+> **打卡工时说明**：`clock_in` 响应含 `clock_in_time`（前端计时器起点）；`clock_out` 请求只需 `clock_in_id`，工时由链上/服务端按时间戳自动计算，响应返回 `work_minutes`。
 | 结算 | `POST /api/settle_salary` `GET /api/settlements/{wallet}` `GET /api/pending_settlements/{employer}` |
 | 看板 | `GET /api/my_dashboard/{wallet}` `GET /api/teacher_dashboard/{wallet}` |
 | 管理 | `GET /api/admin/stats` `GET /api/admin/users` `GET /api/admin/jobs` `POST /api/admin/delete_all_jobs` |
@@ -188,6 +197,9 @@ Geth dev 模式下账户需解锁。部署账户是 dev 预解锁账户；MetaMa
 
 **浏览器控制台报 `content_main.js toLowerCase`？**
 Edge 扩展导致，与本项目无关。
+
+**学生能虚报打卡时长吗？**
+不能。工时由合约按 `block.timestamp` 自动计算，前端只显示实时计时器，没有填写入口。打卡后 60 秒内下班记 0 分钟；忘记下班超 8 小时的按 480 分钟截断（教师可在待确认列表驳回异常记录，驳回后链上墓碑保证不会被自动结算计薪）。
 
 **`start.bat` 会清空数据吗？**
 不会默认清空。脚本启动时会询问是否清空业务表（jobs / employments / clock_ins / settlements），**默认保留数据**（直接回车）；输入 `Y` 才清空。用户表始终保留。

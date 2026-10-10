@@ -95,6 +95,7 @@ contract WorkStudy {
     event StudentResigned(uint256 indexed employmentId, address student);
     event ClockedIn(uint256 indexed clockInId, uint256 indexed employmentId, address student, uint256 workMinutes);
     event HoursConfirmed(uint256 indexed clockInId, uint256 indexed employmentId, uint256 workMinutes);
+    event ClockInRejected(uint256 indexed clockInId, uint256 indexed employmentId, address student);
     event SalarySettled(uint256 indexed settlementId, uint256 indexed employmentId, address student, uint256 amount);
     event AutoSettlementExecuted(uint256 timestamp, uint256 totalSettled, uint256 totalAmount);
     event HoursAutoConfirmed(uint256 indexed clockInId, uint256 indexed employmentId, uint256 workMinutes);
@@ -375,6 +376,27 @@ contract WorkStudy {
         emit HoursConfirmed(_clockInId, record.employmentId, record.workMinutes);
     }
 
+    /**
+     * @notice 教师驳回学生的工时打卡记录（链上墓碑，防止被自动结算误发放）
+     * @param _clockInId 打卡记录ID
+     */
+    function rejectClockIn(uint256 _clockInId) external {
+        ClockInRecord storage record = clockIns[_clockInId];
+        require(record.id != 0, "Clock-in record does not exist");
+        require(!record.confirmed, "Already processed");
+        require(
+            msg.sender == jobs[employments[record.employmentId].jobId].employer,
+            "Only employer can reject"
+        );
+
+        // 墓碑：workMinutes=0 且 confirmed=true，
+        // 自动确认循环 (!confirmed && workMinutes>0) 不再命中，confirmHours 也会被 !confirmed 挡住
+        record.workMinutes = 0;
+        record.confirmed = true;
+
+        emit ClockInRejected(_clockInId, record.employmentId, record.student);
+    }
+
     // ======================== 学生功能 ========================
 
     /**
@@ -423,21 +445,27 @@ contract WorkStudy {
     }
 
     /**
-     * @notice 学生打卡下班，记录工时
+     * @notice 学生打卡下班，工时由链上时间戳自动计算（防虚报）
      * @param _clockInId 打卡记录ID
-     * @param _workMinutes 工作时长(分钟)，由前端计算
      */
-    function clockOut(uint256 _clockInId, uint256 _workMinutes) external {
+    function clockOut(uint256 _clockInId) external {
         ClockInRecord storage record = clockIns[_clockInId];
         require(record.id != 0, "Clock-in record does not exist");
         require(record.clockOutTime == 0, "Already clocked out");
+        require(!record.confirmed, "Already processed");
         require(msg.sender == record.student, "Only the student can clock out");
-        require(_workMinutes > 0 && _workMinutes <= 480, "Invalid work duration (max 8 hours)");
+
+        // 自动计时：工时 = 当前区块时间 - 上班时间（向下取整，杜绝虚报）
+        uint256 workMinutes = (block.timestamp - record.clockInTime) / 60;
+        // 单次上限 8 小时：截断而非回滚，防止忘记下班卡死学生
+        if (workMinutes > 480) {
+            workMinutes = 480;
+        }
 
         record.clockOutTime = block.timestamp;
-        record.workMinutes = _workMinutes;
+        record.workMinutes = workMinutes;
 
-        emit ClockedIn(_clockInId, record.employmentId, record.student, _workMinutes);
+        emit ClockedIn(_clockInId, record.employmentId, record.student, workMinutes);
     }
 
     // ======================== 薪酬结算 ========================
