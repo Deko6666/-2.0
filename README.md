@@ -37,6 +37,8 @@ Campus/
 │   └── index.html           # 前端单页应用
 ├── scripts/
 │   └── deploy.js            # 合约部署脚本（动态 gas + 部署校验）
+├── png/                     # 校徽/展开图素材（/png 静态挂载）
+├── frontend/images/         # 前端图片（校徽副本、主页配图）
 ├── main.py                  # FastAPI 后端（含数据库初始化、全部 API）
 ├── start.bat                # Windows 一键启动
 ├── hardhat.config.js        # Hardhat 配置（连 Geth localhost）
@@ -90,7 +92,7 @@ CREATE DATABASE campus_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 start.bat
 ```
 
-脚本依次执行：清空业务表（可选）→ 部署合约 → 启动后端 → 打开浏览器。
+脚本依次执行：清理残留后端进程 → **自动清空演示业务数据（无需确认）** → 部署合约并重新播种演示岗位/历史数据 → 启动后端 → **等接口就绪后**自动打开浏览器。
 
 ### 4. 手动启动（可选）
 
@@ -113,9 +115,9 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 | 角色 | 能力 |
 |---|---|
-| `STUDENT` | 浏览岗位、申请、打卡/打卡下班、查看工时与结算、辞职 |
-| `TEACHER` | 发布岗位（需锁定预算）、审批申请、确认工时、发放薪酬、关闭岗位 |
-| `ADMIN` | 用户管理、岗位管理、系统统计、结算配置、审计日志、链上 ID 修复 |
+| `STUDENT` | 浏览/申请多个岗位、打卡上下班、迟到/早退卡、积分兑换助学金、缴纳罚款/申诉、查看薪酬记录、辞职 |
+| `TEACHER` | 发布岗位（部门下拉选择）、审批申请、确认工时、发放薪酬、颁发勋章、查看我发布的岗位、接收离职通知 |
+| `ADMIN` | 用户/岗位管理、系统统计、奖惩管理（一键扣钱）、封禁与解封、异常打卡与超时提醒、结算配置、审计日志 |
 
 教师身份在链上通过 `registerAsTeacher()` 白名单登记；后端角色存 MySQL `users.role`。
 
@@ -143,7 +145,7 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 **防舞弊计时机制**：
-- `clockOut` 不再接受手动传入的工时，由合约按 `block.timestamp - clockInTime` 自动计算（向下取整到分钟），前端仅展示实时计时器
+- `clockOut` 不再接受手动传入的工时，由合约按 `block.timestamp - clockInTime` 自动计算（向下取整到分钟），前端仅展示实时计时器；演示模式下按 **现实 1 秒 = 系统 15 分钟** 倍速计时（单次上限 8 小时约 32 秒走完）
 - 单次打卡上限 8 小时（480 分钟）：超出部分截断而非回滚，忘记下班不会卡死学生
 - `rejectClockIn` 链上墓碑（`workMinutes=0, confirmed=true`）：教师驳回的记录不会被宽限期自动确认、不会计薪
 
@@ -178,6 +180,9 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 | **规范风控** | `GET /api/student_hour_status/{wallet}` `GET /api/risk_alerts` |
 | **SBT勋章** | `GET /api/badges/{wallet}` `GET /api/verify_badge/{token_id}` |
 | **争议仲裁** | `POST /api/disputes` `GET /api/disputes/{wallet}` `GET /api/admin/disputes` `POST /api/admin/resolve_dispute` |
+| **积分/奖惩** | `GET /api/points/{wallet}` `POST /api/exchange_points` `POST /api/penalty_event` `GET /api/rewards_penalties` `POST /api/reward_penalty` `POST /api/rewards_penalties/seen` `POST /api/admin_deduct` |
+| **罚款/封禁** | `GET /api/student_penalties/{wallet}` `POST /api/pay_fine` `POST /api/appeal` `GET /api/bans` `POST /api/unban` |
+| **通知/演示** | `GET /api/notifications/{role}` `POST /api/notifications/seen` `GET /api/employer_jobs/{address}` `GET /api/abnormal_clock_ins` `GET /api/public_jobs` |
 
 ---
 
@@ -209,11 +214,11 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 ### 三、规范风控：工时红线与防代刷
 
-教育部政策合规："每周不超过8小时，每月不超过40小时"
+教育部政策合规红线（演示版）："每日不超过 8 小时，每月不超过 240 小时（8h×30 天）"
 
-- **工时红线**：打卡时检查周/月配额，超限自动拦截
+- **工时红线**：打卡时检查日/月配额（按打卡记录实时统计），超限自动拦截；工作超时会在管理员页弹出"工作时间过长影响学业"提醒
 - **IP异常检测**：打卡记录客户端IP，上下班IP跨网段时标记 `IP_MISMATCH`
-- **进度条可视化**：学生端展示本周/本月工时配额使用情况
+- **进度条可视化**：学生端展示今日/本月工时配额使用情况
 
 ### 四、权益闭环：争议申诉与仲裁
 
@@ -226,6 +231,37 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    - **强制通过**：恢复工时并累加，同步到薪酬
 
 ---
+
+## pro-1.0 演示版新特性
+
+### 启动与演示数据（重启即恢复初始状态）
+- `start.bat` 免确认自动清库，并按**进程树**清理残留后端，接口就绪后才开浏览器
+- 自动播种 **10 个演示岗位**（挂在演示教师账户下，链上同步创建）+ 演示学生近 14 天打卡、近 6 个月结算、积分与奖惩示例
+- **三个默认账户**：管理员 `0xf39F…2266`、教师 `0x7099…79C8`、学生 `0x3C44…93BC`（钱包直接登录）
+- 学生可**同时任职多个岗位**（已放开单岗位限制）
+
+### 打卡体验
+- 计时演示模式：**现实 1 秒 = 系统 15 分钟**，单次上限 8 小时约 32 秒走完
+- **打卡悬浮坞**：上班后常驻“下班打卡”入口，跨页面/刷新不丢
+- **迟到卡 / 早退卡**：打卡页一键记录（进奖惩页），打完**立即收工**并停止计时
+- 链上交易 nonce 冲突**自动重试**，打卡/下班/发布不再需要点第二次
+
+### 红线与异常提醒
+- 日 8 小时 / 月 240 小时红线，实时拦截
+- **忘记打下班卡**（超上限半小时）与**工作时间过长影响学业** → 管理员页自动弹窗
+- 学生辞职 → 管理员/教师**登录弹窗通知**（阅后即消）
+
+### 积分 · 奖惩 · 封禁
+- 加班积分：打卡超 4 小时的部分每满 1 小时 +1 分
+- 积分兑换助学金：10 分=¥100 / 50 分=¥500 / 100 分=¥1000（1 分=¥10）
+- 奖惩管理（管理员）：迟到/早退事件自动进流水，**一键扣钱**；余额不足**自动封禁**
+- 学生端“我的奖惩”：缴纳罚款 / 提交申诉；被封号无法登录（提示联系指导老师），**解封卡**一键解除；封禁/罚款/申诉记录**重启即清**
+
+### UI / UX 重制（暗金主题）
+- 统一暗金弹窗（确认/输入/五角星评分，星星带弹跳+震动+粒子散落特效）替代所有原生弹窗
+- 校徽圆形金环展示；头像暗金渐变底；全部数值统一 2 位小数
+- 用人部门**可下拉可输入**（图书部/宿舍部/食堂部/门岗部/清洁部…）
+- 顶部校训「勤思不忘体力行，他助仍需己坚奋」与侧边栏「砥砺青春，奋斗前行，以勤为伴，与爱同行」，点击触发“劳动最光荣”飘洒特效
 
 ## 部署脚本说明
 
@@ -256,4 +292,4 @@ Edge 扩展导致，与本项目无关。
 不能。工时由合约按 `block.timestamp` 自动计算，前端只显示实时计时器，没有填写入口。打卡后 60 秒内下班记 0 分钟；忘记下班超 8 小时的按 480 分钟截断（教师可在待确认列表驳回异常记录，驳回后链上墓碑保证不会被自动结算计薪）。
 
 **`start.bat` 会清空数据吗？**
-不会默认清空。脚本启动时会询问是否清空业务表（jobs / employments / clock_ins / settlements），**默认保留数据**（直接回车）；输入 `Y` 才清空。用户表始终保留。
+会，默认**自动清空全部演示业务数据**（jobs / employments / clock_ins / settlements / hour_limits / 奖惩 / 罚款申诉 / 封禁 / 账户余额）且无需确认，每次启动恢复到初始演示状态；用户表始终保留。
