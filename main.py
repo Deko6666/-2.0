@@ -258,6 +258,64 @@ def init_database():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """))
 
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS fines_appeals (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                student_address VARCHAR(64) NOT NULL,
+                rp_id INT DEFAULT 0,
+                kind VARCHAR(20) NOT NULL,
+                amount_yuan DECIMAL(10,2) DEFAULT 0,
+                reason VARCHAR(255) DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS bans (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                student_address VARCHAR(64) NOT NULL,
+                reason VARCHAR(255) DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS student_accounts (
+                student_address VARCHAR(64) PRIMARY KEY,
+                balance_yuan DECIMAL(10,2) DEFAULT 0
+            )
+        """))
+        try:
+            conn.execute(text("ALTER TABLE rewards_penalties ADD COLUMN processed TINYINT DEFAULT 0"))
+        except Exception:
+            pass
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS points (
+                student_address VARCHAR(64) PRIMARY KEY,
+                points INT DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS rewards_penalties (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                student_address VARCHAR(64) NOT NULL,
+                type VARCHAR(20) NOT NULL,
+                amount_yuan DECIMAL(10,2) DEFAULT 0,
+                reason VARCHAR(255) DEFAULT '',
+                seen TINYINT DEFAULT 0,
+                processed TINYINT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                target_role VARCHAR(20) NOT NULL,
+                message VARCHAR(255) NOT NULL,
+                seen TINYINT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+
         # 确保默认管理员存在
         admin = conn.execute(text("SELECT id FROM users WHERE username='admin'")).fetchone()
         if not admin:
@@ -443,6 +501,245 @@ def send_contract_tx(fn_name: str, args: list = None):
     except Exception as e:
         return None, str(e)
 
+# ======================== 演示岗位种子数据 ========================
+# 演示教师钱包（Hardhat / 开发链公开测试账户 #1）
+DEMO_TEACHER_ADDRESS = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+# 该开发账户的公开测试私钥（仅在节点未解锁账户时降级用于本地演示链签名）
+DEMO_TEACHER_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+
+# (title, department, description, hourly_rate_wei, salary_wei)
+DEMO_JOBS = [
+    ("图书整理员", "图书部", "负责图书上架整理、借还登记与阅览室秩序巡查，要求细致耐心，可按课余时间排班。", "20000000000000000", "600000000000000000"),
+    ("宿舍协管员", "宿舍部", "协助楼栋值班、晚归登记与宿舍区安全巡查，需在晚间轮值。", "18000000000000000", "540000000000000000"),
+    ("食堂帮厨", "食堂部", "协助餐线服务、餐具整理与就餐区清洁，须持健康证上岗。", "16000000000000000", "480000000000000000"),
+    ("门岗协管", "门岗部", "协助出入登记、访客引导与门岗秩序维护，责任心强者优先。", "20000000000000000", "600000000000000000"),
+    ("清洁助理", "清洁部", "负责教学楼公共区域保洁与垃圾清运，吃苦耐劳者优先。", "15000000000000000", "450000000000000000"),
+    ("机房维护助理", "机房部", "协助机房设备日常巡检、软件环境安装与故障登记，计算机相关专业优先。", "25000000000000000", "750000000000000000"),
+    ("绿化养护助理", "绿化部", "参与校园绿植养护、环境巡查与工具整理。", "15000000000000000", "450000000000000000"),
+    ("报告厅服务助理", "会场部", "负责会场布置、音响设备调试与签到服务，有活动服务经验者优先。", "20000000000000000", "600000000000000000"),
+    ("招生咨询助理", "招生办", "协助电话回访、资料整理与招生咨询接待，沟通表达能力良好。", "22000000000000000", "660000000000000000"),
+    ("实训室助理", "实训部", "负责设备登记、耗材盘点与实训室课前准备，责任心强。", "28000000000000000", "840000000000000000"),
+]
+
+# 种子岗位所需的最小合约 ABI（web3.py 需要 JSON ABI 格式）
+SEED_ABI = [
+    {"type": "function", "name": "registerAsTeacher", "stateMutability": "nonpayable", "inputs": [], "outputs": []},
+    {"type": "function", "name": "createJob", "stateMutability": "payable", "inputs": [{"name": "_title", "type": "string"}, {"name": "_department", "type": "string"}, {"name": "_hourlyRate", "type": "uint256"}], "outputs": []},
+    {"type": "function", "name": "jobCount", "stateMutability": "view", "inputs": [], "outputs": [{"name": "", "type": "uint256"}]},
+    {"type": "function", "name": "isTeacher", "stateMutability": "view", "inputs": [{"name": "", "type": "address"}], "outputs": [{"name": "", "type": "bool"}]},
+    {"type": "function", "name": "applyForJob", "stateMutability": "nonpayable", "inputs": [{"name": "_jobId", "type": "uint256"}], "outputs": []},
+    {"type": "function", "name": "approveApplication", "stateMutability": "nonpayable", "inputs": [{"name": "_employmentId", "type": "uint256"}], "outputs": []},
+    {"type": "function", "name": "employmentCount", "stateMutability": "view", "inputs": [], "outputs": [{"name": "", "type": "uint256"}]},
+]
+
+
+DEMO_USERS = [
+    ("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "ADMIN", "系统管理员", "admin_wallet"),
+    ("0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "TEACHER", "演示教师", "demo_teacher"),
+    ("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", "STUDENT", "演示学生", "demo_student"),
+]
+
+
+def seed_demo_history():
+    """为演示学生填充近14天打卡、近6个月结算、积分与奖惩示例（仅在打卡表为空时执行）"""
+    try:
+        with engine.connect() as conn:
+            cnt = conn.execute(text("SELECT COUNT(*) FROM clock_ins")).scalar()
+        if cnt and int(cnt) > 0:
+            return
+        student = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        with engine.connect() as conn:
+            jobs = conn.execute(text("SELECT id, employer_address FROM jobs ORDER BY id LIMIT 3")).fetchall()
+            if not jobs:
+                return
+            for jb in jobs:
+                conn.execute(text("""
+                    INSERT INTO employments (chain_employment_id, job_id, student_address, employer_address, status, total_minutes, applied_at, approved_at)
+                    VALUES (0, :jid, :s, :e, 'APPROVED', 0, NOW() - INTERVAL 30 DAY, NOW() - INTERVAL 29 DAY)
+                """), {"jid": jb[0], "s": student, "e": jb[1]})
+            conn.commit()
+            emp_rows = conn.execute(text("SELECT id FROM employments WHERE student_address=:s ORDER BY id"), {"s": student}).fetchall()
+            emp_ids = [r[0] for r in emp_rows]
+            if not emp_ids:
+                return
+            totals = {}
+            for day in range(14, 0, -1):
+                if day % 7 in (2, 5):
+                    continue
+                emp = emp_ids[day % len(emp_ids)]
+                minutes = 120 + (day % 4) * 60
+                conn.execute(text("""
+                    INSERT INTO clock_ins (employment_id, student_address, chain_clock_in_id, clock_in_time, clock_out_time, work_minutes, confirmed)
+                    VALUES (:e, :s, 0, NOW() - INTERVAL :d DAY + INTERVAL 9 HOUR, NOW() - INTERVAL :d DAY + INTERVAL 9 HOUR + INTERVAL :m MINUTE, :m, 1)
+                """), {"e": emp, "s": student, "d": day, "m": minutes})
+                totals[emp] = totals.get(emp, 0) + minutes
+            for emp, tot in totals.items():
+                conn.execute(text("UPDATE employments SET total_minutes=:t WHERE id=:i"), {"t": tot, "i": emp})
+            for month in range(1, 7):
+                emp = emp_ids[month % len(emp_ids)]
+                minutes = 1200 + month * 180
+                conn.execute(text("""
+                    INSERT INTO settlements (employment_id, student_address, amount_wei, hours_settled_minutes, tx_hash, status, settled_at)
+                    VALUES (:e, :s, :a, :m, :h, 'CONFIRMED', NOW() - INTERVAL :mo MONTH)
+                """), {"e": emp, "s": student, "a": str(minutes * 333333333333333), "m": minutes,
+                       "h": "0x" + ("%064x" % (month * 7919 + 12345)), "mo": month})
+            conn.execute(text("INSERT INTO points (student_address, points) VALUES (:s, 37) ON DUPLICATE KEY UPDATE points = 37"), {"s": student})
+            conn.execute(text("INSERT INTO student_accounts (student_address, balance_yuan) VALUES (:s, 500) ON DUPLICATE KEY UPDATE balance_yuan = 500"), {"s": student})
+            conn.execute(text("INSERT INTO rewards_penalties (student_address, type, amount_yuan, reason) VALUES (:s,'LATE',-20,'迟到打卡（演示）')"), {"s": student})
+            conn.execute(text("INSERT INTO rewards_penalties (student_address, type, amount_yuan, reason) VALUES (:s,'EARLY',-30,'早退打卡（演示）')"), {"s": student})
+            conn.execute(text("INSERT INTO rewards_penalties (student_address, type, amount_yuan, reason) VALUES (:s,'REWARD',50,'月度优秀员工奖励（演示）')"), {"s": student})
+            conn.commit()
+        print("[SEED] 演示历史数据已填充（近14天打卡 / 近6个月结算 / 积分37）")
+    except Exception as e:
+        print(f"[SEED] 演示历史数据填充失败: {e}")
+
+
+# 演示账户测试私钥（Hardhat/开发链公开测试账户，仅用于本地演示链签名）
+DEMO_KEYS = {
+    "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+    "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+}
+
+
+def _send_from(w3, addr, fn, value=0):
+    tx = fn.build_transaction({
+        'from': addr, 'value': value, 'gas': 3000000,
+        'gasPrice': w3.eth.gas_price,
+        'nonce': w3.eth.get_transaction_count(addr),
+        'chainId': w3.eth.chain_id,
+    })
+    try:
+        tx_hash = w3.eth.send_transaction(tx)
+    except Exception:
+        key = DEMO_KEYS.get(Web3.to_checksum_address(addr))
+        if not key:
+            raise
+        signed = w3.eth.account.sign_transaction(tx, key)
+        raw = getattr(signed, 'raw_transaction', None) or getattr(signed, 'rawTransaction')
+        tx_hash = w3.eth.send_raw_transaction(raw)
+    return w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+
+def sync_employment_chain_ids():
+    """为缺少链上就业ID的任职合约补齐链上申请/审批（仅演示账户可签名），使默认岗位可直接打卡。"""
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text(
+                "SELECT id, job_id, student_address, employer_address, status FROM employments "
+                "WHERE chain_employment_id IS NULL OR chain_employment_id = 0"
+            )).fetchall()
+        if not rows:
+            return
+        w3 = get_web3()
+        contract = w3.eth.contract(address=Web3.to_checksum_address(get_contract_address()), abi=SEED_ABI)
+        for r in rows:
+            emp_db_id, job_id, student, employer, status = r
+            with engine.connect() as conn:
+                jrow = conn.execute(text("SELECT chain_job_id FROM jobs WHERE id=:i"), {"i": job_id}).fetchone()
+            chain_job = int(jrow[0]) if jrow and jrow[0] else 0
+            if chain_job <= 0:
+                continue
+            stu = Web3.to_checksum_address(student)
+            emp = Web3.to_checksum_address(employer)
+            if stu not in DEMO_KEYS or emp not in DEMO_KEYS:
+                continue
+            try:
+                _send_from(w3, stu, contract.functions.applyForJob(chain_job))
+                new_id = int(contract.functions.employmentCount().call())
+                if str(status).upper() == 'APPROVED':
+                    _send_from(w3, emp, contract.functions.approveApplication(new_id))
+                with engine.connect() as conn:
+                    conn.execute(text("UPDATE employments SET chain_employment_id=:c WHERE id=:i"), {"c": new_id, "i": emp_db_id})
+                    conn.commit()
+                print(f"[SEED] 任职合约 #{emp_db_id} 已补齐链上就业ID {new_id}")
+            except Exception as e:
+                print(f"[SEED] 任职合约 #{emp_db_id} 链上补齐失败: {e}")
+    except Exception as e:
+        print(f"[SEED] 链上就业ID补齐失败（不影响数据库）: {e}")
+
+
+def seed_demo_users():
+    """默认绑定三个演示账户（管理员/教师/学生），钱包登录免注册。"""
+    try:
+        with engine.connect() as conn:
+            for wallet, role, nickname, username in DEMO_USERS:
+                row = conn.execute(text("SELECT id FROM users WHERE LOWER(TRIM(wallet_address)) = :w"), {"w": wallet.lower()}).fetchone()
+                if row:
+                    continue
+                if role == "ADMIN":
+                    admin = conn.execute(text("SELECT id FROM users WHERE username = 'admin' AND (wallet_address IS NULL OR wallet_address = '')")).fetchone()
+                    if admin:
+                        conn.execute(text("UPDATE users SET wallet_address = :w WHERE id = :id"), {"w": wallet, "id": admin[0]})
+                        continue
+                conn.execute(text("""
+                    INSERT INTO users (username, password, role, nickname, wallet_address)
+                    VALUES (:u, '123456', :r, :n, :w)
+                """), {"u": username, "r": role, "n": nickname, "w": wallet})
+            conn.commit()
+        print("[SEED] 默认账户就绪: 管理员 0xf39F..2266 / 教师 0x7099..79C8 / 学生 0x3C44..93BC")
+    except Exception as e:
+        print(f"[SEED] 默认账户初始化失败: {e}")
+
+
+def seed_demo_jobs():
+    """默认生成 10 个演示岗位（挂在指定教师账号下），并尽力同步播种到链上。"""
+    try:
+        with engine.connect() as conn:
+            count = conn.execute(text("SELECT COUNT(*) FROM jobs")).scalar()
+        if count and int(count) > 0:
+            return
+
+        chain_ids = [0] * len(DEMO_JOBS)
+        try:
+            w3 = get_web3()
+            contract = w3.eth.contract(address=Web3.to_checksum_address(get_contract_address()), abi=SEED_ABI)
+            teacher = Web3.to_checksum_address(DEMO_TEACHER_ADDRESS)
+
+            def _send(fn, value=0):
+                tx = fn.build_transaction({
+                    'from': teacher, 'value': value, 'gas': 3000000,
+                    'gasPrice': w3.eth.gas_price,
+                    'nonce': w3.eth.get_transaction_count(teacher),
+                    'chainId': w3.eth.chain_id,
+                })
+                try:
+                    tx_hash = w3.eth.send_transaction(tx)  # 节点已解锁账户
+                except Exception:
+                    tx_sign = {k: v for k, v in tx.items() if k != 'from'}
+                    signed = w3.eth.account.sign_transaction(tx_sign, DEMO_TEACHER_KEY)  # 降级：本地签名
+                    raw = getattr(signed, 'raw_transaction', None) or getattr(signed, 'rawTransaction')
+                    tx_hash = w3.eth.send_raw_transaction(raw)
+                return w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+            if not contract.functions.isTeacher(teacher).call():
+                _send(contract.functions.registerAsTeacher())
+            for i, (title, dept, desc, rate, salary) in enumerate(DEMO_JOBS):
+                receipt = _send(contract.functions.createJob(title, dept, int(rate)), value=int(salary))
+                if receipt.status == 1:
+                    chain_ids[i] = int(contract.functions.jobCount().call())
+        except Exception as e:
+            print(f"[SEED] 链上岗位播种失败（仅写入数据库）: {e}")
+
+        with engine.connect() as conn:
+            for (title, dept, desc, rate, salary), cid in zip(DEMO_JOBS, chain_ids):
+                conn.execute(text("""
+                    INSERT INTO jobs (chain_job_id, title, department, description, hourly_rate_wei, salary_wei, employer_address, status)
+                    VALUES (:cid, :title, :dept, :desc, :rate, :salary, :employer, 'PUBLISHED')
+                """), {"cid": cid, "title": title, "dept": dept, "desc": desc,
+                       "rate": rate, "salary": salary, "employer": DEMO_TEACHER_ADDRESS})
+            conn.commit()
+        onchain = sum(1 for c in chain_ids if c > 0)
+        print(f"[SEED] 已生成 {len(DEMO_JOBS)} 个演示岗位（教师: {DEMO_TEACHER_ADDRESS}，链上同步 {onchain} 个）")
+    except Exception as e:
+        print(f"[SEED] 演示岗位生成失败: {e}")
+
+
+seed_demo_jobs()
+seed_demo_users()
+seed_demo_history()
+sync_employment_chain_ids()
+
 # ======================== 自动结算调度器 ========================
 
 def check_and_execute_auto_settlement():
@@ -619,8 +916,14 @@ def login_by_wallet(data: WalletLogin):
             SELECT id, username, role, wallet_address, nickname, avatar
             FROM users
             WHERE LOWER(TRIM(wallet_address)) = LOWER(TRIM(:w))
+            ORDER BY (role='ADMIN') DESC, id ASC
+            LIMIT 1
         """)
         r = conn.execute(query, {"w": data.wallet_address}).fetchone()
+        if r:
+            banned = conn.execute(text("SELECT 1 FROM bans WHERE LOWER(student_address)=LOWER(TRIM(:w))"), {"w": data.wallet_address}).fetchone()
+            if banned:
+                return {"success": False, "msg": "该账户已封禁，请联系指导老师解封"}
         if r:
             return {"success": True, "data": {"id": r[0], "username": r[1], "role": r[2], "wallet_address": r[3], "nickname": r[4], "avatar": r[5]}}
         else:
@@ -670,6 +973,244 @@ def save_job(job: JobCreate):
         conn.commit()
         log_audit("JOB_CREATED", job.employer, job.title, f"部门: {job.department}, 预算: {Web3.from_wei(int(job.salary),'ether')} ETH")
         return {"success": True}
+
+# ======================== 积分 / 奖惩 / 通知 ========================
+class PointsExchange(BaseModel):
+    student_address: str
+    points: int
+
+
+class PenaltyEvent(BaseModel):
+    student_address: str
+    kind: str
+
+
+class RewardPenaltyIn(BaseModel):
+    student_address: str
+    type: str
+    amount_yuan: float = 0
+    reason: str = ""
+
+
+class NotifSeen(BaseModel):
+    ids: list = []
+
+
+@app.get("/api/points/{student_address}")
+def get_points(student_address: str):
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT points FROM points WHERE student_address=:s"), {"s": student_address}).fetchone()
+        return {"points": int(row[0]) if row else 0}
+
+
+@app.post("/api/exchange_points")
+def exchange_points(data: PointsExchange):
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT points FROM points WHERE student_address=:s"), {"s": data.student_address}).fetchone()
+        cur = int(row[0]) if row else 0
+        if data.points <= 0:
+            raise HTTPException(400, "兑换积分必须大于 0")
+        if data.points > cur:
+            raise HTTPException(400, f"积分不足（当前 {cur} 分）")
+        conn.execute(text("UPDATE points SET points = points - :p WHERE student_address=:s"), {"p": data.points, "s": data.student_address})
+        conn.execute(text("INSERT INTO rewards_penalties (student_address, type, amount_yuan, reason) VALUES (:s,'GRANT',:a,:r)"),
+                    {"s": data.student_address, "a": data.points * 10, "r": f"积分兑换助学金 {data.points} 分"})
+        conn.commit()
+        return {"success": True, "remaining": cur - data.points, "amount_yuan": data.points * 10}
+
+
+@app.post("/api/penalty_event")
+def penalty_event(data: PenaltyEvent):
+    amount = -20 if data.kind == 'LATE' else -30
+    reason = '迟到打卡' if data.kind == 'LATE' else '早退打卡'
+    with engine.connect() as conn:
+        conn.execute(text("INSERT INTO rewards_penalties (student_address, type, amount_yuan, reason) VALUES (:s,:t,:a,:r)"),
+                    {"s": data.student_address, "t": data.kind, "a": amount, "r": reason})
+        conn.commit()
+    return {"success": True, "amount_yuan": amount, "reason": reason}
+
+
+@app.get("/api/rewards_penalties")
+def list_rewards_penalties():
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT id, student_address, type, amount_yuan, reason, seen, created_at
+            FROM rewards_penalties ORDER BY created_at DESC, id DESC LIMIT 100
+        """)).fetchall()
+        return [{"id": r[0], "student_address": r[1], "type": r[2], "amount_yuan": float(r[3]),
+                 "reason": r[4], "seen": int(r[5]), "created_at": str(r[6])} for r in rows]
+
+
+@app.post("/api/reward_penalty")
+def save_reward_penalty(data: RewardPenaltyIn):
+    if not data.student_address:
+        raise HTTPException(400, "学生地址不能为空")
+    with engine.connect() as conn:
+        conn.execute(text("INSERT INTO rewards_penalties (student_address, type, amount_yuan, reason, seen) VALUES (:s,:t,:a,:r,1)"),
+                    {"s": data.student_address, "t": data.type, "a": data.amount_yuan, "r": data.reason})
+        conn.commit()
+    return {"success": True}
+
+
+@app.post("/api/rewards_penalties/seen")
+def mark_rp_seen():
+    with engine.connect() as conn:
+        conn.execute(text("UPDATE rewards_penalties SET seen=1 WHERE seen=0"))
+        conn.commit()
+    return {"success": True}
+
+
+@app.get("/api/notifications/{role}")
+def get_notifications(role: str):
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT id, message, created_at FROM notifications WHERE target_role=:r AND seen=0 ORDER BY id DESC LIMIT 20"), {"r": role}).fetchall()
+        return [{"id": r[0], "message": r[1], "created_at": str(r[2])} for r in rows]
+
+
+@app.post("/api/notifications/seen")
+def mark_notif_seen(data: NotifSeen):
+    with engine.connect() as conn:
+        for i in (data.ids or []):
+            conn.execute(text("UPDATE notifications SET seen=1 WHERE id=:i"), {"i": i})
+        conn.commit()
+    return {"success": True}
+
+
+@app.get("/api/student_penalties/{student_address}")
+def student_penalties(student_address: str):
+    with engine.connect() as conn:
+        bal = conn.execute(text("SELECT balance_yuan FROM student_accounts WHERE student_address=:s"), {"s": student_address}).fetchone()
+        rows = conn.execute(text("""
+            SELECT id, type, amount_yuan, reason, processed, created_at FROM rewards_penalties
+            WHERE student_address=:s ORDER BY created_at DESC, id DESC LIMIT 50
+        """), {"s": student_address}).fetchall()
+        return {"balance": float(bal[0]) if bal else 0.0,
+                "rows": [{"id": r[0], "type": r[1], "amount_yuan": float(r[2]), "reason": r[3],
+                          "processed": int(r[4]), "created_at": str(r[5])} for r in rows]}
+
+
+@app.post("/api/pay_fine")
+def pay_fine(data: NotifSeen):
+    rp_id = int((data.ids or [0])[0] if (data.ids or []) else 0)
+    if not rp_id:
+        raise HTTPException(400, "参数错误")
+    with engine.connect() as conn:
+        rp = conn.execute(text("SELECT student_address, amount_yuan, reason FROM rewards_penalties WHERE id=:i"), {"i": rp_id}).fetchone()
+        if not rp:
+            raise HTTPException(404, "奖惩记录不存在")
+        stu, amt, reason = rp[0], float(rp[1]), rp[2]
+        bal_row = conn.execute(text("SELECT balance_yuan FROM student_accounts WHERE student_address=:s"), {"s": stu}).fetchone()
+        bal = float(bal_row[0]) if bal_row else 0.0
+        if bal < abs(amt):
+            conn.execute(text("INSERT INTO bans (student_address, reason) VALUES (:s, :r)"),
+                        {"s": stu, "r": f"账户余额不足，罚款 ¥{abs(amt)} 未缴清"})
+            conn.commit()
+            return {"success": False, "banned": True, "msg": "账户余额不足，已被封禁，请联系指导老师解封"}
+        conn.execute(text("UPDATE student_accounts SET balance_yuan = balance_yuan - :a WHERE student_address=:s"),
+                    {"a": abs(amt), "s": stu})
+        conn.execute(text("UPDATE rewards_penalties SET processed=1 WHERE id=:i"), {"i": rp_id})
+        conn.commit()
+        return {"success": True, "balance": bal - abs(amt), "msg": f"罚款 ¥{abs(amt)} 已缴纳"}
+
+
+@app.post("/api/appeal")
+def submit_appeal(data: RewardPenaltyIn):
+    with engine.connect() as conn:
+        conn.execute(text("INSERT INTO fines_appeals (student_address, rp_id, kind, amount_yuan, reason) VALUES (:s, :rid, 'APPEAL', 0, :r)"),
+                    {"s": data.student_address, "rid": int(data.amount_yuan or 0), "r": data.reason})
+        conn.commit()
+    return {"success": True, "msg": "申诉已提交，请等待指导老师处理"}
+
+
+@app.post("/api/admin_deduct")
+def admin_deduct(data: NotifSeen):
+    rp_id = int((data.ids or [0])[0] if (data.ids or []) else 0)
+    if not rp_id:
+        raise HTTPException(400, "参数错误")
+    with engine.connect() as conn:
+        rp = conn.execute(text("SELECT student_address, amount_yuan FROM rewards_penalties WHERE id=:i"), {"i": rp_id}).fetchone()
+        if not rp:
+            raise HTTPException(404, "奖惩记录不存在")
+        stu, amt = rp[0], abs(float(rp[1]))
+        bal_row = conn.execute(text("SELECT balance_yuan FROM student_accounts WHERE student_address=:s"), {"s": stu}).fetchone()
+        bal = float(bal_row[0]) if bal_row else 0.0
+        if bal < amt:
+            conn.execute(text("INSERT INTO bans (student_address, reason) VALUES (:s, :r)"),
+                        {"s": stu, "r": f"扣款 ¥{amt} 时账户余额不足，自动封禁"})
+            conn.execute(text("UPDATE rewards_penalties SET processed=1 WHERE id=:i"), {"i": rp_id})
+            conn.commit()
+            return {"success": True, "banned": True, "msg": f"余额不足，已自动封禁 {stu[:10]}…"}
+        conn.execute(text("UPDATE student_accounts SET balance_yuan = balance_yuan - :a WHERE student_address=:s"), {"a": amt, "s": stu})
+        conn.execute(text("UPDATE rewards_penalties SET processed=1 WHERE id=:i"), {"i": rp_id})
+        conn.commit()
+        return {"success": True, "msg": f"已扣款 ¥{amt}"}
+
+
+@app.get("/api/bans")
+def list_bans():
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT id, student_address, reason, created_at FROM bans ORDER BY id DESC LIMIT 50")).fetchall()
+        return [{"id": r[0], "student_address": r[1], "reason": r[2], "created_at": str(r[3])} for r in rows]
+
+
+@app.post("/api/unban")
+def unban_user(data: NotifSeen):
+    addr = (data.ids or [''])[0] if (data.ids or []) else ''
+    if not addr:
+        raise HTTPException(400, "参数错误")
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM bans WHERE LOWER(student_address)=LOWER(:a)"), {"a": addr})
+        conn.commit()
+    return {"success": True, "msg": "已解除封号"}
+
+
+@app.get("/api/abnormal_clock_ins")
+def abnormal_clock_ins():
+    """异常提醒：忘记打下班卡 / 工作时间过长影响学业"""
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT ci.id, ci.student_address, ci.clock_in_time,
+                   TIMESTAMPDIFF(SECOND, ci.clock_in_time, NOW()) * 15 AS sys_min
+            FROM clock_ins ci
+            WHERE ci.clock_out_time IS NULL
+              AND (TIMESTAMPDIFF(SECOND, ci.clock_in_time, NOW()) * 15 > 510
+                   OR TIMESTAMPDIFF(MINUTE, ci.clock_in_time, NOW()) > 30)
+            ORDER BY ci.clock_in_time ASC
+        """)).fetchall()
+        result = [{
+            "id": r[0], "kind": "forgot", "student_address": r[1], "clock_in_time": str(r[2]),
+            "sys_minutes": int(r[3]),
+            "message": f"学生 {str(r[1])[:10]}... 打卡于 {r[2]}（已计 {int(r[3]) // 60} 小时 {int(r[3]) % 60} 分），仍未打下班卡，请及时补卡或做异常处理"
+        } for r in rows]
+        over = conn.execute(text("""
+            SELECT student_address,
+                   COALESCE(SUM(CASE WHEN DATE(clock_in_time) = CURDATE() THEN work_minutes ELSE 0 END), 0) AS dmin,
+                   COALESCE(SUM(CASE WHEN clock_in_time >= DATE_FORMAT(NOW(), '%Y-%m-01') THEN work_minutes ELSE 0 END), 0) AS mmin
+            FROM clock_ins WHERE rejected = 0 GROUP BY student_address
+            HAVING dmin > 480 OR mmin > 14400
+        """)).fetchall()
+        for o in over:
+            result.append({
+                "id": 0, "kind": "overwork", "student_address": o[0],
+                "day_minutes": int(o[1]), "month_minutes": int(o[2]),
+                "message": f"该学生工作时间过长，影响学业（今日 {int(o[1]) // 60} 小时 / 本月 {int(o[2]) // 60} 小时），请联系该学生及时调整工作时长"
+            })
+        return result
+
+@app.get("/api/employer_jobs/{employer_address}")
+def employer_jobs(employer_address: str):
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT id, chain_job_id, title, COALESCE(department,''), COALESCE(hourly_rate_wei,'0'), salary_wei, employer_address, status, COALESCE(description,'')
+            FROM jobs WHERE employer_address = :e ORDER BY created_at DESC
+        """), {"e": employer_address}).fetchall()
+        return [{
+            "id": r[0], "chain_job_id": r[1], "title": r[2], "department": r[3],
+            "hourly_rate": str(Web3.from_wei(int(r[4]), 'ether')) if r[4] and r[4] != '0' else '0',
+            "salary": str(Web3.from_wei(int(r[5]), 'ether')),
+            "employer": r[6], "status": r[7], "description": r[8], "applicant_count": 0
+        } for r in rows]
+
 
 @app.get("/api/public_jobs")
 def get_public_jobs():
@@ -735,12 +1276,7 @@ def get_job_detail(job_id: int):
 def apply_job(data: JobApply):
     try:
         with engine.connect() as conn:
-            # 检查是否已有进行中的岗位（只能领取一份）
-            active = conn.execute(text(
-                "SELECT e.id, j.title FROM employments e JOIN jobs j ON e.job_id = j.id WHERE e.student_address=:s AND e.status IN ('PENDING','APPROVED')"
-            ), {"s": data.student}).fetchone()
-            if active:
-                return {"success": False, "msg": f"你已有进行中的岗位[{active[1]}]，请先完成或辞职后再申请新岗位"}
+            # （已放开：学生可同时参与多个岗位，便于演示）
 
             # 检查是否已申请该岗位
             existing = conn.execute(text(
@@ -831,6 +1367,15 @@ def resign(data: ResignJob):
             UPDATE jobs SET status='PUBLISHED', student_address=NULL
             WHERE id = (SELECT job_id FROM employments WHERE id=:e)
         """), {"e": data.employment_id})
+        info_row2 = conn.execute(text(
+            "SELECT j.title FROM employments e JOIN jobs j ON e.job_id = j.id WHERE e.id=:e"
+        ), {"e": data.employment_id}).fetchone()
+        job_title2 = info_row2[0] if info_row2 else "未知岗位"
+        nick_row = conn.execute(text("SELECT nickname FROM users WHERE LOWER(TRIM(wallet_address)) = LOWER(TRIM(:s))"), {"s": data.student}).fetchone()
+        nick = (nick_row[0] if nick_row and nick_row[0] else data.student[:10] + "…")
+        for _role in ("ADMIN", "TEACHER"):
+            conn.execute(text("INSERT INTO notifications (target_role, message) VALUES (:r, :m)"),
+                        {"r": _role, "m": f"学生 {nick} 已离职（岗位：{job_title2}）"})
         conn.commit()
         return {"success": True, "msg": "辞职成功"}
 
@@ -976,8 +1521,8 @@ def clock_in(data: ClockInData, request: Request):
 
         # 检查是否有未结束的打卡
         active = conn.execute(text(
-            "SELECT id FROM clock_ins WHERE employment_id=:e AND clock_out_time IS NULL"
-        ), {"e": data.employment_id}).fetchone()
+            "SELECT id FROM clock_ins WHERE student_address=:s AND clock_out_time IS NULL"
+        ), {"s": data.student}).fetchone()
         if active:
             return {"success": False, "msg": "你有未结束的打卡记录，请先下班打卡"}
 
@@ -1020,7 +1565,7 @@ def clock_out(data: ClockOutData, request: Request):
         # 链上不可用时按数据库时间戳兜底
         if work_minutes < 0:
             calc = conn.execute(text("""
-                SELECT LEAST(TIMESTAMPDIFF(MINUTE, clock_in_time, NOW()), 480)
+                SELECT LEAST(TIMESTAMPDIFF(SECOND, clock_in_time, NOW()) * 15, 480)
                 FROM clock_ins WHERE id=:c
             """), {"c": data.clock_in_id}).fetchone()
             work_minutes = max(0, int(calc[0] or 0))
@@ -1036,6 +1581,13 @@ def clock_out(data: ClockOutData, request: Request):
         # 更新工时配额统计
         if work_minutes > 0:
             update_hour_limits(record[4], work_minutes)
+
+        # 加班积分：超过 4 小时的部分，每满 1 小时 +1 积分
+        if work_minutes > 240:
+            earn = (work_minutes - 240) // 60
+            if earn > 0:
+                conn.execute(text("INSERT INTO points (student_address, points) VALUES (:s, :p) ON DUPLICATE KEY UPDATE points = points + :p"),
+                            {"s": record[4], "p": earn})
 
         msg = f"下班打卡成功，本次工时{work_minutes}分钟（系统自动计时）"
         if risk_flag == "IP_MISMATCH":
@@ -1184,6 +1736,183 @@ def get_dashboard(wallet_address: str):
             "total_earnings": str(Web3.from_wei(int(total), 'ether')),
             "clock_count": clock_count
         }
+
+# ======================== 学生数据看板 API ========================
+
+@app.get("/api/student_dashboard/{wallet_address}")
+def get_student_dashboard(wallet_address: str):
+    """学生个人数据看板：KPI 指标 + 收入趋势 / 工时分布 / 动态时间线等图表数据"""
+    from datetime import date, timedelta
+    with engine.connect() as conn:
+        # ---------- KPI 汇总 ----------
+        settle_row = conn.execute(text("""
+            SELECT COALESCE(SUM(CAST(amount_wei AS UNSIGNED)),0), COUNT(*),
+                   COALESCE(SUM(hours_settled_minutes),0)
+            FROM settlements WHERE student_address=:w AND status='CONFIRMED'
+        """), {"w": wallet_address}).fetchone()
+        total_wei = int(settle_row[0]); settle_count = int(settle_row[1]); settled_minutes = int(settle_row[2])
+
+        clock_row = conn.execute(text("""
+            SELECT COUNT(*), COALESCE(SUM(work_minutes),0)
+            FROM clock_ins WHERE student_address=:w
+        """), {"w": wallet_address}).fetchone()
+        clock_count = int(clock_row[0]); total_minutes = int(clock_row[1])
+
+        active_jobs = conn.execute(text("""
+            SELECT COUNT(*) FROM employments WHERE student_address=:w AND status='APPROVED'
+        """), {"w": wallet_address}).scalar() or 0
+
+        month_start = date.today().replace(day=1)
+        month_row = conn.execute(text("""
+            SELECT COALESCE(SUM(CAST(amount_wei AS UNSIGNED)),0), COALESCE(SUM(hours_settled_minutes),0)
+            FROM settlements WHERE student_address=:w AND status='CONFIRMED' AND settled_at >= :ms
+        """), {"w": wallet_address, "ms": str(month_start)}).fetchone()
+        month_wei = int(month_row[0]); month_minutes = int(month_row[1])
+
+        # ---------- 近 6 个月收入 / 工时趋势 ----------
+        monthly_rows = conn.execute(text("""
+            SELECT DATE_FORMAT(settled_at,'%Y-%m') AS ym,
+                   COALESCE(SUM(CAST(amount_wei AS UNSIGNED)),0),
+                   COALESCE(SUM(hours_settled_minutes),0)
+            FROM settlements
+            WHERE student_address=:w AND status='CONFIRMED' AND settled_at >= :since
+            GROUP BY ym ORDER BY ym
+        """), {"w": wallet_address, "since": str(date.today() - timedelta(days=180))}).fetchall()
+        monthly_map = {r[0]: (int(r[1]), int(r[2])) for r in monthly_rows}
+        month_keys = []
+        y, m = date.today().year, date.today().month
+        for _ in range(6):
+            month_keys.append(f"{y:04d}-{m:02d}")
+            m -= 1
+            if m == 0:
+                m, y = 12, y - 1
+        month_keys.reverse()
+        monthly = [{
+            "month": k,
+            "earnings_ether": str(Web3.from_wei(monthly_map.get(k, (0, 0))[0], 'ether')),
+            "minutes": monthly_map.get(k, (0, 0))[1]
+        } for k in month_keys]
+
+        # ---------- 近 14 天每日工时 ----------
+        daily_rows = conn.execute(text("""
+            SELECT DATE(clock_in_time) AS d, COALESCE(SUM(work_minutes),0)
+            FROM clock_ins WHERE student_address=:w AND clock_in_time >= :since
+            GROUP BY d ORDER BY d
+        """), {"w": wallet_address, "since": str(date.today() - timedelta(days=13))}).fetchall()
+        daily_map = {str(r[0]): int(r[1]) for r in daily_rows}
+        daily = []
+        for i in range(13, -1, -1):
+            d = date.today() - timedelta(days=i)
+            daily.append({"date": d.strftime("%m-%d"), "minutes": daily_map.get(str(d), 0)})
+
+        # ---------- 工时按岗位分布 ----------
+        job_rows = conn.execute(text("""
+            SELECT j.title, COALESCE(SUM(c.work_minutes),0), COUNT(*)
+            FROM clock_ins c
+            JOIN employments e ON c.employment_id = e.id
+            JOIN jobs j ON e.job_id = j.id
+            WHERE c.student_address=:w
+            GROUP BY j.title ORDER BY 2 DESC LIMIT 6
+        """), {"w": wallet_address}).fetchall()
+        by_job = [{"title": r[0], "minutes": int(r[1]), "count": int(r[2])} for r in job_rows]
+
+        # ---------- 最近动态时间线 ----------
+        events = []
+        for r in conn.execute(text("""
+            SELECT j.title, c.clock_in_time, COALESCE(c.work_minutes,0)
+            FROM clock_ins c
+            JOIN employments e ON c.employment_id = e.id
+            JOIN jobs j ON e.job_id = j.id
+            WHERE c.student_address=:w ORDER BY c.clock_in_time DESC LIMIT 6
+        """), {"w": wallet_address}).fetchall():
+            events.append({"type": "clock", "text": f"工时打卡 · {r[0]}（{int(r[2])} 分钟）", "time": str(r[1])})
+        for r in conn.execute(text("""
+            SELECT j.title, s.amount_wei, s.settled_at
+            FROM settlements s
+            JOIN employments e ON s.employment_id = e.id
+            JOIN jobs j ON e.job_id = j.id
+            WHERE s.student_address=:w ORDER BY s.settled_at DESC LIMIT 6
+        """), {"w": wallet_address}).fetchall():
+            events.append({"type": "settle", "text": f"薪酬到账 · {r[0]}（{Web3.from_wei(int(r[1]), 'ether')} ETH）", "time": str(r[2])})
+        for r in conn.execute(text("""
+            SELECT jobs.title, employments.applied_at FROM employments
+            JOIN jobs ON employments.job_id = jobs.id
+            WHERE employments.student_address=:w ORDER BY employments.applied_at DESC LIMIT 4
+        """), {"w": wallet_address}).fetchall():
+            events.append({"type": "apply", "text": f"岗位申请 · {r[0]}", "time": str(r[1])})
+        events.sort(key=lambda x: x["time"], reverse=True)
+
+        avg_rate = '0'
+        if settled_minutes > 0:
+            avg_rate = str(Web3.from_wei(total_wei * 3600 // settled_minutes, 'ether'))
+
+        return {
+            "totals": {
+                "total_earnings_ether": str(Web3.from_wei(total_wei, 'ether')),
+                "total_minutes": total_minutes,
+                "clock_count": clock_count,
+                "active_jobs": int(active_jobs),
+                "settle_count": settle_count,
+                "month_earnings_ether": str(Web3.from_wei(month_wei, 'ether')),
+                "month_minutes": month_minutes,
+                "avg_hourly_rate_ether": avg_rate,
+            },
+            "monthly": monthly,
+            "daily": daily,
+            "by_job": by_job,
+            "recent": events[:8],
+            "hour_status": check_hour_limits(wallet_address),
+        }
+
+@app.get("/api/recommended_jobs/{wallet_address}")
+def get_recommended_jobs(wallet_address: str, limit: int = 6):
+    """基于 TOPSIS 人岗匹配算法为学生智能推荐岗位（困难生优先）"""
+    with engine.connect() as conn:
+        profile_row = conn.execute(text("""
+            SELECT financial_level, available_hours_per_week, reputation_score, monthly_aid_received
+            FROM student_profiles WHERE wallet_address=:w
+        """), {"w": wallet_address}).fetchone()
+        profile = {
+            "financial_level": profile_row[0] if profile_row else "NORMAL",
+            "available_hours_per_week": profile_row[1] if profile_row else 10,
+            "reputation_score": profile_row[2] if profile_row else 80,
+            "monthly_aid_received": float(profile_row[3]) if profile_row else 0,
+        }
+
+        applied_ids = {r[0] for r in conn.execute(text(
+            "SELECT job_id FROM employments WHERE student_address=:w"
+        ), {"w": wallet_address}).fetchall()}
+
+        rows = conn.execute(text("""
+            SELECT j.id, j.chain_job_id, j.title, COALESCE(j.department,''), COALESCE(j.description,''),
+                   COALESCE(j.hourly_rate_wei,'0'), j.salary_wei, j.employer_address, j.status,
+                   (SELECT COUNT(*) FROM employments WHERE job_id = j.id) AS applicant_count
+            FROM jobs j
+            WHERE j.status IN ('PUBLISHED', 'APPROVED')
+            ORDER BY j.created_at DESC LIMIT 40
+        """)).fetchall()
+
+        result = []
+        for r in rows:
+            rate_wei = int(r[5]) if r[5] and r[5] != '0' else 0
+            budget_wei = int(r[6])
+            # 由「预算 ÷ 时薪」估算岗位总工时，再折算每周需求工时，代入匹配算法
+            est_weekly = 10
+            if rate_wei > 0:
+                total_hours = budget_wei / rate_wei
+                est_weekly = max(4, min(20, total_hours / 4))
+            match = calculate_match_score(profile, {"estimated_hours_per_week": est_weekly})
+            result.append({
+                "id": r[0], "chain_job_id": r[1], "title": r[2], "department": r[3],
+                "description": r[4],
+                "hourly_rate": str(Web3.from_wei(rate_wei, 'ether')) if rate_wei else '0',
+                "salary": str(Web3.from_wei(budget_wei, 'ether')),
+                "employer": r[7], "status": r[8], "applicant_count": r[9],
+                "applied": r[0] in applied_ids,
+                "match": match,
+            })
+        result.sort(key=lambda x: x["match"]["score"], reverse=True)
+        return result[:limit]
 
 # ======================== 教师仪表盘 API ========================
 
@@ -1388,7 +2117,7 @@ def admin_system_info():
         job_count = int(conn.execute(text("SELECT COUNT(*) FROM jobs")).scalar() or 0)
         active_jobs = int(conn.execute(text("SELECT COUNT(*) FROM jobs WHERE status IN ('PUBLISHED','APPROVED')")).scalar() or 0)
         emp_count = int(conn.execute(text("SELECT COUNT(*) FROM employments")).scalar() or 0)
-        approved_emps = int(conn.execute(text("SELECT COUNT(*) FROM employments WHERE status='APPROVED'")).scalar() or 0)
+        approved_emps = int(conn.execute(text("SELECT COUNT(DISTINCT student_address) FROM employments WHERE status='APPROVED'")).scalar() or 0)
         total_hours = int(conn.execute(text("SELECT COALESCE(SUM(total_minutes),0) FROM employments WHERE status='APPROVED'")).scalar() or 0)
         settle_count = int(conn.execute(text("SELECT COUNT(*) FROM settlements")).scalar() or 0)
         total_paid = int(conn.execute(text("SELECT COALESCE(SUM(CAST(amount_wei AS UNSIGNED)),0) FROM settlements WHERE status='CONFIRMED'")).scalar() or 0)
@@ -1697,41 +2426,47 @@ def update_hour_limits(student_address: str, minutes: int):
         """), {"sa": student_address, "ws": str(week_start), "ms": str(month_start), "m": minutes})
         conn.commit()
 
-def check_hour_limits(student_address: str) -> dict:
-    """检查学生是否超出工时红线"""
-    from datetime import date, timedelta
-    today = date.today()
-    week_start = today - timedelta(days=today.weekday())
-    month_start = today.replace(day=1)
-
-    MAX_WEEKLY = 480   # 8小时
-    MAX_MONTHLY = 2400  # 40小时
-
+def check_hour_limits(student_address: str, upcoming_minutes: int = 0) -> dict:
+    """工时红线检查（日上限 8 小时 / 月上限 240 小时，按打卡记录统计）"""
+    today = datetime.now().strftime('%Y-%m-%d')
+    month_start = datetime.now().strftime('%Y-%m-01')
     with engine.connect() as conn:
-        # 本周工时：直接读当前周记录
         row = conn.execute(text("""
-            SELECT COALESCE(weekly_minutes,0)
-            FROM hour_limits WHERE student_address=:sa AND week_start=:ws
-        """), {"sa": student_address, "ws": str(week_start)}).fetchone()
-        weekly = row[0] if row else 0
-
-        # 本月工时：汇总本月所有周记录的 weekly_minutes（不再依赖 idx_month 唯一键）
-        month_row = conn.execute(text("""
-            SELECT COALESCE(SUM(weekly_minutes),0) FROM hour_limits
-            WHERE student_address=:sa AND month_start=:ms
-        """), {"sa": student_address, "ms": str(month_start)}).fetchone()
-        monthly = month_row[0] if month_row else 0
-
-    return {
-        "weekly_minutes": weekly,
-        "monthly_minutes": monthly,
-        "weekly_remaining": max(0, MAX_WEEKLY - weekly),
-        "monthly_remaining": max(0, MAX_MONTHLY - monthly),
-        "weekly_exceeded": weekly >= MAX_WEEKLY,
-        "monthly_exceeded": monthly >= MAX_MONTHLY,
-        "max_weekly": MAX_WEEKLY,
-        "max_monthly": MAX_MONTHLY
+            SELECT
+                COALESCE(SUM(CASE WHEN DATE(clock_in_time) = :today THEN work_minutes ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN clock_in_time >= :ms THEN work_minutes ELSE 0 END), 0)
+            FROM clock_ins WHERE student_address = :s AND rejected = 0
+        """), {"today": today, "ms": month_start, "s": student_address}).fetchone()
+    day_minutes = int(row[0] or 0)
+    month_minutes = int(row[1] or 0)
+    MAX_DAY = 480      # 8 小时 / 日
+    MAX_MONTH = 14400  # 240 小时 / 月
+    common = {
+        "day_minutes": day_minutes, "month_minutes": month_minutes,
+        "weekly_minutes": day_minutes, "monthly_minutes": month_minutes,
+        "max_weekly": MAX_DAY, "max_monthly": MAX_MONTH,
+        "week_used_hours": round(day_minutes / 60, 2), "week_max_hours": 8,
+        "month_used_hours": round(month_minutes / 60, 2), "month_max_hours": 240,
+        "weekly_exceeded": day_minutes >= MAX_DAY, "monthly_exceeded": month_minutes >= MAX_MONTH,
     }
+    if day_minutes + upcoming_minutes > MAX_DAY:
+        return {"allowed": False, "reason": "今日工时将达到上限（8小时），无法继续打卡，请合理安排学业",
+                "weekly_remaining": 0, "monthly_remaining": max(0, MAX_MONTH - month_minutes), **common}
+    if month_minutes + upcoming_minutes > MAX_MONTH:
+        return {"allowed": False, "reason": "本月工时将达到上限（240小时），无法继续打卡，请合理安排学业",
+                "weekly_remaining": max(0, MAX_DAY - day_minutes), "monthly_remaining": 0, **common}
+    day_remaining = max(0, MAX_DAY - day_minutes)
+    month_remaining = max(0, MAX_MONTH - month_minutes)
+    return {"allowed": True, "reason": "",
+            "day_remaining": day_remaining, "day_percent": round(day_minutes / MAX_DAY * 100, 1),
+            "month_remaining": month_remaining, "month_percent": round(month_minutes / MAX_MONTH * 100, 1),
+            "weekly_remaining": day_remaining, "weekly_percent": round(day_minutes / MAX_DAY * 100, 1),
+            "week_percent": round(day_minutes / MAX_DAY * 100, 1), "monthly_remaining": month_remaining,
+            "max_weekly": MAX_DAY, "max_monthly": MAX_MONTH,
+            "week_used_minutes": day_minutes, "week_max_minutes": MAX_DAY,
+            "week_used_hours": round(day_minutes / 60, 2), "week_max_hours": 8,
+            "month_used_hours": round(month_minutes / 60, 2), "month_max_hours": 240,
+            **common}
 
 def detect_clock_risk(student_address: str, current_ip: str, clock_in_ip: str = None) -> str:
     """检测打卡风险"""
@@ -1985,42 +2720,106 @@ def ai_generate_desc(data: AIGenerateRequest):
 3. 语言简洁专业
 4. 只输出简介内容，不要标题和多余文字"""
 
-    try:
-        # 确保 URL 以 /v1/chat/completions 结尾
-        if not api_url.endswith('/v1/chat/completions'):
-            api_url = api_url.rstrip('/') + '/v1/chat/completions'
 
-        with httpx.Client(timeout=30) as client:
-            resp = client.post(
-                api_url,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 200,
-                    "temperature": 0.7
-                }
-            )
-            if resp.status_code != 200:
-                return {"success": False, "msg": f"AI 服务返回错误: HTTP {resp.status_code}"}
-            result = resp.json()
-            desc = result["choices"][0]["message"]["content"].strip()
-            # 去掉可能的引号包裹
-            if desc.startswith('"') and desc.endswith('"'):
-                desc = desc[1:-1]
-            return {"success": True, "description": desc}
-    except httpx.TimeoutException:
-        return {"success": False, "msg": "AI 服务响应超时，请稍后重试"}
+    # ---- 协议自适应：兼容 OpenAI(Chat/Completions) 与 Gemini 原生(generateContent) ----
+    from urllib.parse import urlparse
+    _url = api_url.strip()
+    if "://" not in _url:
+        _url = "https://" + _url
+    _parsed = urlparse(_url)
+    _base = f"{_parsed.scheme}://{_parsed.netloc}"
+    _path = (_parsed.path or "").rstrip("/")
+    _model_id = model.split("/")[-1] if model.startswith("models/") else model
+
+    # OpenAI 端点：已配完整 chat/completions 地址则直接用，否则自动补全
+    if _path.endswith("/chat/completions"):
+        _openai_url = _base + _path
+    elif _path.endswith("/v1"):
+        _openai_url = _base + _path + "/chat/completions"
+    else:
+        _openai_url = _base + "/v1/chat/completions"
+    # Gemini 原生端点（goldenglow 等中转站按 Google 协议转发）
+    _gemini_url = _base + f"/v1beta/models/{_model_id}:generateContent"
+
+    def _post_openai(client):
+        return client.post(
+            _openai_url,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": "你是一个高校勤工助学岗位简介撰写助手，能根据岗位要求、工作内容和时间安排，用精炼、准确、自然的语言生成岗位简介。"},
+                    {"role": "user", "content": prompt}
+                ],
+                "max_tokens": 200,
+                "temperature": 0.7
+            },
+            timeout=60
+        )
+
+    def _post_gemini(client):
+        return client.post(
+            _gemini_url,
+            headers={"x-goog-api-key": api_key, "Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {"maxOutputTokens": 200, "temperature": 0.7}
+            },
+            timeout=60
+        )
+
+    def _parse_openai(data):
+        return data.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+
+    def _parse_gemini(data):
+        parts = (data.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
+        return (parts[0].get("text", "") if parts else "").strip()
+
+    # gemini 系模型优先走原生协议；端点 404/405 时自动切换另一种协议
+    _gemini_first = "gemini" in model.lower() or "/v1beta/" in _path
+    _attempts = [
+        ("Gemini", _post_gemini, _parse_gemini, _gemini_url),
+        ("OpenAI", _post_openai, _parse_openai, _openai_url),
+    ]
+    if not _gemini_first:
+        _attempts.reverse()
+
+    _errors = []
+    try:
+        with httpx.Client(timeout=60) as client:
+            for _name, _post, _parse, _ep in _attempts:
+                try:
+                    resp = _post(client)
+                except httpx.TimeoutException:
+                    return {"success": False, "msg": "AI 服务响应超时，请稍后重试", "description": "AI 服务响应超时，请稍后重试"}
+                except Exception as _e:
+                    _errors.append(f"{_name} 连接失败({_ep}): {_e}")
+                    continue
+                if resp.status_code == 200:
+                    try:
+                        content = _parse(resp.json())
+                    except Exception:
+                        _errors.append(f"{_name} 返回解析失败: HTTP {resp.status_code} {resp.text[:200]}")
+                        continue
+                    if content:
+                        return {"success": True, "msg": content, "description": content}
+                    _errors.append(f"{_name} 返回内容为空")
+                    continue
+                if resp.status_code in (404, 405, 501):
+                    # 端点协议不匹配，自动换另一种协议重试
+                    _errors.append(f"{_name} 端点不可用 (HTTP {resp.status_code}): {_ep} | 响应: {resp.text[:200]}")
+                    continue
+                return {"success": False, "msg": f"AI 服务返回错误: HTTP {resp.status_code} {resp.text[:200]}", "description": f"AI 服务返回错误: HTTP {resp.status_code} {resp.text[:200]}"}
     except Exception as e:
-        return {"success": False, "msg": f"AI 调用失败: {str(e)}"}
+        return {"success": False, "msg": f"AI 调用失败: {str(e)}", "description": f"AI 调用失败: {str(e)}"}
+    return {"success": False, "msg": "AI 调用失败: " + ("；".join(_errors) or "两种协议均不可用，请检查 API 地址/密钥/模型名"), "description": "AI 调用失败: " + ("；".join(_errors) or "两种协议均不可用，请检查 API 地址/密钥/模型名")}
+
 
 class AIConfigUpdate(BaseModel):
     ai_api_key: str = ""
     ai_api_url: str = ""
     ai_model: str = ""
+
 
 @app.get("/api/ai_config")
 def get_ai_config():
@@ -2195,4 +2994,5 @@ def simulate_attack():
 # ======================== 静态文件挂载 (必须放最后) ========================
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/png", StaticFiles(directory=os.path.join(os.path.dirname(os.path.abspath(__file__)), "png")), name="png")
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

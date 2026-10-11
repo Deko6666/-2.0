@@ -473,8 +473,9 @@ contract WorkStudy {
         require(!record.confirmed, "Already processed");
         require(msg.sender == record.student, "Only the student can clock out");
 
-        // 自动计时：工时 = 当前区块时间 - 上班时间（向下取整，杜绝虚报）
-        uint256 workMinutes = (block.timestamp - record.clockInTime) / 60;
+        // 自动计时：工时 = 上班时长（向下取整，杜绝虚报）
+        // 演示模式：现实 1 秒 = 系统 15 分钟（按 15 倍速计时）
+        uint256 workMinutes = (block.timestamp - record.clockInTime) * 15;
         // 单次上限 8 小时：截断而非回滚，防止忘记下班卡死学生
         if (workMinutes > 480) {
             workMinutes = 480;
