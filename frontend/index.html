@@ -8,77 +8,105 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --primary: #1a3a6b;
-            --primary-light: #2a5298;
-            --primary-dark: #0e2240;
-            --accent: #c0392b;
-            --accent-light: #e74c3c;
             --gold: #d4a017;
-            --bg: #f4f6f9;
-            --card: #ffffff;
-            --text: #2c3e50;
-            --text-light: #7f8c8d;
-            --border: #e0e4e8;
-            --success: #27ae60;
+            --gold-light: #f0c040;
+            --gold-dark: #b8860b;
+            --gold-glow: rgba(212,160,23,0.4);
+            --bg: #0a0a0a;
+            --card: #141414;
+            --card-hover: #1a1a1a;
+            --text: #e8e8e8;
+            --text-light: #888;
+            --text-dim: #555;
+            --border: #2a2a2a;
+            --border-light: #333;
+            --success: #2ecc71;
             --warning: #f39c12;
             --danger: #e74c3c;
-            --info: #2980b9;
+            --info: #3498db;
+            --gold-gradient: linear-gradient(135deg, #b8860b, #d4a017, #f0c040, #d4a017, #b8860b);
+            --dark-gradient: linear-gradient(180deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            background-image: radial-gradient(ellipse at 50% 0%, rgba(212,160,23,0.03) 0%, transparent 60%);
+        }
+
+        /* ========== 滚动条 ========== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gold-dark); }
 
         /* ========== 顶部横幅 ========== */
         .top-banner {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
-            color: #fff; text-align: center; padding: 12px 0;
-            font-size: 13px; letter-spacing: 2px;
-            border-bottom: 3px solid var(--gold);
+            background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%);
+            color: var(--gold); text-align: center; padding: 12px 0;
+            font-size: 13px; letter-spacing: 3px;
+            border-bottom: 2px solid var(--gold-dark);
+            text-shadow: 0 0 10px var(--gold-glow);
         }
-        .top-banner .school-name { font-weight: 300; opacity: 0.9; }
+        .top-banner .school-name { font-weight: 300; opacity: 0.8; color: var(--text-light); }
 
         /* ========== 导航栏 ========== */
         .navbar {
-            background: #fff; height: 64px;
+            background: linear-gradient(180deg, #111 0%, #0d0d0d 100%);
+            height: 64px;
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 40px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-bottom: 1px solid var(--border);
             position: sticky; top: 0; z-index: 100;
+            backdrop-filter: blur(10px);
         }
         .nav-left { display: flex; align-items: center; gap: 30px; }
         .nav-logo { display: flex; align-items: center; gap: 10px; }
         .nav-logo .logo-icon {
-            width: 40px; height: 40px; background: var(--primary);
+            width: 40px; height: 40px;
+            background: var(--gold-gradient);
             border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            font-size: 20px; color: #fff;
+            font-size: 20px; color: #000; font-weight: 900;
+            box-shadow: 0 0 15px var(--gold-glow);
         }
-        .nav-logo .logo-text { font-size: 17px; font-weight: 700; color: var(--primary); letter-spacing: 1px; }
+        .nav-logo .logo-text {
+            font-size: 17px; font-weight: 700;
+            background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
         .nav-links { display: flex; gap: 4px; }
         .nav-links span {
             color: var(--text-light); cursor: pointer;
             padding: 8px 20px; border-radius: 6px;
-            font-size: 14px; font-weight: 500; transition: 0.2s;
+            font-size: 14px; font-weight: 500; transition: all 0.3s;
         }
-        .nav-links span:hover { color: var(--primary); background: #eef2f7; }
-        .nav-links span.active { color: var(--primary); background: #e8eef6; font-weight: 600; }
+        .nav-links span:hover { color: var(--gold); background: rgba(212,160,23,0.08); }
+        .nav-links span.active {
+            color: var(--gold); background: rgba(212,160,23,0.12);
+            font-weight: 600; box-shadow: inset 0 -2px 0 var(--gold);
+        }
         .nav-right { display: flex; align-items: center; gap: 12px; }
 
         /* ========== 容器 ========== */
         .container { max-width: 1120px; margin: 24px auto; padding: 0 20px; }
-        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page { display: none; animation: fadeIn 0.4s ease; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
         /* ========== 卡片 ========== */
         .card {
-            background: var(--card); border-radius: 10px;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+            background: var(--card); border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
             border: 1px solid var(--border);
             padding: 24px; margin-bottom: 18px;
+            transition: all 0.3s;
         }
+        .card:hover { border-color: var(--border-light); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .card-title {
-            font-size: 16px; font-weight: 700; color: var(--primary);
+            font-size: 16px; font-weight: 700;
+            background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             margin-bottom: 16px; padding-bottom: 12px;
-            border-bottom: 2px solid var(--bg);
+            border-bottom: 1px solid var(--border);
             display: flex; align-items: center; gap: 8px;
         }
 
@@ -86,32 +114,49 @@
         .btn {
             padding: 9px 22px; border-radius: 6px; border: none;
             cursor: pointer; font-weight: 600; font-size: 13px;
-            transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;
-            font-family: inherit;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+            font-family: inherit; position: relative; overflow: hidden;
         }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover:not(:disabled) { background: var(--primary-light); }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-primary {
+            background: var(--gold-gradient); color: #000;
+            box-shadow: 0 2px 10px rgba(212,160,23,0.2);
+        }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(212,160,23,0.4); transform: translateY(-1px); }
         .btn-success { background: var(--success); color: #fff; }
-        .btn-success:hover:not(:disabled) { background: #1e8e4e; }
+        .btn-success:hover:not(:disabled) { box-shadow: 0 4px 15px rgba(46,204,113,0.3); }
         .btn-warning { background: var(--warning); color: #fff; }
-        .btn-warning:hover:not(:disabled) { background: #d68910; }
+        .btn-warning:hover:not(:disabled) { box-shadow: 0 4px 15px rgba(243,156,18,0.3); }
         .btn-danger { background: var(--danger); color: #fff; }
-        .btn-danger:hover:not(:disabled) { background: #c0392b; }
-        .btn-outline { border: 1.5px solid var(--primary); color: var(--primary); background: transparent; }
-        .btn-outline:hover { background: #eef2f7; }
+        .btn-danger:hover:not(:disabled) { box-shadow: 0 4px 15px rgba(231,76,60,0.3); }
+        .btn-outline { border: 1.5px solid var(--gold-dark); color: var(--gold); background: transparent; }
+        .btn-outline:hover { background: rgba(212,160,23,0.1); }
         .btn-sm { padding: 6px 14px; font-size: 12px; }
         .btn-lg { padding: 12px 30px; font-size: 15px; }
-        .btn-gold { background: var(--gold); color: #fff; }
+        .btn-gold { background: var(--gold-gradient); color: #000; font-weight: 700; }
+        .btn-gold:hover { box-shadow: 0 0 25px var(--gold-glow); }
+        .btn-ai {
+            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+            box-shadow: 0 2px 10px rgba(102,126,234,0.3);
+        }
+        .btn-ai:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(102,126,234,0.5); }
+        .btn-click { animation: btnClick 0.15s ease; }
+        @keyframes btnClick { 0%{transform:scale(1)} 50%{transform:scale(0.93)} 100%{transform:scale(1)} }
 
         /* ========== 表单 ========== */
-        label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: var(--text-light); margin-bottom: 5px; }
         input, select, textarea {
             width: 100%; padding: 10px 14px; margin-bottom: 14px;
             border: 1.5px solid var(--border); border-radius: 6px;
-            font-size: 14px; transition: 0.2s; font-family: inherit;
+            font-size: 14px; transition: all 0.3s; font-family: inherit;
+            background: #1a1a1a; color: var(--text);
         }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,58,107,0.08); }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212,160,23,0.15);
+        }
+        input::placeholder, textarea::placeholder { color: var(--text-dim); }
         textarea { resize: vertical; min-height: 70px; }
 
         /* ========== 状态标签 ========== */
@@ -119,85 +164,166 @@
             display: inline-block; padding: 3px 10px; border-radius: 4px;
             font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
         }
-        .badge-pending { background: #fff3cd; color: #856404; }
-        .badge-published { background: #d4edda; color: #155724; }
-        .badge-approved { background: #cce5ff; color: #004085; }
-        .badge-taken { background: #e2e3e5; color: #383d41; }
-        .badge-rejected { background: #f8d7da; color: #721c24; }
-        .badge-confirmed { background: #d4edda; color: #155724; }
-        .badge-paid { background: #d4edda; color: #155724; }
+        .badge-pending { background: rgba(243,156,18,0.15); color: #f39c12; }
+        .badge-published { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .badge-approved { background: rgba(52,152,219,0.15); color: #3498db; }
+        .badge-taken { background: rgba(155,89,182,0.15); color: #9b59b6; }
+        .badge-rejected { background: rgba(231,76,60,0.15); color: #e74c3c; }
+        .badge-confirmed { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .badge-paid { background: rgba(212,160,23,0.15); color: var(--gold); }
 
         /* ========== 统计卡片 ========== */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
-        .stat-card { text-align: center; padding: 22px 16px; }
+        .stat-card {
+            text-align: center; padding: 22px 16px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; transition: all 0.3s;
+        }
+        .stat-card:hover { border-color: var(--gold-dark); box-shadow: 0 0 20px rgba(212,160,23,0.1); }
         .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 6px; }
         .stat-value { font-size: 26px; font-weight: 700; }
         .stat-value.green { color: var(--success); }
-        .stat-value.blue { color: var(--primary); }
+        .stat-value.blue { color: var(--gold); }
         .stat-value.orange { color: var(--warning); }
         .stat-value.red { color: var(--danger); }
 
         /* ========== 岗位卡片 ========== */
         .job-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
-        .job-card { border-top: 3px solid var(--primary); transition: 0.2s; }
-        .job-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        .job-card {
+            border-top: 3px solid var(--gold-dark); transition: all 0.3s;
+            cursor: pointer; background: var(--card);
+        }
+        .job-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(212,160,23,0.15);
+            border-top-color: var(--gold);
+        }
         .job-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
         .job-meta { display: flex; gap: 16px; margin: 8px 0; font-size: 13px; color: var(--text-light); }
         .job-salary { font-size: 22px; font-weight: 700; color: var(--gold); margin: 8px 0; }
-        .job-employer { font-size: 12px; color: #aaa; font-family: 'Courier New', monospace; word-break: break-all; }
+        .job-employer { font-size: 12px; color: var(--text-dim); font-family: 'Courier New', monospace; word-break: break-all; }
 
         /* ========== 弹窗 ========== */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.45); display: none;
+            background: rgba(0,0,0,0.75); display: none;
             align-items: center; justify-content: center; z-index: 200;
+            backdrop-filter: blur(4px);
         }
         .modal-overlay.show { display: flex; }
         .modal-content {
-            background: #fff; padding: 32px; border-radius: 12px;
+            background: linear-gradient(180deg, #1a1a1a, #111);
+            padding: 32px; border-radius: 16px;
             width: 420px; max-width: 92vw; position: relative;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(212,160,23,0.08);
+            border: 1px solid var(--border);
+            animation: modalIn 0.3s ease;
         }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         .modal-close {
             position: absolute; top: 14px; right: 18px;
-            font-size: 24px; cursor: pointer; color: #aaa; background: none; border: none;
+            font-size: 24px; cursor: pointer; color: var(--text-dim); background: none; border: none;
         }
-        .modal-close:hover { color: #333; }
+        .modal-close:hover { color: var(--gold); }
 
         /* ========== 表格 ========== */
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f8f9fb; padding: 10px 14px; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid var(--border); }
-        td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
-        tr:hover td { background: #fafbfc; }
+        th {
+            background: #1a1a1a; padding: 10px 14px; text-align: left;
+            font-weight: 600; color: var(--gold-dark); border-bottom: 2px solid var(--border);
+            font-size: 12px; letter-spacing: 0.5px;
+        }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+        tr:hover td { background: rgba(212,160,23,0.04); }
 
         /* ========== 个人资料 ========== */
         .profile-header { display: flex; align-items: center; gap: 24px; }
         .avatar-circle {
             width: 88px; height: 88px; border-radius: 50%;
-            border: 3px solid var(--border); object-fit: cover; cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border: 3px solid var(--gold-dark); object-fit: cover; cursor: pointer;
+            box-shadow: 0 0 20px rgba(212,160,23,0.2);
         }
         .avatar-picker { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
         .avatar-picker img {
             width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
             border: 2px solid transparent; transition: 0.2s;
         }
-        .avatar-picker img:hover, .avatar-picker img.selected { border-color: var(--primary); transform: scale(1.08); }
+        .avatar-picker img:hover, .avatar-picker img.selected { border-color: var(--gold); transform: scale(1.08); }
         .wallet-addr { font-family: 'Courier New', monospace; font-size: 12px; color: var(--text-light); word-break: break-all; }
-        .tx-link { color: var(--info); text-decoration: none; font-family: monospace; font-size: 12px; }
+        .tx-link { color: var(--gold); text-decoration: none; font-family: monospace; font-size: 12px; }
         .tx-link:hover { text-decoration: underline; }
-        .empty-state { text-align: center; padding: 40px 20px; color: #bbb; }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
         .empty-state .icon { font-size: 48px; margin-bottom: 8px; }
-        .loading { text-align: center; padding: 30px; color: #bbb; }
-        .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #eee; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; }
+        .loading { text-align: center; padding: 30px; color: var(--text-dim); }
+        .spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 3px solid var(--border); border-top-color: var(--gold);
+            border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ========== 页脚 ========== */
         .footer {
-            text-align: center; padding: 20px; color: #bbb; font-size: 12px;
+            text-align: center; padding: 20px; color: var(--text-dim); font-size: 12px;
             border-top: 1px solid var(--border); margin-top: 40px;
         }
+
+        /* ========== 岗位详情页 ========== */
+        .detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+        .detail-back { cursor: pointer; color: var(--gold); font-size: 14px; display: flex; align-items: center; gap: 4px; }
+        .detail-back:hover { text-decoration: underline; }
+        .detail-title { font-size: 24px; font-weight: 700; color: var(--text); }
+        .detail-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0; }
+        .detail-info-item { background: #1a1a1a; padding: 14px; border-radius: 8px; border: 1px solid var(--border); }
+        .detail-info-label { font-size: 12px; color: var(--text-light); margin-bottom: 4px; }
+        .detail-info-value { font-size: 18px; font-weight: 700; color: var(--gold); }
+        .detail-desc { line-height: 1.8; color: var(--text); padding: 16px; background: #1a1a1a; border-radius: 8px; border: 1px solid var(--border); margin: 16px 0; }
+        .image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+        .image-gallery img {
+            width: 100%; height: 160px; object-fit: cover; border-radius: 8px;
+            border: 1px solid var(--border); cursor: pointer; transition: all 0.3s;
+        }
+        .image-gallery img:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(212,160,23,0.2); }
+        .image-upload-zone {
+            border: 2px dashed var(--border); border-radius: 12px;
+            padding: 30px; text-align: center; cursor: pointer;
+            transition: all 0.3s; color: var(--text-dim);
+        }
+        .image-upload-zone:hover { border-color: var(--gold-dark); color: var(--gold); background: rgba(212,160,23,0.03); }
+
+        /* ========== AI 生成按钮 ========== */
+        .ai-gen-btn {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff; border: none; border-radius: 6px; padding: 6px 14px;
+            font-size: 12px; cursor: pointer; font-weight: 600;
+        }
+        .ai-gen-btn:hover { box-shadow: 0 2px 15px rgba(102,126,234,0.4); }
+        .ai-loading { display: inline-block; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+        /* ========== 图片灯箱 ========== */
+        .lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none;
+            align-items: center; justify-content: center; z-index: 300;
+            cursor: pointer;
+        }
+        .lightbox.show { display: flex; }
+        .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+
+        /* ========== 通知 ========== */
+        .toast {
+            position: fixed; top: 80px; right: 20px; z-index: 500;
+            background: #1a1a1a; border: 1px solid var(--border); border-left: 4px solid var(--gold);
+            padding: 14px 20px; border-radius: 8px; color: var(--text);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            animation: slideIn 0.3s ease; max-width: 360px;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.success { border-left-color: var(--success); }
 
         @media (max-width: 768px) {
             .navbar { padding: 0 16px; }
@@ -207,6 +333,7 @@
             .job-grid { grid-template-columns: 1fr; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .charts-grid { grid-template-columns: 1fr !important; }
+            .image-gallery { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -252,7 +379,10 @@
                 <div><label>总预算 (ETH)</label><input type="number" id="jobBudget" placeholder="0.5" step="0.01"></div>
             </div>
             <label>岗位描述</label>
-            <textarea id="jobDesc" placeholder="工作内容、任职要求等"></textarea>
+            <div style="position:relative;">
+                <textarea id="jobDesc" placeholder="工作内容、任职要求等" style="padding-right:120px;"></textarea>
+                <button class="btn btn-ai btn-sm" onclick="aiGenerateDesc()" id="aiGenBtn" style="position:absolute;right:8px;bottom:22px;">🤖 AI 生成</button>
+            </div>
             <button class="btn btn-gold btn-lg" onclick="publishJob()" style="margin-top:4px;">🚀 链上发布并锁仓</button>
         </div>
         <div class="card-title" style="margin-bottom:16px;">🔥 最新岗位</div>
@@ -316,7 +446,7 @@
             <div class="card-title">🤖 自动结算调度状态</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px;">
                 <div>上次结算: <b id="asLastSettle">-</b></div>
-                <div>下次结算: <b id="asNextSettle" style="color:var(--primary);">-</b></div>
+                <div>下次结算: <b id="asNextSettle" style="color:var(--gold);">-</b></div>
                 <div>自动结算: <span id="asEnabled" class="badge badge-published">-</span></div>
                 <div>工时确认宽限期: <b id="asGrace">-</b> 小时</div>
             </div>
@@ -406,6 +536,31 @@
                 <div>教师数: <span id="sysTeachers">-</span></div>
                 <div>学生数: <span id="sysStudents">-</span></div>
             </div>
+        </div>
+        <!-- AI 配置 -->
+        <div class="card" style="border-left:4px solid #764ba2;">
+            <div class="card-title">🤖 AI 岗位简介生成配置</div>
+            <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">配置 AI 服务后，教师发布岗位时可使用 AI 自动生成岗位简介（约50字）</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div>
+                    <label>API Key（密钥仅存数据库，不会写入代码）</label>
+                    <input type="password" id="aiApiKey" placeholder="输入 API Key">
+                    <div style="font-size:12px;color:var(--text-dim);margin-top:-10px;margin-bottom:10px;">当前状态: <span id="aiKeyStatus">未配置</span></div>
+                </div>
+                <div>
+                    <label>API 地址</label>
+                    <input type="text" id="aiApiUrl" placeholder="https://goldenglow.webn.cc/v1/chat/completions">
+                </div>
+                <div>
+                    <label>模型名称</label>
+                    <input type="text" id="aiModel" placeholder="gemini-2.5-flash">
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:4px;">
+                <button class="btn btn-primary" onclick="saveAIConfig()">💾 保存配置</button>
+                <button class="btn btn-ai" onclick="testAI()">🧪 测试连接</button>
+            </div>
+            <div id="aiTestResult" style="margin-top:10px;font-size:13px;"></div>
         </div>
         <!-- 岗位管理 -->
         <div class="card">
@@ -544,13 +699,57 @@
 <!-- 页脚 -->
 <div class="footer">© 江西软件职业技术大学 勤工助学管理系统 · 基于区块链智能合约</div>
 
+<!-- 岗位详情页 -->
+<div id="jobDetailPage" class="page" style="max-width:1120px;margin:24px auto;padding:0 20px;">
+    <div class="detail-header">
+        <span class="detail-back" onclick="switchPage('hall')">← 返回任务大厅</span>
+    </div>
+    <div class="card">
+        <h2 class="detail-title" id="detailTitle">-</h2>
+        <div class="detail-info">
+            <div class="detail-info-item"><div class="detail-info-label">🏢 部门</div><div class="detail-info-value" id="detailDept">-</div></div>
+            <div class="detail-info-item"><div class="detail-info-label">💰 时薪</div><div class="detail-info-value" id="detailRate">-</div></div>
+            <div class="detail-info-item"><div class="detail-info-label">📦 总预算</div><div class="detail-info-value" id="detailBudget">-</div></div>
+            <div class="detail-info-item"><div class="detail-info-label">👥 申请人数</div><div class="detail-info-value" id="detailApplicants">-</div></div>
+        </div>
+        <div class="detail-desc" id="detailDesc">暂无描述</div>
+        <div style="display:flex;gap:10px;align-items:center;margin:16px 0;">
+            <img id="detailTeacherAvatar" src="" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--gold-dark);">
+            <div>
+                <div style="font-weight:600;" id="detailTeacherName">-</div>
+                <div style="font-size:12px;color:var(--text-light);">发布教师</div>
+            </div>
+        </div>
+        <div style="margin:16px 0;">
+            <div style="font-weight:600;margin-bottom:8px;">📷 岗位图片</div>
+            <div class="image-gallery" id="detailImages"><div class="empty-state" style="padding:20px;">暂无图片</div></div>
+            <div id="imageUploadSection" style="display:none;margin-top:12px;">
+                <div class="image-upload-zone" onclick="document.getElementById('jobImageInput').click()">
+                    <div style="font-size:32px;margin-bottom:8px;">📁</div>
+                    <div>点击上传岗位图片</div>
+                    <div style="font-size:12px;margin-top:4px;">支持 jpg/png/gif/webp</div>
+                </div>
+                <input type="file" id="jobImageInput" accept="image/*" style="display:none" onchange="uploadJobImage(event)">
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn btn-primary btn-lg" id="detailApplyBtn" onclick="applyFromDetail()">📝 申请岗位</button>
+        </div>
+    </div>
+</div>
+
+<!-- 图片灯箱 -->
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('show')">
+    <img id="lightboxImg" src="">
+</div>
+
 <!-- 登录弹窗 -->
 <div class="modal-overlay" id="authModal">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal('authModal')">×</button>
         <div style="text-align:center; margin-bottom:20px;">
             <div style="font-size:32px; margin-bottom:6px;">🎓</div>
-            <h3 id="mTitle" style="color:var(--primary); font-size:18px;">用户登录</h3>
+            <h3 id="mTitle" style="color:var(--gold); font-size:18px;">用户登录</h3>
         </div>
         <button class="btn btn-success btn-lg" style="width:100%; margin-bottom:16px;" onclick="connectWallet()">🦊 MetaMask 快捷登录</button>
         <div style="text-align:center; color:#ccc; margin-bottom:16px; font-size:13px;">── 或使用账号密码 ──</div>
@@ -563,7 +762,7 @@
             <select id="r"><option value="STUDENT">学生</option><option value="TEACHER">教师</option></select>
         </div>
         <button class="btn btn-primary btn-lg" style="width:100%;" onclick="handleAuth()">进入系统</button>
-        <p id="toggleLink" style="color:var(--primary); cursor:pointer; font-size:13px; margin-top:14px; text-align:center;" onclick="switchAuth()">没有账号？点击注册</p>
+        <p id="toggleLink" style="color:var(--gold); cursor:pointer; font-size:13px; margin-top:14px; text-align:center;" onclick="switchAuth()">没有账号？点击注册</p>
     </div>
 </div>
 
@@ -571,7 +770,7 @@
 <div class="modal-overlay" id="clockModal">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal('clockModal')">×</button>
-        <h3 style="text-align:center; margin-bottom:20px; color:var(--primary);">⏰ 工时打卡</h3>
+        <h3 style="text-align:center; margin-bottom:20px; color:var(--gold);">⏰ 工时打卡</h3>
         <div id="clockStatus" style="text-align:center; margin-bottom:20px;">
             <div style="font-size:52px;" id="clockIcon">🕐</div>
             <p id="clockText" style="font-size:15px; color:#555; margin-top:8px;">准备打卡</p>
@@ -580,7 +779,7 @@
             <button class="btn btn-success btn-lg" style="width:100%;" onclick="doClockIn()">🟢 上班打卡</button>
         </div>
         <div id="clockOutPanel" style="display:none;">
-            <div id="elapsedTimer" style="font-size:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;color:var(--primary);letter-spacing:2px;">00:00:00</div>
+            <div id="elapsedTimer" style="font-size:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;color:var(--gold);letter-spacing:2px;">00:00:00</div>
             <p style="text-align:center;color:#999;font-size:13px;margin:8px 0 16px;">⏱ 工时由系统自动计时，下班时按链上时间自动结算（单次上限 8 小时）</p>
             <button class="btn btn-warning btn-lg" style="width:100%;" onclick="doClockOut()">🔴 下班打卡</button>
         </div>
@@ -629,8 +828,8 @@ function stopClockTimer() {
 }
 
 const API = "http://127.0.0.1:8000/api";
-const CONTRACT_ADDR = "0x5b163b797d7b7fcd61392b9a8bfdc5d901fe1156";
-const SBT_CONTRACT_ADDR = "0x7d378ce8fb044cc00429e445c363a308b23cb48e"; // 部署后自动更新
+const CONTRACT_ADDR = "0x1b8ff922dd757c441425c10a7ecf049cc6678526";
+const SBT_CONTRACT_ADDR = "0x11c799d2b1c92a1de5d8c9ce7cd916d44982a522"; // 部署后自动更新
 const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=1";
 
 const CONTRACT_ABI = [
@@ -742,7 +941,7 @@ async function checkAndSwitchNetwork() {
         const gethChainId = parseInt(testData.result, 16);
         if (gethChainId !== 887766) throw new Error("geth节点chainId不匹配，当前: " + gethChainId);
     } catch (e) {
-        throw new Error("⚠️ geth节点未启动！请先运行 start.bat 启动系统");
+        throw new Error("⚠️ 区块链节点未启动！请先运行 start.bat 启动系统");
     }
     // 检查合约是否真的部署在链上（防止向空地址转账：部署失败或节点重启后旧地址会变成死地址）
     try {
@@ -753,7 +952,7 @@ async function checkAndSwitchNetwork() {
         });
         const codeData = await codeRes.json();
         if (!codeData.result || codeData.result === '0x' || codeData.result === '0x0') {
-            throw new Error("⚠️ 合约未部署！地址 " + CONTRACT_ADDR + " 上没有合约代码。\n\n请运行 start.bat 重新部署合约（切勿直接发交易，ETH会丢失）");
+            throw new Error("⚠️ 合约未部署！请运行 start.bat 重新部署合约（切勿直接发交易，ETH会丢失）");
         }
     } catch (e) {
         if (e.message && e.message.indexOf('合约未部署') >= 0) throw e;
@@ -780,7 +979,7 @@ async function checkAndSwitchNetwork() {
                     }]
                 });
             } else {
-                throw new Error("请在MetaMask中手动添加网络: chainId=887766, RPC=http://127.0.0.1:8545");
+                throw new Error("请在MetaMask中手动添加网络: chainId=887766");
             }
         }
     }
@@ -893,6 +1092,41 @@ function closeModal(id) {
 }
 function toggleEdit() { const p = document.getElementById('editPanel'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; }
 
+// ======================== 通知与震动 ========================
+function showToast(msg, type = 'info') {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : '');
+    // 清理消息中的 localhost URL
+    msg = String(msg).replace(/https?:\/\/127\.0\.0\.1:\d+/g, '').replace(/https?:\/\/localhost:\d+/g, '');
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+// 全局覆盖 alert 为 toast 通知
+const _origAlert = window.alert;
+window.alert = function(msg) {
+    const s = String(msg);
+    if (s.includes('✅') || s.includes('成功') || s.includes('已')) showToast(s, 'success');
+    else if (s.includes('❌') || s.includes('失败') || s.includes('错误') || s.includes('⚠️') || s.includes('无法')) showToast(s, 'error');
+    else if (s.includes('🦊')) showToast(s, 'info');
+    else showToast(s, 'info');
+};
+function vibrate(el) {
+    if (navigator.vibrate) navigator.vibrate([15]);
+    if (el) { el.classList.add('btn-click'); setTimeout(() => el.classList.remove('btn-click'), 200); }
+}
+// 全局按钮震动
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn');
+    if (btn) vibrate(btn);
+});
+function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('show');
+}
+
 // ======================== 任务大厅 ========================
 async function fetchHallJobs() {
     const grid = document.getElementById('jobGrid');
@@ -902,14 +1136,14 @@ async function fetchHallJobs() {
         const data = await res.json();
         if (!Array.isArray(data) || !data.length) { grid.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>暂无岗位发布</p></div>'; return; }
         grid.innerHTML = data.map(j => `
-            <div class="card job-card">
+            <div class="card job-card" onclick="openJobDetail(${j.id})">
                 <div class="job-title">${escHtml(j.title)}</div>
                 <div><span class="badge badge-${j.status.toLowerCase()}">${statusText(j.status)}</span></div>
                 <div class="job-meta"><span>🏢 ${escHtml(j.department||'未设置')}</span><span>👥 ${j.applicant_count}人申请</span></div>
                 <div class="job-salary">💰 ${j.salary} ETH</div>
-                <div class="job-employer">发布者: ${j.employer}</div>
-                ${j.description ? `<p style="font-size:13px;color:#777;margin:10px 0 0;">${escHtml(j.description)}</p>` : ''}
-                <div style="display:flex;gap:8px;margin-top:14px;">
+                <div class="job-employer">发布者: ${j.employer.slice(0,10)}...</div>
+                ${j.description ? `<p style="font-size:13px;color:var(--text-light);margin:10px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escHtml(j.description)}</p>` : ''}
+                <div style="display:flex;gap:8px;margin-top:14px;" onclick="event.stopPropagation()">
                     <button class="btn btn-primary" style="flex:1;" onclick="applyForJob(${j.id},${j.chain_job_id||0})" ${!currentUser||currentUser.role!=='STUDENT'?'disabled':''}>
                         ${!currentUser?'请先登录':currentUser.role!=='STUDENT'?'仅学生可申请':'📝 申请岗位'}
                     </button>
@@ -1176,7 +1410,7 @@ async function loadTeacherContracts() {
                             <div style="font-weight:700;">⏰ ${escHtml(c.job_title)}</div>
                             <div style="font-size:13px;color:#666;">学生: ${escHtml(c.student_nickname)} (${c.student_address.slice(0,8)}...)</div>
                             <div style="font-size:12px;color:#999;">上班: ${c.clock_in_time} → 下班: ${c.clock_out_time}</div>
-                            <div style="font-size:14px;font-weight:600;color:var(--primary);margin-top:4px;">本次工时: ${c.work_minutes} 分钟</div>
+                            <div style="font-size:14px;font-weight:600;color:var(--gold);margin-top:4px;">本次工时: ${c.work_minutes} 分钟</div>
                         </div>
                         <div style="display:flex;gap:8px;">
                             <button class="btn btn-success btn-sm" onclick="confirmHours(${c.clock_in_id},${c.chain_clock_in_id||0})">✅ 确认工时</button>
@@ -1917,7 +2151,7 @@ async function runDiagnosis() {
         });
         const data = await res.json();
         if (data.result && data.result !== '0x') {
-            report += '✅ 合约存在: ' + CONTRACT_ADDR + '\n';
+            report += '✅ 智能合约已部署\n';
         } else {
             report += '❌ 合约不存在！地址无效或合约未部署\n';
         }
@@ -1972,7 +2206,7 @@ async function runDiagnosis() {
 
 async function issueBadge(studentAddr, jobTitle, department, totalMinutes) {
     if (!SBT_CONTRACT_ADDR || SBT_CONTRACT_ADDR === "0x0000000000000000000000000000000000000000") {
-        alert('SBT合约尚未部署，请先运行 npx hardhat run scripts/deploy.js --network localhost');
+        showToast('SBT合约尚未部署，请先运行 start.bat 重新部署', 'error');
         return;
     }
     try {
@@ -2114,7 +2348,7 @@ async function loadProfilePage() {
                         <div style="text-align:center;">
                             <div style="font-size:36px;">🏅</div>
                             <div style="font-size:11px;color:#999;">Token #${b.token_id}</div>
-                            <a href="/verify?token_id=${b.token_id}" style="font-size:12px;color:var(--primary);" target="_blank">🔗 验真</a>
+                            <a href="/verify?token_id=${b.token_id}" style="font-size:12px;color:var(--gold);" target="_blank">🔗 验真</a>
                         </div>
                     </div>
                 </div>
@@ -2140,7 +2374,7 @@ async function loadProfilePage() {
                             <div style="font-weight:600;">申诉 #${d.id} — ${escHtml(d.job_title)}</div>
                             <div style="font-size:12px;color:#999;margin:4px 0;">打卡时间: ${d.clock_in_time} · 工时: ${d.work_minutes}分钟</div>
                             <div style="font-size:13px;margin-top:4px;">理由: ${escHtml(d.reason)}</div>
-                            ${d.admin_decision ? '<div style="font-size:12px;color:var(--primary);margin-top:4px;">裁决说明: ' + escHtml(d.admin_decision) + '</div>' : ''}
+                            ${d.admin_decision ? '<div style="font-size:12px;color:var(--gold);margin-top:4px;">裁决说明: ' + escHtml(d.admin_decision) + '</div>' : ''}
                         </div>
                         <span style="background:${statusColor[d.status]};color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;white-space:nowrap;">${statusMap[d.status]}</span>
                     </div>
@@ -2276,7 +2510,7 @@ async function loadAdminDisputes() {
                                 <strong>申诉理由：</strong>${escHtml(d.reason)}
                                 ${d.evidence_hash ? '<br><strong>佐证哈希：</strong>' + escHtml(d.evidence_hash) : ''}
                             </div>
-                            ${d.admin_decision ? '<div style="margin-top:6px;font-size:13px;color:var(--primary);"><strong>裁决：</strong>' + escHtml(d.admin_decision) + '</div>' : ''}
+                            ${d.admin_decision ? '<div style="margin-top:6px;font-size:13px;color:var(--gold);"><strong>裁决：</strong>' + escHtml(d.admin_decision) + '</div>' : ''}
                         </div>
                         ${canResolve ? `
                         <div style="display:flex;flex-direction:column;gap:6px;margin-left:12px;">
@@ -2392,13 +2626,190 @@ async function loadAdminRiskAlerts() {
 // 通过监听 admin page 展示来加载额外数据
 const _origSwitchPage = switchPage;
 switchPage = function(p) {
+    // 隐藏岗位详情页（如果不是详情页）
+    const detailPage = document.getElementById('jobDetailPage');
+    if (detailPage) detailPage.style.display = p === 'jobDetail' ? 'block' : 'none';
+    if (p === 'jobDetail') {
+        document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
+        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+        localStorage.setItem('currentPage', 'jobDetail');
+        return;
+    }
     _origSwitchPage(p);
     if (p === 'admin') {
         loadAdminVerifyProfiles();
         loadAdminRiskAlerts();
         loadAdminDisputes();
+        loadAIConfig();
     }
 };
+
+// ======================== 岗位详情页 ========================
+let currentDetailJobId = null;
+
+async function openJobDetail(jobId) {
+    currentDetailJobId = jobId;
+    switchPage('jobDetail');
+    try {
+        const res = await fetch(`${API}/job_detail/${jobId}`);
+        const d = await res.json();
+        if (!d.success) { showToast(d.msg || '加载失败', 'error'); return; }
+        const j = d.data;
+        document.getElementById('detailTitle').innerText = j.title;
+        document.getElementById('detailDept').innerText = j.department || '未设置';
+        document.getElementById('detailRate').innerText = j.hourly_rate + ' ETH';
+        document.getElementById('detailBudget').innerText = j.salary + ' ETH';
+        document.getElementById('detailApplicants').innerText = j.applicant_count + '人';
+        document.getElementById('detailDesc').innerText = j.description || '暂无详细描述';
+        document.getElementById('detailTeacherName').innerText = j.teacher_nickname || '未知教师';
+        document.getElementById('detailTeacherAvatar').src = j.teacher_avatar || DEFAULT_AVATAR;
+
+        // 图片
+        const imgDiv = document.getElementById('detailImages');
+        if (j.images && j.images.length > 0) {
+            imgDiv.innerHTML = j.images.map(url => `<img src="${url}" onclick="openLightbox('${url}')" loading="lazy">`).join('');
+        } else {
+            imgDiv.innerHTML = '<div class="empty-state" style="padding:20px;">暂无图片</div>';
+        }
+
+        // 教师可上传图片
+        const uploadSection = document.getElementById('imageUploadSection');
+        uploadSection.style.display = (currentUser && (currentUser.role === 'TEACHER' || currentUser.role === 'ADMIN') && currentUser.wallet_address === j.employer) ? 'block' : 'none';
+
+        // 申请按钮
+        const applyBtn = document.getElementById('detailApplyBtn');
+        if (!currentUser || currentUser.role !== 'STUDENT') {
+            applyBtn.style.display = 'none';
+        } else {
+            applyBtn.style.display = 'inline-flex';
+            applyBtn.onclick = () => applyForJob(j.id, j.chain_job_id || 0);
+        }
+    } catch (e) {
+        showToast('加载岗位详情失败: ' + e.message, 'error');
+    }
+}
+
+function applyFromDetail() {
+    if (!currentDetailJobId) return;
+    // 重新加载详情获取 chain_job_id
+    fetch(`${API}/job_detail/${currentDetailJobId}`)
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) applyForJob(d.data.id, d.data.chain_job_id || 0);
+        });
+}
+
+// ======================== 岗位图片上传 ========================
+async function uploadJobImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!currentDetailJobId) return showToast('请先进入岗位详情页', 'error');
+
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+        showToast('正在上传图片...', 'info');
+        const res = await fetch(`${API}/upload_job_image`, { method: 'POST', body: fd });
+        const d = await res.json();
+        if (d.success) {
+            // 保存图片记录
+            await fetch(`${API}/save_job_images`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ job_id: currentDetailJobId, image_urls: [d.url] })
+            });
+            showToast('图片上传成功！', 'success');
+            // 刷新详情页
+            openJobDetail(currentDetailJobId);
+        } else {
+            showToast(d.msg || '上传失败', 'error');
+        }
+    } catch (e) {
+        showToast('上传失败: ' + e.message, 'error');
+    }
+    event.target.value = '';
+}
+
+// ======================== AI 岗位简介生成 ========================
+async function aiGenerateDesc() {
+    const title = document.getElementById('jobTitle').value.trim();
+    const dept = document.getElementById('jobDept').value.trim();
+    const rate = document.getElementById('jobHourlyRate').value;
+    if (!title) return showToast('请先填写岗位名称', 'error');
+
+    const btn = document.getElementById('aiGenBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ai-loading">⏳</span> 生成中...';
+    try {
+        const res = await fetch(`${API}/ai_generate_desc`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ job_title: title, department: dept, hourly_rate: rate })
+        });
+        const d = await res.json();
+        if (d.success) {
+            document.getElementById('jobDesc').value = d.description;
+            showToast('AI 已生成岗位简介', 'success');
+        } else {
+            showToast(d.msg || 'AI 生成失败', 'error');
+        }
+    } catch (e) {
+        showToast('AI 调用失败: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🤖 AI 生成';
+    }
+}
+
+// ======================== AI 配置管理（管理员） ========================
+async function loadAIConfig() {
+    try {
+        const res = await fetch(`${API}/ai_config`);
+        const d = await res.json();
+        document.getElementById('aiKeyStatus').innerText = d.configured ? '已配置 (' + d.ai_api_key_masked + ')' : '未配置';
+        document.getElementById('aiApiUrl').value = d.ai_api_url || '';
+        document.getElementById('aiModel').value = d.ai_model || '';
+    } catch (e) {}
+}
+
+async function saveAIConfig() {
+    const key = document.getElementById('aiApiKey').value.trim();
+    const url = document.getElementById('aiApiUrl').value.trim();
+    const model = document.getElementById('aiModel').value.trim();
+    try {
+        const body = {};
+        if (key) body.ai_api_key = key;
+        if (url) body.ai_api_url = url;
+        if (model) body.ai_model = model;
+        const res = await fetch(`${API}/ai_config`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(body)
+        });
+        const d = await res.json();
+        showToast(d.msg || '保存成功', 'success');
+        document.getElementById('aiApiKey').value = '';
+        loadAIConfig();
+    } catch (e) {
+        showToast('保存失败: ' + e.message, 'error');
+    }
+}
+
+async function testAI() {
+    const resultDiv = document.getElementById('aiTestResult');
+    resultDiv.innerHTML = '<span style="color:var(--gold);">⏳ 正在测试 AI 连接...</span>';
+    try {
+        const res = await fetch(`${API}/ai_generate_desc`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ job_title: '图书馆管理员', department: '图书馆', hourly_rate: '0.01' })
+        });
+        const d = await res.json();
+        if (d.success) {
+            resultDiv.innerHTML = '<span style="color:var(--success);">✅ 连接成功！生成结果: ' + escHtml(d.description) + '</span>';
+        } else {
+            resultDiv.innerHTML = '<span style="color:var(--danger);">❌ ' + escHtml(d.msg) + '</span>';
+        }
+    } catch (e) {
+        resultDiv.innerHTML = '<span style="color:var(--danger);">❌ 连接失败: ' + e.message + '</span>';
+    }
+}
 </script>
 </body>
 </html>

@@ -3,6 +3,7 @@ import shutil
 import time
 import threading
 import json
+import httpx
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -242,6 +243,18 @@ def init_database():
                 admin_address VARCHAR(42),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 resolved_at TIMESTAMP NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+
+        # 岗位图片表
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS job_images (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                job_id INT NOT NULL,
+                image_url VARCHAR(500) NOT NULL,
+                uploaded_by VARCHAR(42),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """))
 
@@ -1941,6 +1954,178 @@ def verify_badge(token_id: int):
     except Exception as e:
         print(f"[VERIFY ERROR] {e}")
     return {"valid": False, "msg": "勋章不存在或验证失败"}
+
+# ======================== AI 岗位简介生成 ========================
+
+class AIGenerateRequest(BaseModel):
+    job_title: str
+    department: str = ""
+    hourly_rate: str = ""
+
+@app.post("/api/ai_generate_desc")
+def ai_generate_desc(data: AIGenerateRequest):
+    """调用 AI 生成岗位简介（约50字）"""
+    api_key = get_config("ai_api_key", "")
+    api_url = get_config("ai_api_url", "https://goldenglow.webn.cc/v1/chat/completions")
+    model = get_config("ai_model", "gemini-2.5-flash")
+
+    if not api_key:
+        return {"success": False, "msg": "AI 未配置，请联系管理员在系统设置中填写 API Key"}
+
+    prompt = f"""你是一个大学勤工俭学岗位描述生成器。
+请为以下岗位生成一段简洁的岗位简介，约50字，语言正式、适合校园公告。
+
+岗位名称：{data.job_title}
+所属部门：{data.department or '未指定'}
+时薪：{data.hourly_rate or '面议'} ETH
+
+要求：
+1. 介绍岗位主要工作内容
+2. 说明工作时间安排
+3. 语言简洁专业
+4. 只输出简介内容，不要标题和多余文字"""
+
+    try:
+        with httpx.Client(timeout=30) as client:
+            resp = client.post(
+                api_url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 200,
+                    "temperature": 0.7
+                }
+            )
+            if resp.status_code != 200:
+                return {"success": False, "msg": f"AI 服务返回错误: HTTP {resp.status_code}"}
+            result = resp.json()
+            desc = result["choices"][0]["message"]["content"].strip()
+            # 去掉可能的引号包裹
+            if desc.startswith('"') and desc.endswith('"'):
+                desc = desc[1:-1]
+            return {"success": True, "description": desc}
+    except httpx.TimeoutException:
+        return {"success": False, "msg": "AI 服务响应超时，请稍后重试"}
+    except Exception as e:
+        return {"success": False, "msg": f"AI 调用失败: {str(e)}"}
+
+class AIConfigUpdate(BaseModel):
+    ai_api_key: str = ""
+    ai_api_url: str = ""
+    ai_model: str = ""
+
+@app.get("/api/ai_config")
+def get_ai_config():
+    """获取 AI 配置（密钥脱敏）"""
+    key = get_config("ai_api_key", "")
+    masked_key = key[:8] + "****" + key[-4:] if len(key) > 12 else ("****" if key else "")
+    return {
+        "ai_api_key_masked": masked_key,
+        "ai_api_url": get_config("ai_api_url", "https://goldenglow.webn.cc/v1/chat/completions"),
+        "ai_model": get_config("ai_model", "gemini-2.5-flash"),
+        "configured": bool(key)
+    }
+
+@app.post("/api/ai_config")
+def update_ai_config(data: AIConfigUpdate):
+    """管理员更新 AI 配置"""
+    if data.ai_api_key:
+        set_config("ai_api_key", data.ai_api_key)
+    if data.ai_api_url:
+        set_config("ai_api_url", data.ai_api_url)
+    if data.ai_model:
+        set_config("ai_model", data.ai_model)
+    log_audit("AI_CONFIG_UPDATED", "admin", "ai_config", f"模型: {data.ai_model}")
+    return {"success": True, "msg": "AI 配置已更新"}
+
+# ======================== 岗位图片管理 ========================
+
+JOB_IMAGE_DIR = os.path.join(UPLOAD_DIR, "job_images")
+os.makedirs(JOB_IMAGE_DIR, exist_ok=True)
+
+@app.post("/api/upload_job_image")
+async def upload_job_image(file: UploadFile = File(...)):
+    """上传岗位图片"""
+    ext = file.filename.split(".")[-1].lower()
+    if ext not in ("jpg", "jpeg", "png", "gif", "webp"):
+        return {"success": False, "msg": "仅支持 jpg/png/gif/webp 格式"}
+    filename = f"job_{int(time.time())}_{os.urandom(4).hex()}.{ext}"
+    save_path = os.path.join(JOB_IMAGE_DIR, filename)
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"success": True, "url": f"http://127.0.0.1:8000/uploads/job_images/{filename}"}
+
+class JobImageSave(BaseModel):
+    job_id: int
+    image_urls: list
+
+@app.post("/api/save_job_images")
+def save_job_images(data: JobImageSave):
+    """保存岗位图片记录"""
+    with engine.connect() as conn:
+        for url in data.image_urls:
+            conn.execute(text(
+                "INSERT INTO job_images (job_id, image_url) VALUES (:jid, :url)"
+            ), {"jid": data.job_id, "url": url})
+        conn.commit()
+    return {"success": True}
+
+@app.get("/api/job_images/{job_id}")
+def get_job_images(job_id: int):
+    """获取岗位图片列表"""
+    with engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT id, image_url, created_at FROM job_images WHERE job_id=:jid ORDER BY id"
+        ), {"jid": job_id}).fetchall()
+        return [{"id": r[0], "url": r[1], "created_at": str(r[2])} for r in rows]
+
+@app.get("/api/job_detail/{job_id}")
+def get_job_detail_full(job_id: int):
+    """获取岗位完整详情（含图片和教师信息）"""
+    with engine.connect() as conn:
+        job = conn.execute(text("""
+            SELECT j.id, j.chain_job_id, j.title, COALESCE(j.department,''),
+                   COALESCE(j.hourly_rate_wei,'0'), j.salary_wei, j.employer_address,
+                   j.status, COALESCE(j.description,''), j.created_at
+            FROM jobs j WHERE j.id=:jid
+        """), {"jid": job_id}).fetchone()
+        if not job:
+            return {"success": False, "msg": "岗位不存在"}
+
+        # 教师信息
+        teacher = conn.execute(text(
+            "SELECT nickname, avatar FROM users WHERE wallet_address=:w"
+        ), {"w": job[6]}).fetchone()
+
+        # 图片
+        imgs = conn.execute(text(
+            "SELECT image_url FROM job_images WHERE job_id=:jid ORDER BY id"
+        ), {"jid": job_id}).fetchall()
+
+        # 申请人数
+        app_count = conn.execute(text(
+            "SELECT COUNT(*) FROM employments WHERE job_id=:jid"
+        ), {"jid": job_id}).scalar() or 0
+
+        return {
+            "success": True,
+            "data": {
+                "id": job[0], "chain_job_id": job[1], "title": job[2],
+                "department": job[3],
+                "hourly_rate": str(Web3.from_wei(int(job[4]), 'ether')) if job[4] and job[4] != '0' else '0',
+                "salary": str(Web3.from_wei(int(job[5]), 'ether')),
+                "employer": job[6], "status": job[7], "description": job[8],
+                "created_at": str(job[9]),
+                "teacher_nickname": teacher[0] if teacher else "未知",
+                "teacher_avatar": teacher[1] if teacher else "",
+                "images": [r[0] for r in imgs],
+                "applicant_count": app_count
+            }
+        }
 
 # ======================== 静态文件挂载 (必须放最后) ========================
 
