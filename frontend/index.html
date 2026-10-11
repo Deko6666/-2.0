@@ -243,6 +243,7 @@
             width: 88px; height: 88px; border-radius: 50%;
             border: 3px solid var(--gold-dark); object-fit: cover; cursor: pointer;
             box-shadow: 0 0 20px rgba(212,160,23,0.2);
+            background: #1e1e1e;
         }
         .avatar-picker { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
         .avatar-picker img {
@@ -348,17 +349,16 @@
 <nav class="navbar">
     <div class="nav-left">
         <div class="nav-logo">
-            <div class="logo-icon">🎓</div>
+            <div class="logo-icon"></div>
             <div class="logo-text">江西软件职业技术大学勤工助学系统</div>
         </div>
         <div class="nav-links" id="navLinks" style="display:none;">
-            <span class="active" onclick="switchPage('hall')">📋 任务大厅</span>
-            <span onclick="switchPage('contracts')">📄 我的合约</span>
-            <span onclick="switchPage('salary')">💰 薪酬记录</span>
-            <span id="navProfile" style="display:none" onclick="switchPage('profile')">👤 个人画像</span>
-            <span id="navAutoSettle" style="display:none" onclick="switchPage('autoSettle')">🤖 自动结算</span>
-            <span id="navAdmin" style="display:none" onclick="switchPage('admin')">⚙️ 系统管理</span>
-            <span onclick="runDiagnosis()" style="color:var(--warning);">🔍 诊断</span>
+            <span class="active" onclick="switchPage('hall')"> 任务大厅</span>
+            <span onclick="switchPage('contracts')"> 我的合约</span>
+            <span onclick="switchPage('salary')"> 薪酬记录</span>
+            <span id="navProfile" style="display:none" onclick="switchPage('profile')"> 个人画像</span>
+            <span id="navAutoSettle" style="display:none" onclick="switchPage('autoSettle')"> 自动结算</span>
+            <span id="navAdmin" style="display:none" onclick="switchPage('admin')"> 系统管理</span>
         </div>
     </div>
     <div class="nav-right" id="userTopArea">
@@ -371,7 +371,7 @@
     <!-- ==================== 任务大厅 ==================== -->
     <div id="hallPage" class="page active">
         <div id="teacherPublish" class="card" style="display:none; border-left: 4px solid var(--gold);">
-            <div class="card-title">📢 发布新岗位</div>
+            <div class="card-title"> 发布新岗位</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div><label>岗位名称</label><input type="text" id="jobTitle" placeholder="如：图书馆管理员"></div>
                 <div><label>用人部门</label><input type="text" id="jobDept" placeholder="如：图书馆"></div>
@@ -381,11 +381,11 @@
             <label>岗位描述</label>
             <div style="position:relative;">
                 <textarea id="jobDesc" placeholder="工作内容、任职要求等" style="padding-right:120px;"></textarea>
-                <button class="btn btn-ai btn-sm" onclick="aiGenerateDesc()" id="aiGenBtn" style="position:absolute;right:8px;bottom:22px;">🤖 AI 生成</button>
+                <button class="btn btn-ai btn-sm" onclick="aiGenerateDesc()" id="aiGenBtn" style="position:absolute;right:8px;bottom:22px;"> AI 生成</button>
             </div>
-            <button class="btn btn-gold btn-lg" onclick="publishJob()" style="margin-top:4px;">🚀 链上发布并锁仓</button>
+            <button class="btn btn-gold btn-lg" onclick="publishJob()" style="margin-top:4px;"> 链上发布并锁仓</button>
         </div>
-        <div class="card-title" style="margin-bottom:16px;">🔥 最新岗位</div>
+        <div class="card-title" style="margin-bottom:16px;"> 最新岗位</div>
         <div id="jobGrid" class="job-grid">
             <div class="loading"><span class="spinner"></span>加载中...</div>
         </div>
@@ -395,13 +395,13 @@
     <div id="contractsPage" class="page">
         <div id="studentContracts">
             <div class="card">
-                <div class="card-title">📄 我的任职合约</div>
+                <div class="card-title"> 我的任职合约</div>
                 <div id="myContractsList"><div class="loading"><span class="spinner"></span>加载中...</div></div>
             </div>
         </div>
         <div id="teacherContracts" style="display:none;">
             <div class="card">
-                <div class="card-title">📬 待审批申请 <span id="pendingBadge" class="badge badge-pending" style="display:none;">0</span></div>
+                <div class="card-title"> 待审批申请 <span id="pendingBadge" class="badge badge-pending" style="display:none;">0</span></div>
                 <div id="pendingApplications"><div class="loading"><span class="spinner"></span>加载中...</div></div>
             </div>
             <div class="card">
@@ -409,7 +409,7 @@
                 <div id="unconfirmedHours"><div class="loading"><span class="spinner"></span>加载中...</div></div>
             </div>
             <div class="card">
-                <div class="card-title">💰 待结算薪酬</div>
+                <div class="card-title"> 待结算薪酬</div>
                 <div id="pendingSettlements"><div class="loading"><span class="spinner"></span>加载中...</div></div>
             </div>
         </div>
@@ -422,7 +422,7 @@
             <div class="card stat-card"><div class="stat-label">结算次数</div><div class="stat-value blue"><span id="settleCount">0</span></div></div>
         </div>
         <div class="card">
-            <div class="card-title">💰 薪酬结算记录</div>
+            <div class="card-title"> 薪酬结算记录</div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>岗位</th><th>部门</th><th>工时</th><th>金额</th><th>交易哈希</th><th>时间</th><th>状态</th></tr></thead>
@@ -443,7 +443,7 @@
 
         <!-- 结算调度状态 -->
         <div class="card" style="border-left:4px solid var(--success);">
-            <div class="card-title">🤖 自动结算调度状态</div>
+            <div class="card-title"> 自动结算调度状态</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px;">
                 <div>上次结算: <b id="asLastSettle">-</b></div>
                 <div>下次结算: <b id="asNextSettle" style="color:var(--gold);">-</b></div>
@@ -451,14 +451,14 @@
                 <div>工时确认宽限期: <b id="asGrace">-</b> 小时</div>
             </div>
             <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="btn btn-gold btn-lg" onclick="triggerAutoSettlement()">⚡ 立即执行自动结算</button>
-                <button class="btn btn-outline" onclick="loadAutoSettlePage()">🔄 刷新状态</button>
+                <button class="btn btn-gold btn-lg" onclick="triggerAutoSettlement()"> 立即执行自动结算</button>
+                <button class="btn btn-outline" onclick="loadAutoSettlePage()"> 刷新状态</button>
             </div>
         </div>
 
         <!-- 结算配置 -->
         <div class="card" id="settleConfigCard" style="display:none;">
-            <div class="card-title">⚙️ 结算配置（管理员）</div>
+            <div class="card-title"> 结算配置（管理员）</div>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
                 <div>
                     <label>结算周期（天）</label>
@@ -471,28 +471,28 @@
                 <div>
                     <label>自动结算</label>
                     <select id="cfgAutoEnabled">
-                        <option value="true">✅ 开启</option>
-                        <option value="false">❌ 关闭</option>
+                        <option value="true"> 开启</option>
+                        <option value="false"> 关闭</option>
                     </select>
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="saveSettlementConfig()" style="margin-top:4px;">💾 保存配置</button>
+            <button class="btn btn-primary" onclick="saveSettlementConfig()" style="margin-top:4px;"> 保存配置</button>
         </div>
 
         <!-- 自动结算工作原理 -->
         <div class="card">
-            <div class="card-title">📖 自动结算工作原理</div>
+            <div class="card-title"> 自动结算工作原理</div>
             <div style="font-size:13px; line-height:2; color:#555;">
-                <p><b>1️⃣ 工时自动确认：</b>学生打卡下班后，教师在 <b>宽限期</b>（默认48小时）内未确认的工时，系统将<b>自动确认</b>并计入可结算工时。</p>
-                <p><b>2️⃣ 到期自动触发：</b>系统后台<b>每小时</b>检查一次是否到达结算周期（默认30天）。到达后自动触发链上智能合约执行薪酬结算。</p>
-                <p><b>3️⃣ 自动核算与发放：</b>合约根据「已确认工时 × 时薪」自动核算每位学生的薪酬，并<b>直接从合约锁仓的预算中转账给学生</b>，全程无需人工干预。</p>
-                <p><b>4️⃣ 全程可审计：</b>所有操作（发布、审批、打卡、确认、结算）均记录在<b>审计日志</b>和<b>区块链</b>中，确保公开透明、不可篡改。</p>
+                <p><b>1⃣ 工时自动确认：</b>学生打卡下班后，教师在 <b>宽限期</b>（默认48小时）内未确认的工时，系统将<b>自动确认</b>并计入可结算工时。</p>
+                <p><b>2⃣ 到期自动触发：</b>系统后台<b>每小时</b>检查一次是否到达结算周期（默认30天）。到达后自动触发链上智能合约执行薪酬结算。</p>
+                <p><b>3⃣ 自动核算与发放：</b>合约根据「已确认工时 × 时薪」自动核算每位学生的薪酬，并<b>直接从合约锁仓的预算中转账给学生</b>，全程无需人工干预。</p>
+                <p><b>4⃣ 全程可审计：</b>所有操作（发布、审批、打卡、确认、结算）均记录在<b>审计日志</b>和<b>区块链</b>中，确保公开透明、不可篡改。</p>
             </div>
         </div>
 
         <!-- 审计日志 -->
         <div class="card">
-            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">📜 审计日志 <button class="btn btn-outline btn-sm" onclick="loadAuditLogs()">🔄 刷新</button></div>
+            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;"> 审计日志 <button class="btn btn-outline btn-sm" onclick="loadAuditLogs()"> 刷新</button></div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>ID</th><th>操作</th><th>执行者</th><th>目标</th><th>详情</th><th>交易哈希</th><th>时间</th></tr></thead>
@@ -512,7 +512,7 @@
         </div>
         <!-- 数据可视化 -->
         <div class="card">
-            <div class="card-title">📊 数据可视化</div>
+            <div class="card-title"> 数据可视化</div>
             <div class="charts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                 <div style="position:relative;height:260px;">
                     <canvas id="chartDept"></canvas>
@@ -527,7 +527,7 @@
         </div>
         <!-- 系统信息 -->
         <div class="card">
-            <div class="card-title">🔧 系统信息</div>
+            <div class="card-title"> 系统信息</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
                 <div>RPC节点: <span id="sysRpc" class="wallet-addr">-</span></div>
                 <div>链ID: <span id="sysChainId">-</span></div>
@@ -539,7 +539,7 @@
         </div>
         <!-- AI 配置 -->
         <div class="card" style="border-left:4px solid #764ba2;">
-            <div class="card-title">🤖 AI 岗位简介生成配置</div>
+            <div class="card-title"> AI 岗位简介生成配置</div>
             <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">配置 AI 服务后，教师发布岗位时可使用 AI 自动生成岗位简介（约50字）</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                 <div>
@@ -557,14 +557,31 @@
                 </div>
             </div>
             <div style="display:flex;gap:10px;margin-top:4px;">
-                <button class="btn btn-primary" onclick="saveAIConfig()">💾 保存配置</button>
-                <button class="btn btn-ai" onclick="testAI()">🧪 测试连接</button>
+                <button class="btn btn-primary" onclick="saveAIConfig()"> 保存配置</button>
+                <button class="btn btn-ai" onclick="testAI()"> 测试连接</button>
             </div>
             <div id="aiTestResult" style="margin-top:10px;font-size:13px;"></div>
         </div>
+        <!-- 模拟攻击演示 -->
+        <div class="card" style="border-left:4px solid var(--danger);position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(220,38,38,0.08),transparent);pointer-events:none;"></div>
+            <div class="card-title"> 模拟攻击演示</div>
+            <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">模拟常见网络攻击场景，展示系统安全防护能力（纯演示，无实际攻击行为）</p>
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+                <button id="attackBtn" class="btn btn-danger" onclick="simulateAttack()" style="min-width:160px;">启动模拟攻击</button>
+                <div style="display:flex;gap:20px;font-size:13px;">
+                    <span style="color:var(--success);"> WAF: 正常运行</span>
+                    <span style="color:var(--success);"> IDS: 活跃</span>
+                    <span style="color:var(--success);"> 防火墙: 已启用</span>
+                </div>
+            </div>
+            <div id="attackLog" style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:14px;max-height:320px;overflow-y:auto;font-family:'Courier New',monospace;font-size:13px;line-height:1.8;">
+                <div style="color:var(--text-dim);">等待启动模拟攻击...</div>
+            </div>
+        </div>
         <!-- 岗位管理 -->
         <div class="card">
-            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">📋 岗位管理 <button class="btn btn-danger btn-sm" onclick="adminDeleteAllJobs()">🗑️ 清空全部</button></div>
+            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;"> 岗位管理 <button class="btn btn-danger btn-sm" onclick="adminDeleteAllJobs()"> 清空全部</button></div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>ID</th><th>链上ID</th><th>岗位名称</th><th>部门</th><th>发布者</th><th>状态</th><th>操作</th></tr></thead>
@@ -574,7 +591,7 @@
         </div>
         <!-- 合约管理 -->
         <div class="card">
-            <div class="card-title">📄 所有合约</div>
+            <div class="card-title"> 所有合约</div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>ID</th><th>岗位</th><th>学生</th><th>教师</th><th>状态</th><th>工时</th></tr></thead>
@@ -584,7 +601,7 @@
         </div>
         <!-- 用户管理 -->
         <div class="card">
-            <div class="card-title">👥 用户管理</div>
+            <div class="card-title"> 用户管理</div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>ID</th><th>用户名</th><th>昵称</th><th>角色</th><th>钱包地址</th><th>注册时间</th><th>操作</th></tr></thead>
@@ -594,17 +611,17 @@
         </div>
         <!-- 画像审核（精准资助） -->
         <div class="card">
-            <div class="card-title">🎯 待审核学生画像 <span id="profileVerifyBadge" class="badge badge-pending" style="display:none;">0</span></div>
+            <div class="card-title"> 待审核学生画像 <span id="profileVerifyBadge" class="badge badge-pending" style="display:none;">0</span></div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>ID</th><th>学生</th><th>困难等级</th><th>可用工时</th><th>佐证哈希</th><th>提交时间</th><th>操作</th></tr></thead>
+                    <thead><tr><th>ID</th><th>学生</th><th>困难等级</th><th>可用工时</th><th>佐证材料</th><th>提交时间</th><th>操作</th></tr></thead>
                     <tbody id="adminProfileTable"><tr><td colspan="7" class="empty-state">暂无待审核画像</td></tr></tbody>
                 </table>
             </div>
         </div>
         <!-- 风控监控 -->
         <div class="card">
-            <div class="card-title">🛡️ 风控监控（异常打卡）</div>
+            <div class="card-title"> 风控监控（异常打卡）</div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>ID</th><th>学生</th><th>岗位</th><th>打卡时间</th><th>工时</th><th>风险类型</th><th>上班IP</th><th>下班IP</th></tr></thead>
@@ -614,7 +631,7 @@
         </div>
         <!-- 争议仲裁 -->
         <div class="card">
-            <div class="card-title">⚖️ 争议仲裁 <span id="disputeBadge" class="badge badge-pending" style="display:none;">0</span></div>
+            <div class="card-title"> 争议仲裁 <span id="disputeBadge" class="badge badge-pending" style="display:none;">0</span></div>
             <div id="adminDisputes"><div class="empty-state">暂无争议</div></div>
         </div>
     </div>
@@ -629,8 +646,8 @@
                     <p style="font-size:13px; color:#666;">账号: <span id="myUsername"></span></p>
                     <p class="wallet-addr" style="margin-top:2px;">钱包: <span id="myWallet">未连接</span></p>
                     <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-outline btn-sm" onclick="toggleEdit()">✏️ 编辑资料</button>
-                        <button class="btn btn-outline btn-sm" onclick="connectWallet()">🦊 连接钱包</button>
+                        <button class="btn btn-outline btn-sm" onclick="toggleEdit()"> 编辑资料</button>
+                        <button class="btn btn-outline btn-sm" onclick="connectWallet()"> 连接钱包</button>
                         <button class="btn btn-danger btn-sm" onclick="logout()">退出系统</button>
                     </div>
                 </div>
@@ -641,11 +658,11 @@
                 <div style="margin:10px 0;">
                     <input type="file" id="fileBtn" style="display:none" onchange="doUpload(event)">
                     <img id="uploadPreview" src="" style="width:48px; height:48px; border-radius:50%; object-fit:cover; display:none; vertical-align:middle; margin-right:10px;">
-                    <button class="btn btn-outline btn-sm" onclick="document.getElementById('fileBtn').click()">📁 上传头像</button>
+                    <button class="btn btn-outline btn-sm" onclick="document.getElementById('fileBtn').click()"> 上传头像</button>
                 </div>
                 <label>选择预设头像</label>
                 <div class="avatar-picker" id="avatarPicker"></div>
-                <button class="btn btn-primary" onclick="saveProfile()">💾 保存</button>
+                <button class="btn btn-primary" onclick="saveProfile()"> 保存</button>
             </div>
         </div>
     </div>
@@ -653,7 +670,7 @@
     <!-- ==================== 个人画像（精准资助） ==================== -->
     <div id="profilePage" class="page">
         <div class="card">
-            <div class="card-title">🎯 困难生认证与画像</div>
+            <div class="card-title"> 困难生认证与画像</div>
             <p style="font-size:13px;color:#666;margin-bottom:16px;">完善个人画像信息，系统将根据算法为您智能推荐匹配岗位，困难生享有优先录用权。</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                 <div>
@@ -670,15 +687,19 @@
                     <input type="number" id="profileAvailHours" value="10" min="1" max="40">
                 </div>
                 <div>
-                    <label>佐证材料哈希（IPFS/文件哈希）</label>
-                    <input type="text" id="profileCertHash" placeholder="如：QmXxx... 或 0xabc...">
+                    <label>佐证材料（上传贫困证明等文件）</label>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <input type="text" id="profileCertHash" placeholder="已上传文件地址将自动填入" style="flex:1;" readonly>
+                        <button class="btn btn-outline btn-sm" onclick="document.getElementById('certFileInput').click()"> 上传文件</button>
+                    </div>
+                    <input type="file" id="certFileInput" accept="image/*,.pdf,.doc,.docx" style="display:none" onchange="uploadCertFile(event)">
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="saveStudentProfile()" style="margin-top:16px;">💾 提交画像</button>
+            <button class="btn btn-primary" onclick="saveStudentProfile()" style="margin-top:16px;"> 提交画像</button>
             <div id="profileStatus" style="margin-top:12px;font-size:13px;"></div>
         </div>
         <div class="card">
-            <div class="card-title">📊 我的画像信息</div>
+            <div class="card-title"> 我的画像信息</div>
             <div id="profileInfo" style="font-size:14px;"><div class="loading">加载中...</div></div>
         </div>
         <div class="card">
@@ -686,11 +707,11 @@
             <div id="hourQuota" style="font-size:14px;"><div class="loading">加载中...</div></div>
         </div>
         <div class="card">
-            <div class="card-title">🏆 我的履约勋章</div>
+            <div class="card-title"> 我的履约勋章</div>
             <div id="myBadges" style="font-size:14px;"><div class="loading">加载中...</div></div>
         </div>
         <div class="card">
-            <div class="card-title">⚖️ 我的申诉</div>
+            <div class="card-title"> 我的申诉</div>
             <div id="myDisputes" style="font-size:14px;"><div class="loading">加载中...</div></div>
         </div>
     </div>
@@ -707,10 +728,10 @@
     <div class="card">
         <h2 class="detail-title" id="detailTitle">-</h2>
         <div class="detail-info">
-            <div class="detail-info-item"><div class="detail-info-label">🏢 部门</div><div class="detail-info-value" id="detailDept">-</div></div>
-            <div class="detail-info-item"><div class="detail-info-label">💰 时薪</div><div class="detail-info-value" id="detailRate">-</div></div>
-            <div class="detail-info-item"><div class="detail-info-label">📦 总预算</div><div class="detail-info-value" id="detailBudget">-</div></div>
-            <div class="detail-info-item"><div class="detail-info-label">👥 申请人数</div><div class="detail-info-value" id="detailApplicants">-</div></div>
+            <div class="detail-info-item"><div class="detail-info-label"> 部门</div><div class="detail-info-value" id="detailDept">-</div></div>
+            <div class="detail-info-item"><div class="detail-info-label"> 时薪</div><div class="detail-info-value" id="detailRate">-</div></div>
+            <div class="detail-info-item"><div class="detail-info-label"> 总预算</div><div class="detail-info-value" id="detailBudget">-</div></div>
+            <div class="detail-info-item"><div class="detail-info-label"> 申请人数</div><div class="detail-info-value" id="detailApplicants">-</div></div>
         </div>
         <div class="detail-desc" id="detailDesc">暂无描述</div>
         <div style="display:flex;gap:10px;align-items:center;margin:16px 0;">
@@ -721,11 +742,11 @@
             </div>
         </div>
         <div style="margin:16px 0;">
-            <div style="font-weight:600;margin-bottom:8px;">📷 岗位图片</div>
+            <div style="font-weight:600;margin-bottom:8px;"> 岗位图片</div>
             <div class="image-gallery" id="detailImages"><div class="empty-state" style="padding:20px;">暂无图片</div></div>
             <div id="imageUploadSection" style="display:none;margin-top:12px;">
                 <div class="image-upload-zone" onclick="document.getElementById('jobImageInput').click()">
-                    <div style="font-size:32px;margin-bottom:8px;">📁</div>
+                    <div style="font-size:32px;margin-bottom:8px;"></div>
                     <div>点击上传岗位图片</div>
                     <div style="font-size:12px;margin-top:4px;">支持 jpg/png/gif/webp</div>
                 </div>
@@ -733,7 +754,7 @@
             </div>
         </div>
         <div style="display:flex;gap:10px;margin-top:16px;">
-            <button class="btn btn-primary btn-lg" id="detailApplyBtn" onclick="applyFromDetail()">📝 申请岗位</button>
+            <button class="btn btn-primary btn-lg" id="detailApplyBtn" onclick="applyFromDetail()"> 申请岗位</button>
         </div>
     </div>
 </div>
@@ -748,10 +769,10 @@
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal('authModal')">×</button>
         <div style="text-align:center; margin-bottom:20px;">
-            <div style="font-size:32px; margin-bottom:6px;">🎓</div>
+            <div style="font-size:32px; margin-bottom:6px;"></div>
             <h3 id="mTitle" style="color:var(--gold); font-size:18px;">用户登录</h3>
         </div>
-        <button class="btn btn-success btn-lg" style="width:100%; margin-bottom:16px;" onclick="connectWallet()">🦊 MetaMask 快捷登录</button>
+        <button class="btn btn-success btn-lg" style="width:100%; margin-bottom:16px;" onclick="connectWallet()"> MetaMask 快捷登录</button>
         <div style="text-align:center; color:#ccc; margin-bottom:16px; font-size:13px;">── 或使用账号密码 ──</div>
         <label>账号</label>
         <input type="text" id="u" placeholder="请输入账号">
@@ -772,16 +793,16 @@
         <button class="modal-close" onclick="closeModal('clockModal')">×</button>
         <h3 style="text-align:center; margin-bottom:20px; color:var(--gold);">⏰ 工时打卡</h3>
         <div id="clockStatus" style="text-align:center; margin-bottom:20px;">
-            <div style="font-size:52px;" id="clockIcon">🕐</div>
+            <div style="font-size:52px;" id="clockIcon"></div>
             <p id="clockText" style="font-size:15px; color:#555; margin-top:8px;">准备打卡</p>
         </div>
         <div id="clockInPanel">
-            <button class="btn btn-success btn-lg" style="width:100%;" onclick="doClockIn()">🟢 上班打卡</button>
+            <button class="btn btn-success btn-lg" style="width:100%;" onclick="doClockIn()"> 上班打卡</button>
         </div>
         <div id="clockOutPanel" style="display:none;">
             <div id="elapsedTimer" style="font-size:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;color:var(--gold);letter-spacing:2px;">00:00:00</div>
             <p style="text-align:center;color:#999;font-size:13px;margin:8px 0 16px;">⏱ 工时由系统自动计时，下班时按链上时间自动结算（单次上限 8 小时）</p>
-            <button class="btn btn-warning btn-lg" style="width:100%;" onclick="doClockOut()">🔴 下班打卡</button>
+            <button class="btn btn-warning btn-lg" style="width:100%;" onclick="doClockOut()"> 下班打卡</button>
         </div>
     </div>
 </div>
@@ -941,7 +962,7 @@ async function checkAndSwitchNetwork() {
         const gethChainId = parseInt(testData.result, 16);
         if (gethChainId !== 887766) throw new Error("geth节点chainId不匹配，当前: " + gethChainId);
     } catch (e) {
-        throw new Error("⚠️ 区块链节点未启动！请先运行 start.bat 启动系统");
+        throw new Error(" 区块链节点未启动！请先运行 start.bat 启动系统");
     }
     // 检查合约是否真的部署在链上（防止向空地址转账：部署失败或节点重启后旧地址会变成死地址）
     try {
@@ -952,11 +973,11 @@ async function checkAndSwitchNetwork() {
         });
         const codeData = await codeRes.json();
         if (!codeData.result || codeData.result === '0x' || codeData.result === '0x0') {
-            throw new Error("⚠️ 合约未部署！请运行 start.bat 重新部署合约（切勿直接发交易，ETH会丢失）");
+            throw new Error(" 合约未部署！请运行 start.bat 重新部署合约（切勿直接发交易，ETH会丢失）");
         }
     } catch (e) {
         if (e.message && e.message.indexOf('合约未部署') >= 0) throw e;
-        throw new Error("⚠️ 无法检查合约状态，请确认 geth 节点运行正常");
+        throw new Error(" 无法检查合约状态，请确认 geth 节点运行正常");
     }
     const provider = new ethers.BrowserProvider(window.ethereum);
     const network = await provider.getNetwork();
@@ -1044,7 +1065,7 @@ async function handleAuth() {
 function loginSuccess() {
     localStorage.setItem('campusUser', JSON.stringify(currentUser));
     document.getElementById('navLinks').style.display = 'flex';
-    const shortAddr = currentUser.wallet_address ? currentUser.wallet_address.slice(0,6)+'...'+currentUser.wallet_address.slice(-4) : '🔌 连接钱包';
+    const shortAddr = currentUser.wallet_address ? currentUser.wallet_address.slice(0,6)+'...'+currentUser.wallet_address.slice(-4) : ' 连接钱包';
     document.getElementById('userTopArea').innerHTML = `
         <button class="btn btn-outline btn-sm" onclick="connectWallet()">${shortAddr}</button>
         <img src="${currentUser.avatar || DEFAULT_AVATAR}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--border);cursor:pointer;" onclick="switchPage('mine')" title="个人中心">
@@ -1108,9 +1129,9 @@ function showToast(msg, type = 'info') {
 const _origAlert = window.alert;
 window.alert = function(msg) {
     const s = String(msg);
-    if (s.includes('✅') || s.includes('成功') || s.includes('已')) showToast(s, 'success');
-    else if (s.includes('❌') || s.includes('失败') || s.includes('错误') || s.includes('⚠️') || s.includes('无法')) showToast(s, 'error');
-    else if (s.includes('🦊')) showToast(s, 'info');
+    if (s.includes('') || s.includes('成功') || s.includes('已')) showToast(s, 'success');
+    else if (s.includes('') || s.includes('失败') || s.includes('错误') || s.includes('') || s.includes('无法')) showToast(s, 'error');
+    else if (s.includes('')) showToast(s, 'info');
     else showToast(s, 'info');
 };
 function vibrate(el) {
@@ -1132,26 +1153,26 @@ async function fetchHallJobs() {
     const grid = document.getElementById('jobGrid');
     try {
         const res = await fetch(`${API}/public_jobs`);
-        if (!res.ok) { grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>后端错误: '+res.status+'</p></div>'; return; }
+        if (!res.ok) { grid.innerHTML = '<div class="empty-state"><div class="icon"></div><p>后端错误: '+res.status+'</p></div>'; return; }
         const data = await res.json();
-        if (!Array.isArray(data) || !data.length) { grid.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>暂无岗位发布</p></div>'; return; }
+        if (!Array.isArray(data) || !data.length) { grid.innerHTML = '<div class="empty-state"><div class="icon"></div><p>暂无岗位发布</p></div>'; return; }
         grid.innerHTML = data.map(j => `
             <div class="card job-card" onclick="openJobDetail(${j.id})">
                 <div class="job-title">${escHtml(j.title)}</div>
                 <div><span class="badge badge-${j.status.toLowerCase()}">${statusText(j.status)}</span></div>
-                <div class="job-meta"><span>🏢 ${escHtml(j.department||'未设置')}</span><span>👥 ${j.applicant_count}人申请</span></div>
-                <div class="job-salary">💰 ${j.salary} ETH</div>
+                <div class="job-meta"><span> ${escHtml(j.department||'未设置')}</span><span> ${j.applicant_count}人申请</span></div>
+                <div class="job-salary"> ${j.salary} ETH</div>
                 <div class="job-employer">发布者: ${j.employer.slice(0,10)}...</div>
                 ${j.description ? `<p style="font-size:13px;color:var(--text-light);margin:10px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escHtml(j.description)}</p>` : ''}
                 <div style="display:flex;gap:8px;margin-top:14px;" onclick="event.stopPropagation()">
                     <button class="btn btn-primary" style="flex:1;" onclick="applyForJob(${j.id},${j.chain_job_id||0})" ${!currentUser||currentUser.role!=='STUDENT'?'disabled':''}>
-                        ${!currentUser?'请先登录':currentUser.role!=='STUDENT'?'仅学生可申请':'📝 申请岗位'}
+                        ${!currentUser?'请先登录':currentUser.role!=='STUDENT'?'仅学生可申请':' 申请岗位'}
                     </button>
-                    ${currentUser&&(currentUser.role==='ADMIN'||currentUser.role==='TEACHER')?`<button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})">🗑️ 删除</button>`:''}
+                    ${currentUser&&(currentUser.role==='ADMIN'||currentUser.role==='TEACHER')?`<button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})"> 删除</button>`:''}
                 </div>
             </div>
         `).join('');
-    } catch (e) { grid.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载失败: '+e.message+'</p></div>'; }
+    } catch (e) { grid.innerHTML = '<div class="empty-state"><div class="icon"></div><p>加载失败: '+e.message+'</p></div>'; }
 }
 
 async function applyForJob(dbJobId, chainJobId) {
@@ -1176,7 +1197,7 @@ async function applyForJob(dbJobId, chainJobId) {
                 return;
             }
         } catch(e) { console.warn("查询岗位状态失败:", e); }
-        alert("🦊 请在 MetaMask 中确认交易...");
+        alert(" 请在 MetaMask 中确认交易...");
         const tx = await contract.applyForJob(chainJobId);
         const receipt = await tx.wait();
         console.log("applyForJob receipt:", receipt);
@@ -1213,8 +1234,8 @@ async function applyForJob(dbJobId, chainJobId) {
         }
         const res = await fetch(`${API}/apply_job`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({job_id:dbJobId, student:currentUser.wallet_address, chain_employment_id:chainEmpId}) });
         const d = await res.json();
-        if (d.success) { alert("🎉 申请成功！等待教师审批"); fetchHallJobs(); }
-        else alert("⚠️ " + d.msg);
+        if (d.success) { alert(" 申请成功！等待教师审批"); fetchHallJobs(); }
+        else alert(" " + d.msg);
     } catch (e) {
         if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
             alert("你取消了交易");
@@ -1240,12 +1261,12 @@ async function publishJob() {
         try { const regTx = await contract.registerAsTeacher(); await regTx.wait(); } catch(e) {}
         const hourlyRateWei = ethers.parseEther(hourlyRate.toString());
         const budgetWei = ethers.parseEther(budget.toString());
-        alert("🦊 请在 MetaMask 中确认交易（将锁定预算到合约）...");
+        alert(" 请在 MetaMask 中确认交易（将锁定预算到合约）...");
         const tx = await contract.createJob(title, dept||'', hourlyRateWei, {value:budgetWei});
         const receipt = await tx.wait();
         console.log("createJob receipt status:", receipt.status, "logs:", receipt.logs);
         if (receipt.status === 0) {
-            return alert("❌ 链上交易执行失败（状态0），可能是余额不足或合约报错");
+            return alert(" 链上交易执行失败（状态0），可能是余额不足或合约报错");
         }
         // 获取链上岗位ID：用原始 JSON-RPC 查询 jobCount()（最可靠）
         let chainJobId = 0;
@@ -1298,10 +1319,10 @@ async function publishJob() {
                 const codeData = await codeRes.json();
                 console.log("合约代码检查:", codeData.result ? codeData.result.substring(0,20)+'...' : '无');
             } catch(e) {}
-            return alert("⚠️ 获取链上岗位ID失败！\n\n请按F12打开控制台，截图发给开发者\n\n提示：请先运行 start.bat 重新部署合约");
+            return alert(" 获取链上岗位ID失败！\n\n请按F12打开控制台，截图发给开发者\n\n提示：请先运行 start.bat 重新部署合约");
         }
         await fetch(`${API}/save_job`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title, department:dept, description:desc, hourly_rate:hourlyRateWei.toString(), salary:budgetWei.toString(), employer:await signer.getAddress(), chain_job_id:chainJobId}) });
-        alert("✅ 岗位发布成功！预算已锁仓到智能合约");
+        alert(" 岗位发布成功！预算已锁仓到智能合约");
         ['jobTitle','jobDept','jobHourlyRate','jobBudget','jobDesc'].forEach(id => document.getElementById(id).value='');
         fetchHallJobs();
     } catch (e) {
@@ -1323,7 +1344,7 @@ async function loadContractsPage() {
     }
     if (!currentUser.wallet_address) {
         const list = document.getElementById('myContractsList');
-        if (list) list.innerHTML = '<div class="empty-state"><div class="icon">🦊</div><p>请先连接钱包</p></div>';
+        if (list) list.innerHTML = '<div class="empty-state"><div class="icon"></div><p>请先连接钱包</p></div>';
         return;
     }
     if (currentUser.role === 'STUDENT') await loadStudentContracts();
@@ -1335,23 +1356,23 @@ async function loadStudentContracts() {
         const res = await fetch(`${API}/my_applications/${currentUser.wallet_address}`);
         const data = await res.json();
         const list = document.getElementById('myContractsList');
-        if (!data.length) { list.innerHTML = '<div class="empty-state"><div class="icon">📄</div><p>暂无合约，去任务大厅申请岗位</p></div>'; return; }
+        if (!data.length) { list.innerHTML = '<div class="empty-state"><div class="icon"></div><p>暂无合约，去任务大厅申请岗位</p></div>'; return; }
         list.innerHTML = data.map(c => `
             <div class="card" style="border-left:3px solid ${statusColor(c.status)};">
                 <div style="display:flex;justify-content:space-between;align-items:start;">
                     <div>
                         <div style="font-weight:700;font-size:15px;">${escHtml(c.title)}</div>
-                        <div style="font-size:13px;color:#666;margin:4px 0;">🏢 ${escHtml(c.department||'未设置')} | 时薪: ${c.hourly_rate} ETH</div>
+                        <div style="font-size:13px;color:#666;margin:4px 0;"> ${escHtml(c.department||'未设置')} | 时薪: ${c.hourly_rate} ETH</div>
                         <div style="font-size:12px;color:#999;">申请时间: ${c.applied_at}</div>
                         <div style="font-size:13px;margin-top:6px;">已确认工时: <b>${c.total_minutes}</b> 分钟</div>
                     </div>
                     <div style="text-align:right;">
                         <span class="badge badge-${c.status.toLowerCase()}">${statusText(c.status)}</span>
-                        ${c.status==='APPROVED'?`<div style="margin-top:10px;display:flex;gap:6px;"><button class="btn btn-success btn-sm" onclick="openClockModal(${c.employment_id},${c.chain_employment_id||0})">⏰ 打卡</button><button class="btn btn-danger btn-sm" onclick="resignJob(${c.employment_id},${c.chain_employment_id||0})">📤 辞职</button></div>`:''}
-                        ${c.status==='PENDING'?`<div style="margin-top:10px;"><button class="btn btn-danger btn-sm" onclick="resignJob(${c.employment_id},${c.chain_employment_id||0})">📤 撤回申请</button></div>`:''}
+                        ${c.status==='APPROVED'?`<div style="margin-top:10px;display:flex;gap:6px;"><button class="btn btn-success btn-sm" onclick="openClockModal(${c.employment_id},${c.chain_employment_id||0})">⏰ 打卡</button><button class="btn btn-danger btn-sm" onclick="resignJob(${c.employment_id},${c.chain_employment_id||0})"> 辞职</button></div>`:''}
+                        ${c.status==='PENDING'?`<div style="margin-top:10px;"><button class="btn btn-danger btn-sm" onclick="resignJob(${c.employment_id},${c.chain_employment_id||0})"> 撤回申请</button></div>`:''}
                     </div>
                 </div>
-                ${c.status==='APPROVED'?`<div style="margin-top:12px;border-top:1px solid #f0f0f0;padding-top:12px;"><button class="btn btn-outline btn-sm" onclick="loadClockRecords(${c.employment_id},this)">📋 查看打卡记录</button><div id="clockRecords_${c.employment_id}" style="margin-top:8px;"></div></div>`:''}
+                ${c.status==='APPROVED'?`<div style="margin-top:12px;border-top:1px solid #f0f0f0;padding-top:12px;"><button class="btn btn-outline btn-sm" onclick="loadClockRecords(${c.employment_id},this)"> 查看打卡记录</button><div id="clockRecords_${c.employment_id}" style="margin-top:8px;"></div></div>`:''}
             </div>
         `).join('');
     } catch (e) { document.getElementById('myContractsList').innerHTML = '<div class="empty-state">加载失败</div>'; }
@@ -1381,29 +1402,29 @@ async function loadTeacherContracts() {
                 <div class="card" style="border-left:3px solid ${p.match_score >= 80 ? 'var(--success)' : 'var(--warning)'};">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div style="flex:1;">
-                            <div style="font-weight:700;">📝 ${escHtml(p.job_title)}</div>
+                            <div style="font-weight:700;"> ${escHtml(p.job_title)}</div>
                             <div style="font-size:13px;color:#666;">申请者: ${escHtml(p.student_nickname||'未知')} (${p.student_address.slice(0,8)}...)</div>
                             <div style="font-size:12px;color:#999;">申请时间: ${p.applied_at}</div>
                             <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
-                                <span style="background:${scoreColor};color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700;">🎯 匹配度: ${p.match_score}%</span>
+                                <span style="background:${scoreColor};color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700;"> 匹配度: ${p.match_score}%</span>
                                 <span style="font-size:12px;color:#666;">${escHtml(p.reason)}</span>
                             </div>
                         </div>
                         <div style="display:flex;gap:8px;">
-                            <button class="btn btn-success btn-sm" onclick="approveApplication(${p.employment_id},${p.chain_employment_id||0})">✅ 批准</button>
-                            <button class="btn btn-danger btn-sm" onclick="rejectApplication(${p.employment_id},${p.chain_employment_id||0})">❌ 拒绝</button>
+                            <button class="btn btn-success btn-sm" onclick="approveApplication(${p.employment_id},${p.chain_employment_id||0})"> 批准</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectApplication(${p.employment_id},${p.chain_employment_id||0})"> 拒绝</button>
                         </div>
                     </div>
                 </div>`;
             }).join('');
-        } else { badge.style.display='none'; pendingDiv.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>暂无待审批申请</p></div>'; }
+        } else { badge.style.display='none'; pendingDiv.innerHTML='<div class="empty-state"><div class="icon"></div><p>暂无待审批申请</p></div>'; }
 
         // 加载待确认工时记录
         const clockRes = await fetch(`${API}/pending_clock_ins/${currentUser.wallet_address}`);
         const pendingClocks = await clockRes.json();
         const unconfDiv = document.getElementById('unconfirmedHours');
         if (pendingClocks.length) {
-            unconfDiv.innerHTML = `<p style="color:#666;margin-bottom:12px;">📋 待确认工时: <b>${pendingClocks.length}</b> 条</p>` + pendingClocks.map(c => `
+            unconfDiv.innerHTML = `<p style="color:#666;margin-bottom:12px;"> 待确认工时: <b>${pendingClocks.length}</b> 条</p>` + pendingClocks.map(c => `
                 <div class="card" style="border-left:3px solid var(--info);margin-bottom:8px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div>
@@ -1413,14 +1434,14 @@ async function loadTeacherContracts() {
                             <div style="font-size:14px;font-weight:600;color:var(--gold);margin-top:4px;">本次工时: ${c.work_minutes} 分钟</div>
                         </div>
                         <div style="display:flex;gap:8px;">
-                            <button class="btn btn-success btn-sm" onclick="confirmHours(${c.clock_in_id},${c.chain_clock_in_id||0})">✅ 确认工时</button>
-                            <button class="btn btn-danger btn-sm" onclick="rejectClockIn(${c.clock_in_id},${c.chain_clock_in_id||0})">❌ 驳回</button>
+                            <button class="btn btn-success btn-sm" onclick="confirmHours(${c.clock_in_id},${c.chain_clock_in_id||0})"> 确认工时</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectClockIn(${c.clock_in_id},${c.chain_clock_in_id||0})"> 驳回</button>
                         </div>
                     </div>
                 </div>
             `).join('');
         } else {
-            unconfDiv.innerHTML = '<div class="empty-state"><div class="icon">✅</div><p>暂无待确认工时</p></div>';
+            unconfDiv.innerHTML = '<div class="empty-state"><div class="icon"></div><p>暂无待确认工时</p></div>';
         }
 
         // 加载待结算薪酬
@@ -1428,23 +1449,23 @@ async function loadTeacherContracts() {
         const pendingSettlements = await settleRes.json();
         const settleDiv = document.getElementById('pendingSettlements');
         if (pendingSettlements.length) {
-            settleDiv.innerHTML = `<p style="color:#666;margin-bottom:12px;">💰 待结算: <b>${pendingSettlements.length}</b> 个合约</p>` + pendingSettlements.map(s => `
+            settleDiv.innerHTML = `<p style="color:#666;margin-bottom:12px;"> 待结算: <b>${pendingSettlements.length}</b> 个合约</p>` + pendingSettlements.map(s => `
                 <div class="card" style="border-left:3px solid var(--success);margin-bottom:8px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div>
-                            <div style="font-weight:700;">💼 ${escHtml(s.job_title)}</div>
+                            <div style="font-weight:700;"> ${escHtml(s.job_title)}</div>
                             <div style="font-size:13px;color:#666;">学生: ${escHtml(s.student_nickname)} (${s.student_address.slice(0,8)}...)</div>
                             <div style="font-size:13px;margin-top:4px;">已确认工时: <b>${s.total_minutes}</b> 分钟 | 应付薪酬: <b style="color:var(--success);">${s.salary_ether} ETH</b></div>
                         </div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="btn btn-success btn-sm" onclick="settleSalary(${s.employment_id},${s.chain_employment_id})">💰 结算薪酬</button>
-                            <button class="btn btn-gold btn-sm" onclick="issueBadge('${s.student_address}','${escHtml(s.job_title)}','${escHtml(s.department||'')}',${s.total_minutes})">🏅 颁发勋章</button>
+                            <button class="btn btn-success btn-sm" onclick="settleSalary(${s.employment_id},${s.chain_employment_id})"> 结算薪酬</button>
+                            <button class="btn btn-gold btn-sm" onclick="issueBadge('${s.student_address}','${escHtml(s.job_title)}','${escHtml(s.department||'')}',${s.total_minutes})"> 颁发勋章</button>
                         </div>
                     </div>
                 </div>
             `).join('');
         } else {
-            settleDiv.innerHTML = '<div class="empty-state"><div class="icon">✅</div><p>暂无待结算薪酬</p></div>';
+            settleDiv.innerHTML = '<div class="empty-state"><div class="icon"></div><p>暂无待结算薪酬</p></div>';
         }
     } catch (e) { document.getElementById('pendingApplications').innerHTML='<div class="empty-state">加载失败</div>'; }
 }
@@ -1455,7 +1476,7 @@ async function loadAdminContracts() {
         const list = document.getElementById('myContractsList');
         const res = await fetch(`${API}/admin/employments`);
         const data = await res.json();
-        if (!data.length) { list.innerHTML = '<div class="empty-state"><div class="icon">📄</div><p>暂无合约记录</p></div>'; return; }
+        if (!data.length) { list.innerHTML = '<div class="empty-state"><div class="icon"></div><p>暂无合约记录</p></div>'; return; }
         list.innerHTML = data.map(e => `
             <div class="card" style="border-left:3px solid ${statusColor(e.status)};">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1478,11 +1499,11 @@ async function approveApplication(dbEmpId, chainEmpId) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-        alert("🦊 请在 MetaMask 中确认...");
+        alert(" 请在 MetaMask 中确认...");
         const tx = await contract.approveApplication(chainEmpId);
         await tx.wait();
         await fetch(`${API}/approve_application`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:dbEmpId}) });
-        alert("✅ 已批准"); loadTeacherContracts();
+        alert(" 已批准"); loadTeacherContracts();
     } catch (e) { alert("操作失败：" + (e.reason||e.message)); }
 }
 
@@ -1493,7 +1514,7 @@ async function rejectApplication(dbEmpId, chainEmpId) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-        alert("🦊 请在 MetaMask 中确认...");
+        alert(" 请在 MetaMask 中确认...");
         const tx = await contract.rejectApplication(chainEmpId);
         await tx.wait();
         await fetch(`${API}/reject_application`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:dbEmpId}) });
@@ -1505,7 +1526,7 @@ async function rejectApplication(dbEmpId, chainEmpId) {
 async function openClockModal(empId, chainEmpId) {
     stopClockTimer();
     currentEmploymentId = empId; currentChainEmploymentId = chainEmpId; currentClockInId = null; currentChainClockInId = 0;
-    document.getElementById('clockIcon').innerText='🕐'; document.getElementById('clockText').innerText='加载中...';
+    document.getElementById('clockIcon').innerText=''; document.getElementById('clockText').innerText='加载中...';
     document.getElementById('clockInPanel').style.display='none'; document.getElementById('clockOutPanel').style.display='none';
     openModal('clockModal');
     // 查询是否有未下班的打卡记录
@@ -1516,17 +1537,17 @@ async function openClockModal(empId, chainEmpId) {
         if (active) {
             currentClockInId = active.id;
             currentChainClockInId = active.chain_clock_in_id || 0;
-            document.getElementById('clockIcon').innerText='🟢';
+            document.getElementById('clockIcon').innerText='';
             document.getElementById('clockText').innerText=`上次上班打卡: ${active.clock_in_time}，请下班打卡`;
             document.getElementById('clockOutPanel').style.display='block';
             startClockTimer(parseLocalDateTime(active.clock_in_time).getTime());
         } else {
-            document.getElementById('clockIcon').innerText='🕐';
+            document.getElementById('clockIcon').innerText='';
             document.getElementById('clockText').innerText='准备打卡';
             document.getElementById('clockInPanel').style.display='block';
         }
     } catch(e) {
-        document.getElementById('clockIcon').innerText='🕐';
+        document.getElementById('clockIcon').innerText='';
         document.getElementById('clockText').innerText='准备打卡';
         document.getElementById('clockInPanel').style.display='block';
     }
@@ -1543,7 +1564,7 @@ async function doClockIn() {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-        alert("🦊 请在 MetaMask 中确认打卡...");
+        alert(" 请在 MetaMask 中确认打卡...");
         const tx = await contract.clockIn(currentChainEmploymentId);
         const receipt = await tx.wait();
         console.log("clockIn receipt:", receipt);
@@ -1579,13 +1600,13 @@ async function doClockIn() {
             } catch(e) { console.warn("方法2失败:", e); }
         }
         console.log("链上打卡ID:", chainClockInId, "数据库合约ID:", currentEmploymentId);
-        if (chainClockInId === 0) console.error("⚠️ 未能解析链上打卡ID！receipt:", receipt.logs);
+        if (chainClockInId === 0) console.error(" 未能解析链上打卡ID！receipt:", receipt.logs);
         const res = await fetch(`${API}/clock_in`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:currentEmploymentId, student:currentUser.wallet_address, chain_clock_in_id:chainClockInId}) });
         const d = await res.json();
         if (d.success) {
             currentClockInId = d.clock_in_id;
             currentChainClockInId = chainClockInId;
-            document.getElementById('clockIcon').innerText='🟢'; document.getElementById('clockText').innerText=`已上班打卡 (链上#${chainClockInId})，工作中...`;
+            document.getElementById('clockIcon').innerText=''; document.getElementById('clockText').innerText=`已上班打卡 (链上#${chainClockInId})，工作中...`;
             document.getElementById('clockInPanel').style.display='none'; document.getElementById('clockOutPanel').style.display='block';
             startClockTimer(d.clock_in_time ? parseLocalDateTime(d.clock_in_time).getTime() : Date.now());
         } else alert(d.msg);
@@ -1606,14 +1627,14 @@ async function doClockOut() {
             } catch(e) {}
         }
         if (!chainClockInId || chainClockInId <= 0) {
-            alert("❌ 链上打卡ID无效！\n\n上班打卡时链上交易可能未成功，请重新打卡。");
+            alert(" 链上打卡ID无效！\n\n上班打卡时链上交易可能未成功，请重新打卡。");
             return;
         }
         await ensureWalletBound();
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-        alert("🦊 请在 MetaMask 中确认下班打卡...");
+        alert(" 请在 MetaMask 中确认下班打卡...");
         // 工时由合约按 block.timestamp 自动计算，无需填写
         const tx = await contract.clockOut(chainClockInId);
         await tx.wait();
@@ -1622,7 +1643,7 @@ async function doClockOut() {
         const d = await res.json();
         if (d.success) {
             stopClockTimer();
-            document.getElementById('clockIcon').innerText='🔴';
+            document.getElementById('clockIcon').innerText='';
             document.getElementById('clockText').innerText=`下班成功！本次工时 ${d.work_minutes} 分钟（系统自动计时）`;
             document.getElementById('clockOutPanel').style.display='none';
             currentClockInId = null; currentChainClockInId = 0;
@@ -1646,15 +1667,15 @@ async function loadClockRecords(empId, btn) {
         let html = `<table style="font-size:12px;"><tr><th>上班</th><th>下班</th><th>工时</th><th>状态</th>${isTeacher?'<th>操作</th>':''}${!isTeacher?'<th>操作</th>':''}</tr>${data.map(r=>{
             const isRejected = r.confirmed && r.work_minutes === 0 && r.clock_out_time;
             const statusHtml = r.confirmed ? (r.work_minutes === 0 && r.clock_out_time ? '<span class="badge" style="background:var(--danger);color:#fff;">已驳回</span>' : '<span class="badge badge-confirmed">已确认</span>') : '<span class="badge badge-pending">待确认</span>';
-            const teacherCol = isTeacher ? `<td>${!r.confirmed&&r.clock_out_time?`<button class="btn btn-success btn-sm" onclick="confirmHours(${r.id},${r.chain_clock_in_id||0})">✅ 确认</button> <button class="btn btn-danger btn-sm" onclick="rejectClockIn(${r.id},${r.chain_clock_in_id||0})">❌ 驳回</button>`:'-'}</td>` : '';
-            const studentCol = !isTeacher ? `<td>${isRejected?`<button class="btn btn-warning btn-sm" onclick="createDispute(${r.id})">⚖️ 发起申诉</button>`:'-'}</td>` : '';
+            const teacherCol = isTeacher ? `<td>${!r.confirmed&&r.clock_out_time?`<button class="btn btn-success btn-sm" onclick="confirmHours(${r.id},${r.chain_clock_in_id||0})"> 确认</button> <button class="btn btn-danger btn-sm" onclick="rejectClockIn(${r.id},${r.chain_clock_in_id||0})"> 驳回</button>`:'-'}</td>` : '';
+            const studentCol = !isTeacher ? `<td>${isRejected?`<button class="btn btn-warning btn-sm" onclick="createDispute(${r.id})"> 发起申诉</button>`:'-'}</td>` : '';
             return `<tr><td>${r.clock_in_time}</td><td>${r.clock_out_time||'进行中'}</td><td>${r.work_minutes}分钟</td><td>${statusHtml}</td>${teacherCol}${studentCol}</tr>`;
         }).join('')}</table>`;
         if (!isTeacher && unconfirmed.length > 0) {
             html += `<p style="color:#856404;font-size:12px;margin-top:8px;background:#fff3cd;padding:6px 10px;border-radius:4px;">⏳ 有 ${unconfirmed.length} 条打卡记录等待教师确认，确认后工时才会累计</p>`;
         }
         if (!isTeacher && rejected.length > 0) {
-            html += `<p style="color:#721c24;font-size:12px;margin-top:8px;background:#f8d7da;padding:6px 10px;border-radius:4px;">❌ 有 ${rejected.length} 条记录被驳回，如不服可在72小时内点击"发起申诉"</p>`;
+            html += `<p style="color:#721c24;font-size:12px;margin-top:8px;background:#f8d7da;padding:6px 10px;border-radius:4px;"> 有 ${rejected.length} 条记录被驳回，如不服可在72小时内点击"发起申诉"</p>`;
         }
         div.innerHTML = html;
     } catch (e) { div.innerHTML='<p style="color:red;">加载失败</p>'; }
@@ -1701,7 +1722,7 @@ async function loadAdminPage() {
                 <td>${j.id}</td><td>${j.chain_job_id||'-'}</td><td>${escHtml(j.title)}</td><td>${escHtml(j.department||'-')}</td>
                 <td class="wallet-addr">${j.employer.slice(0,10)}...</td>
                 <td><span class="badge badge-${j.status.toLowerCase()}">${statusText(j.status)}</span></td>
-                <td><button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})">🗑️</button></td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})"></button></td>
             </tr>
         `).join('') : '<tr><td colspan="7" class="empty-state">暂无岗位</td></tr>';
 
@@ -1731,7 +1752,7 @@ async function loadAdminPage() {
                 </select></td>
                 <td class="wallet-addr">${u.wallet_address||'未绑定'}</td>
                 <td>${u.created_at}</td>
-                <td>${u.role!=='ADMIN'?`<button class="btn btn-danger btn-sm" onclick="adminDeleteUser(${u.id},'${escHtml(u.username)}')">🗑️</button>`:'-'}</td>
+                <td>${u.role!=='ADMIN'?`<button class="btn btn-danger btn-sm" onclick="adminDeleteUser(${u.id},'${escHtml(u.username)}')"></button>`:'-'}</td>
             </tr>
         `).join('');
 
@@ -1762,7 +1783,7 @@ async function loadAdminPage() {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, title: { display: true, text: '📋 岗位按部门分布', font: { size: 14, weight: 'bold' } } },
+                    plugins: { legend: { display: false }, title: { display: true, text: ' 岗位按部门分布', font: { size: 14, weight: 'bold' } } },
                     scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             }));
@@ -1786,7 +1807,7 @@ async function loadAdminPage() {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } },
-                        title: { display: true, text: '👥 用户角色分布', font: { size: 14, weight: 'bold' } }
+                        title: { display: true, text: ' 用户角色分布', font: { size: 14, weight: 'bold' } }
                     }
                 }
             }));
@@ -1826,7 +1847,7 @@ async function loadAdminPage() {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        title: { display: true, text: '📈 近7天打卡趋势', font: { size: 14, weight: 'bold' } }
+                        title: { display: true, text: ' 近7天打卡趋势', font: { size: 14, weight: 'bold' } }
                     },
                     scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
@@ -1836,12 +1857,12 @@ async function loadAdminPage() {
 }
 
 async function adminDeleteAllJobs() {
-    if (!confirm("⚠️ 确认清空所有岗位？将删除所有岗位、合约、打卡和薪酬记录！")) return;
+    if (!confirm(" 确认清空所有岗位？将删除所有岗位、合约、打卡和薪酬记录！")) return;
     if (!confirm("再次确认：此操作不可恢复！")) return;
     try {
         const res = await fetch(`${API}/admin/delete_all_jobs`, { method:'POST', headers:{'Content-Type':'application/json'} });
         const d = await res.json();
-        if (d.success) { alert("✅ 已清空"); loadAdminPage(); fetchHallJobs(); }
+        if (d.success) { alert(" 已清空"); loadAdminPage(); fetchHallJobs(); }
         else alert("失败：" + d.msg);
     } catch (e) { alert("失败：" + e.message); }
 }
@@ -1851,7 +1872,7 @@ async function adminDeleteUser(userId, username) {
     try {
         const res = await fetch(`${API}/admin/delete_user`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:userId}) });
         const d = await res.json();
-        if (d.success) { alert("✅ " + d.msg); loadAdminPage(); }
+        if (d.success) { alert(" " + d.msg); loadAdminPage(); }
         else alert("失败：" + d.msg);
     } catch (e) { alert("失败：" + e.message); }
 }
@@ -1871,7 +1892,7 @@ async function deleteJob(dbJobId) {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-                alert("🦊 请在 MetaMask 中确认关闭岗位...");
+                alert(" 请在 MetaMask 中确认关闭岗位...");
                 const tx = await contract.closeJob(dbJobId);
                 await tx.wait();
             } catch (e) { console.log("链上关闭失败，继续删除数据库记录:", e.reason || e.message); }
@@ -1879,7 +1900,7 @@ async function deleteJob(dbJobId) {
         // 链下删除
         const res = await fetch(`${API}/delete_job`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({job_id:dbJobId}) });
         const d = await res.json();
-        if (d.success) { alert("✅ 岗位已删除"); fetchHallJobs(); if (currentUser.role==='ADMIN') loadAdminPage(); }
+        if (d.success) { alert(" 岗位已删除"); fetchHallJobs(); if (currentUser.role==='ADMIN') loadAdminPage(); }
         else alert("删除失败：" + d.msg);
     } catch (e) { alert("删除失败：" + (e.message || e)); }
 }
@@ -1890,25 +1911,25 @@ async function confirmHours(clockInId, chainClockInId) {
     try {
         // 必须先在链上确认成功，才能同步数据库（否则结算时链上无工时）
         if (!chainClockInId || chainClockInId <= 0) {
-            alert("❌ 该打卡记录无链上ID，无法在链上确认工时！\n\n请让学生重新打卡，确保链上交易成功后再确认。");
+            alert(" 该打卡记录无链上ID，无法在链上确认工时！\n\n请让学生重新打卡，确保链上交易成功后再确认。");
             return;
         }
         await ensureWalletBound();
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-        alert("🦊 请在 MetaMask 中确认工时...");
+        alert(" 请在 MetaMask 中确认工时...");
         const tx = await contract.confirmHours(chainClockInId);
         await tx.wait();
         console.log("链上确认成功, chainClockInId:", chainClockInId);
         // 链上成功后才同步数据库
         const res = await fetch(`${API}/confirm_hours`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({clock_in_id:clockInId}) });
         const d = await res.json();
-        if (d.success) { alert("✅ 链上+数据库均已确认：" + d.msg); loadTeacherContracts(); }
-        else alert("⚠️ 链上已确认但数据库更新失败：" + d.msg);
+        if (d.success) { alert(" 链上+数据库均已确认：" + d.msg); loadTeacherContracts(); }
+        else alert(" 链上已确认但数据库更新失败：" + d.msg);
     } catch (e) {
         if (e.code === 'ACTION_REJECTED' || e.code === 4001) alert("你取消了交易");
-        else alert("❌ 确认工时失败：" + (e.reason || e.message) + "\n\n数据库未更新，请重试。");
+        else alert(" 确认工时失败：" + (e.reason || e.message) + "\n\n数据库未更新，请重试。");
     }
 }
 
@@ -1921,7 +1942,7 @@ async function rejectClockIn(clockInId, chainClockInId) {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-            alert("🦊 请在 MetaMask 中确认驳回工时...");
+            alert(" 请在 MetaMask 中确认驳回工时...");
             const tx = await contract.rejectClockIn(chainClockInId);
             await tx.wait();
             console.log("链上驳回成功, chainClockInId:", chainClockInId);
@@ -1929,11 +1950,11 @@ async function rejectClockIn(clockInId, chainClockInId) {
         // 链上墓碑后（或本就无链上记录时）同步删除数据库
         const res = await fetch(`${API}/reject_clock_in`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({clock_in_id:clockInId}) });
         const d = await res.json();
-        if (d.success) { alert("✅ " + d.msg); loadTeacherContracts(); }
-        else alert("⚠️ 链上已驳回但数据库更新失败：" + (d.msg || "请重试"));
+        if (d.success) { alert(" " + d.msg); loadTeacherContracts(); }
+        else alert(" 链上已驳回但数据库更新失败：" + (d.msg || "请重试"));
     } catch (e) {
         if (e.code === 'ACTION_REJECTED' || e.code === 4001) alert("你取消了交易");
-        else alert("❌ 驳回失败：" + (e.reason || e.message) + "\n\n数据库未更新，请重试。");
+        else alert(" 驳回失败：" + (e.reason || e.message) + "\n\n数据库未更新，请重试。");
     }
 }
 
@@ -1951,18 +1972,18 @@ async function settleSalary(empId, chainEmpId) {
             const chainHours = Number(emp.totalHours);
             console.log("链上合约工时:", chainHours, "分钟");
             if (chainHours === 0) {
-                alert("❌ 链上工时为0！\n\n这说明教师确认工时时链上交易没有成功。\n\n请重新操作：\n1. 让学生重新打卡\n2. 教师确认工时时注意MetaMask弹窗\n3. 确认MetaMask交易成功后再结算");
+                alert(" 链上工时为0！\n\n这说明教师确认工时时链上交易没有成功。\n\n请重新操作：\n1. 让学生重新打卡\n2. 教师确认工时时注意MetaMask弹窗\n3. 确认MetaMask交易成功后再结算");
                 return;
             }
         } catch(e) { console.warn("查询链上工时失败:", e); }
-        alert("🦊 请在MetaMask中确认薪酬结算...");
+        alert(" 请在MetaMask中确认薪酬结算...");
         const tx = await contract.settleSalary(chainEmpId);
         const receipt = await tx.wait();
         const txHash = receipt.hash;
         // 同步数据库
         const res = await fetch(`${API}/settle_salary`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:empId, tx_hash:txHash}) });
         const d = await res.json();
-        if (d.success) { alert("✅ 薪酬结算成功！金额: " + (d.amount_ether||'') + " ETH\n交易哈希: " + txHash.slice(0,16) + "..."); loadTeacherContracts(); }
+        if (d.success) { alert(" 薪酬结算成功！金额: " + (d.amount_ether||'') + " ETH\n交易哈希: " + txHash.slice(0,16) + "..."); loadTeacherContracts(); }
         else alert("结算失败：" + d.msg);
     } catch (e) {
         if (e.code === 'ACTION_REJECTED' || e.code === 4001) alert("你取消了交易");
@@ -1981,7 +2002,7 @@ async function resignJob(empId, chainEmpId) {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-                alert("🦊 请在 MetaMask 中确认...");
+                alert(" 请在 MetaMask 中确认...");
                 const tx = await contract.resignFromJob(chainEmpId);
                 await tx.wait();
             } catch (e) { console.log("链上辞职失败，继续更新数据库:", e.reason || e.message); }
@@ -1989,7 +2010,7 @@ async function resignJob(empId, chainEmpId) {
         // 链下更新
         const res = await fetch(`${API}/resign`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employment_id:empId, student:currentUser.wallet_address}) });
         const d = await res.json();
-        if (d.success) { alert("✅ 操作成功"); loadStudentContracts(); fetchHallJobs(); }
+        if (d.success) { alert(" 操作成功"); loadStudentContracts(); fetchHallJobs(); }
         else alert(d.msg);
     } catch (e) { alert("操作失败：" + (e.message || e)); }
 }
@@ -2031,14 +2052,14 @@ async function loadAutoSettlePage() {
         // 获取结算状态
         const statusRes = await fetch(`${API}/auto_settlement_status`);
         const st = await statusRes.json();
-        document.getElementById('asStatus').innerText = st.is_due ? '⏳ 待结算' : '✅ 正常';
+        document.getElementById('asStatus').innerText = st.is_due ? '⏳ 待结算' : ' 正常';
         document.getElementById('asStatus').className = st.is_due ? 'stat-value orange' : 'stat-value green';
         document.getElementById('asCycle').innerText = st.cycle_days;
         document.getElementById('asPending').innerText = st.pending_count;
         document.getElementById('asAmount').innerText = st.pending_amount_ether;
         document.getElementById('asLastSettle').innerText = st.last_settlement;
         document.getElementById('asNextSettle').innerText = st.next_settlement;
-        document.getElementById('asEnabled').innerText = st.auto_enabled ? '✅ 已开启' : '❌ 已关闭';
+        document.getElementById('asEnabled').innerText = st.auto_enabled ? ' 已开启' : ' 已关闭';
         document.getElementById('asEnabled').className = st.auto_enabled ? 'badge badge-published' : 'badge badge-rejected';
         document.getElementById('asGrace').innerText = st.grace_period_hours;
 
@@ -2063,10 +2084,10 @@ async function triggerAutoSettlement() {
         const res = await fetch(`${API}/trigger_auto_settlement`, { method: 'POST', headers: {'Content-Type':'application/json'} });
         const d = await res.json();
         if (d.success) {
-            alert('✅ 自动结算执行成功！\n交易哈希: ' + (d.tx_hash || '').slice(0, 20) + '...');
+            alert(' 自动结算执行成功！\n交易哈希: ' + (d.tx_hash || '').slice(0, 20) + '...');
             loadAutoSettlePage();
         } else {
-            alert('❌ 结算失败: ' + d.msg);
+            alert(' 结算失败: ' + d.msg);
         }
     } catch (e) {
         alert('操作失败: ' + e.message);
@@ -2086,7 +2107,7 @@ async function saveSettlementConfig() {
             body: JSON.stringify({ cycle_days: cycleDays, grace_period_hours: graceHours, auto_enabled: autoEnabled })
         });
         const d = await res.json();
-        alert('✅ ' + d.msg);
+        alert(' ' + d.msg);
         loadAutoSettlePage();
     } catch (e) {
         alert('保存失败: ' + e.message);
@@ -2103,13 +2124,13 @@ async function loadAuditLogs() {
             return;
         }
         const actionText = {
-            'JOB_CREATED': '📢 发布岗位', 'APPLICATION_APPROVED': '✅ 批准申请',
-            'APPLICATION_REJECTED': '❌ 拒绝申请', 'HOURS_CONFIRMED': '⏰ 确认工时',
-            'SETTLEMENT': '💰 薪酬结算', 'AUTO_SETTLEMENT_TRIGGERED': '🤖 自动结算触发',
-            'AUTO_SETTLEMENT_SUCCESS': '✅ 自动结算成功', 'AUTO_SETTLEMENT_FAILED': '❌ 自动结算失败',
-            'AUTO_SETTLEMENT_ERROR': '⚠️ 自动结算异常', 'MANUAL_SETTLEMENT_TRIGGER': '⚡ 手动触发结算',
-            'MANUAL_SETTLEMENT_SUCCESS': '✅ 手动结算成功', 'MANUAL_SETTLEMENT_FAILED': '❌ 手动结算失败',
-            'CONFIG_UPDATED': '⚙️ 配置更新', 'SETTLEMENT_SYNCED': '🔄 结算同步'
+            'JOB_CREATED': ' 发布岗位', 'APPLICATION_APPROVED': ' 批准申请',
+            'APPLICATION_REJECTED': ' 拒绝申请', 'HOURS_CONFIRMED': '⏰ 确认工时',
+            'SETTLEMENT': ' 薪酬结算', 'AUTO_SETTLEMENT_TRIGGERED': ' 自动结算触发',
+            'AUTO_SETTLEMENT_SUCCESS': ' 自动结算成功', 'AUTO_SETTLEMENT_FAILED': ' 自动结算失败',
+            'AUTO_SETTLEMENT_ERROR': ' 自动结算异常', 'MANUAL_SETTLEMENT_TRIGGER': ' 手动触发结算',
+            'MANUAL_SETTLEMENT_SUCCESS': ' 手动结算成功', 'MANUAL_SETTLEMENT_FAILED': ' 手动结算失败',
+            'CONFIG_UPDATED': ' 配置更新', 'SETTLEMENT_SYNCED': ' 结算同步'
         };
         tbody.innerHTML = logs.map(l => `
             <tr>
@@ -2129,7 +2150,7 @@ async function loadAuditLogs() {
 
 // ======================== 系统诊断 ========================
 async function runDiagnosis() {
-    let report = '🔍 系统诊断报告\n' + '='.repeat(40) + '\n\n';
+    let report = ' 系统诊断报告\n' + '='.repeat(40) + '\n\n';
     // 1. 检查geth节点
     try {
         const res = await fetch('http://127.0.0.1:8545', {
@@ -2138,9 +2159,9 @@ async function runDiagnosis() {
             body: JSON.stringify({jsonrpc:'2.0',method:'eth_blockNumber',params:[],id:1})
         });
         const data = await res.json();
-        report += '✅ Geth节点运行中 (区块: ' + parseInt(data.result, 16) + ')\n';
+        report += ' Geth节点运行中 (区块: ' + parseInt(data.result, 16) + ')\n';
     } catch (e) {
-        report += '❌ Geth节点未启动！请运行 start.bat\n';
+        report += ' Geth节点未启动！请运行 start.bat\n';
     }
     // 2. 检查合约
     try {
@@ -2151,49 +2172,49 @@ async function runDiagnosis() {
         });
         const data = await res.json();
         if (data.result && data.result !== '0x') {
-            report += '✅ 智能合约已部署\n';
+            report += ' 智能合约已部署\n';
         } else {
-            report += '❌ 合约不存在！地址无效或合约未部署\n';
+            report += ' 合约不存在！地址无效或合约未部署\n';
         }
     } catch (e) {
-        report += '❌ 无法检查合约\n';
+        report += ' 无法检查合约\n';
     }
     // 3. 检查MetaMask
     if (window.ethereum) {
-        report += '✅ MetaMask已安装\n';
+        report += ' MetaMask已安装\n';
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
             const chainId = Number(network.chainId);
             if (chainId === 887766) {
-                report += '✅ MetaMask网络: Geth Dev (887766)\n';
+                report += ' MetaMask网络: Geth Dev (887766)\n';
             } else {
-                report += '⚠️ MetaMask网络: chainId=' + chainId + ' (应为887766)\n';
+                report += ' MetaMask网络: chainId=' + chainId + ' (应为887766)\n';
             }
             const signer = await provider.getSigner();
             const addr = await signer.getAddress();
             const balance = await provider.getBalance(addr);
-            report += '🦊 钱包地址: ' + addr + '\n';
-            report += '💰 钱包余额: ' + ethers.formatEther(balance) + ' ETH\n';
+            report += ' 钱包地址: ' + addr + '\n';
+            report += ' 钱包余额: ' + ethers.formatEther(balance) + ' ETH\n';
             if (parseFloat(ethers.formatEther(balance)) < 0.01) {
-                report += '⚠️ 余额不足！请导入Hardhat测试账户\n';
+                report += ' 余额不足！请导入Hardhat测试账户\n';
             }
         } catch (e) {
-            report += '⚠️ MetaMask未连接: ' + e.message + '\n';
+            report += ' MetaMask未连接: ' + e.message + '\n';
         }
     } else {
-        report += '❌ MetaMask未安装\n';
+        report += ' MetaMask未安装\n';
     }
     // 4. 检查后端
     try {
         const res = await fetch(API + '/admin/stats');
         const data = await res.json();
-        report += '✅ 后端运行中 (用户:' + data.user_count + ' 岗位:' + data.job_count + ')\n';
+        report += ' 后端运行中 (用户:' + data.user_count + ' 岗位:' + data.job_count + ')\n';
     } catch (e) {
-        report += '❌ 后端未启动\n';
+        report += ' 后端未启动\n';
     }
     report += '\n' + '='.repeat(40) + '\n';
-    report += '💡 如果钱包交易失败，请确认:\n';
+    report += ' 如果钱包交易失败，请确认:\n';
     report += '   1. 已运行 start.bat 启动geth节点\n';
     report += '   2. MetaMask已切换到Geth Dev网络(887766)\n';
     report += '   3. 使用的是geth开发账户(密码: 12345678)\n';
@@ -2221,7 +2242,7 @@ async function issueBadge(studentAddr, jobTitle, department, totalMinutes) {
         try { allowed = await sbtContract.canIssue(addr); } catch (e) { /* 旧合约无此方法则直接尝试注册 */ }
         if (!allowed) {
             const workStudy = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
-            alert('🦊 首次颁发需注册链上教师身份，请在 MetaMask 中确认...');
+            alert(' 首次颁发需注册链上教师身份，请在 MetaMask 中确认...');
             const regTx = await workStudy.registerAsTeacher();
             await regTx.wait();
         }
@@ -2232,12 +2253,12 @@ async function issueBadge(studentAddr, jobTitle, department, totalMinutes) {
         const rating = parseInt(ratingStr);
         if (!rating || rating < 1 || rating > 5) { alert('评分必须在1-5之间'); return; }
 
-        alert('🦊 请在 MetaMask 中确认颁发勋章...');
+        alert(' 请在 MetaMask 中确认颁发勋章...');
         const tx = await sbtContract.issueBadge(
             studentAddr, jobTitle, department, BigInt(totalMinutes), comment, rating
         );
         await tx.wait();
-        alert('✅ 履约勋章颁发成功！');
+        alert(' 履约勋章颁发成功！');
     } catch (e) {
         const msg = (e.reason || e.message || String(e));
         alert('颁发失败: ' + (msg.includes('Unauthorized')
@@ -2265,11 +2286,11 @@ async function saveStudentProfile() {
         });
         const r = await res.json();
         document.getElementById('profileStatus').innerHTML = r.success
-            ? '<span style="color:var(--success);">✅ ' + escHtml(r.msg) + '</span>'
-            : '<span style="color:var(--danger);">❌ ' + escHtml(r.msg) + '</span>';
+            ? '<span style="color:var(--success);"> ' + escHtml(r.msg) + '</span>'
+            : '<span style="color:var(--danger);"> ' + escHtml(r.msg) + '</span>';
         if (r.success) loadProfilePage();
     } catch (e) {
-        document.getElementById('profileStatus').innerHTML = '<span style="color:var(--danger);">❌ 请求失败</span>';
+        document.getElementById('profileStatus').innerHTML = '<span style="color:var(--danger);"> 请求失败</span>';
     }
 }
 
@@ -2281,14 +2302,14 @@ async function loadProfilePage() {
     try {
         const res = await fetch(API + '/student_profile/' + wallet);
         const p = await res.json();
-        const levelMap = {A:'A级（特别困难）🔴', B:'B级（比较困难）🟠', C:'C级（一般困难）🟡', NORMAL:'普通 🟢'};
+        const levelMap = {A:'A级（特别困难）', B:'B级（比较困难）', C:'C级（一般困难）', NORMAL:'普通 '};
         document.getElementById('profileInfo').innerHTML = `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div>困难等级: <strong>${levelMap[p.financial_level] || p.financial_level}</strong></div>
                 <div>每周可用工时: <strong>${p.available_hours_per_week} 小时</strong></div>
                 <div>信誉分: <strong style="color:${p.reputation_score>=80?'var(--success)':'var(--warning)'};">${p.reputation_score}/100</strong></div>
                 <div>本月已获助学金: <strong>${p.monthly_aid_received} 元</strong></div>
-                <div>认证状态: ${p.verified ? '<span style="color:var(--success);">✅ 已认证</span>' : '<span style="color:var(--warning);">⏳ 待认证</span>'}</div>
+                <div>认证状态: ${p.verified ? '<span style="color:var(--success);"> 已认证</span>' : '<span style="color:var(--warning);">⏳ 待认证</span>'}</div>
             </div>
         `;
         // 预填表单
@@ -2339,16 +2360,16 @@ async function loadProfilePage() {
                 <div class="card" style="border-left:4px solid var(--gold);margin-bottom:10px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div>
-                            <div style="font-weight:700;font-size:16px;">🏅 ${escHtml(b.job_title)}</div>
+                            <div style="font-weight:700;font-size:16px;"> ${escHtml(b.job_title)}</div>
                             <div style="font-size:13px;color:#666;margin-top:4px;">部门: ${escHtml(b.department)} · 累计工时: ${Math.floor(b.total_hours/60)}小时</div>
                             <div style="font-size:13px;margin-top:4px;">评语: ${escHtml(b.teacher_comment)}</div>
-                            <div style="margin-top:4px;">${'⭐'.repeat(b.star_rating)}${'☆'.repeat(5-b.star_rating)}</div>
+                            <div style="margin-top:4px;">${''.repeat(b.star_rating)}${''.repeat(5-b.star_rating)}</div>
                             <div style="font-size:12px;color:#999;margin-top:4px;">颁发时间: ${new Date(b.issued_at * 1000).toLocaleDateString()}</div>
                         </div>
                         <div style="text-align:center;">
-                            <div style="font-size:36px;">🏅</div>
+                            <div style="font-size:36px;"></div>
                             <div style="font-size:11px;color:#999;">Token #${b.token_id}</div>
-                            <a href="/verify?token_id=${b.token_id}" style="font-size:12px;color:var(--gold);" target="_blank">🔗 验真</a>
+                            <a href="/verify?token_id=${b.token_id}" style="font-size:12px;color:var(--gold);" target="_blank"> 验真</a>
                         </div>
                     </div>
                 </div>
@@ -2365,7 +2386,7 @@ async function loadProfilePage() {
         if (!disputes || disputes.length === 0) {
             document.getElementById('myDisputes').innerHTML = '<div class="empty-state">暂无申诉记录</div>';
         } else {
-            const statusMap = {PENDING:'⏳ 待裁决', IN_DISPUTE:'🔴 争议中', RESOLVED_UPHELD:'✅ 维持驳回', RESOLVED_OVERTURNED:'🔄 申诉成功'};
+            const statusMap = {PENDING:'⏳ 待裁决', IN_DISPUTE:' 争议中', RESOLVED_UPHELD:' 维持驳回', RESOLVED_OVERTURNED:' 申诉成功'};
             const statusColor = {PENDING:'var(--warning)', IN_DISPUTE:'var(--danger)', RESOLVED_UPHELD:'var(--text-light)', RESOLVED_OVERTURNED:'var(--success)'};
             document.getElementById('myDisputes').innerHTML = disputes.map(d => `
                 <div class="card" style="border-left:4px solid ${statusColor[d.status]||'var(--border)'};margin-bottom:8px;">
@@ -2417,7 +2438,7 @@ async function loadPendingWithScore(employer) {
                 <div class="card" style="border-left:3px solid ${p.match_score >= 80 ? 'var(--success)' : 'var(--warning)'};">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div style="flex:1;">
-                            <div style="font-weight:700;">📝 ${escHtml(p.job_title)}</div>
+                            <div style="font-weight:700;"> ${escHtml(p.job_title)}</div>
                             <div style="font-size:13px;color:#666;">申请者: ${escHtml(p.student_nickname||'未知')} (${p.student_address.slice(0,8)}...)</div>
                             <div style="font-size:12px;color:#999;">申请时间: ${p.applied_at}</div>
                             <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
@@ -2426,8 +2447,8 @@ async function loadPendingWithScore(employer) {
                             </div>
                         </div>
                         <div style="display:flex;gap:8px;">
-                            <button class="btn btn-success btn-sm" onclick="approveApplication(${p.employment_id}, ${p.chain_employment_id})">✅ 批准</button>
-                            <button class="btn btn-danger btn-sm" onclick="rejectApplication(${p.employment_id}, ${p.chain_employment_id})">❌ 拒绝</button>
+                            <button class="btn btn-success btn-sm" onclick="approveApplication(${p.employment_id}, ${p.chain_employment_id})"> 批准</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectApplication(${p.employment_id}, ${p.chain_employment_id})"> 拒绝</button>
                         </div>
                     </div>
                 </div>
@@ -2446,16 +2467,16 @@ async function checkHourQuotaBeforeClockIn() {
         const res = await fetch(API + '/student_hour_status/' + currentUser.wallet_address);
         const h = await res.json();
         if (h.weekly_exceeded) {
-            alert('⚠️ 本周工时已达教育部规定上限（8小时），无法继续打卡。\n请合理安排学业。');
+            alert(' 本周工时已达教育部规定上限（8小时），无法继续打卡。\n请合理安排学业。');
             return false;
         }
         if (h.monthly_exceeded) {
-            alert('⚠️ 本月工时已达教育部规定上限（40小时），无法继续打卡。\n请合理安排学业。');
+            alert(' 本月工时已达教育部规定上限（40小时），无法继续打卡。\n请合理安排学业。');
             return false;
         }
         // 接近上限时警告
         if (h.weekly_remaining <= 60) {
-            if (!confirm(`⚠️ 本周剩余工时仅 ${h.weekly_remaining} 分钟，打卡后可能接近上限。\n确定继续？`)) return false;
+            if (!confirm(` 本周剩余工时仅 ${h.weekly_remaining} 分钟，打卡后可能接近上限。\n确定继续？`)) return false;
         }
         return true;
     } catch { return true; } // 检查失败不阻断
@@ -2492,7 +2513,7 @@ async function loadAdminDisputes() {
             return;
         }
         container.innerHTML = disputes.map(d => {
-            const statusMap = {PENDING:'⏳ 待裁决', IN_DISPUTE:'🔴 争议中', RESOLVED_UPHELD:'✅ 维持驳回', RESOLVED_OVERTURNED:'🔄 已翻转'};
+            const statusMap = {PENDING:'⏳ 待裁决', IN_DISPUTE:' 争议中', RESOLVED_UPHELD:' 维持驳回', RESOLVED_OVERTURNED:' 已翻转'};
             const statusColor = (d.status === 'PENDING' || d.status === 'IN_DISPUTE') ? 'var(--warning)' : 'var(--success)';
             const canResolve = d.status === 'PENDING' || d.status === 'IN_DISPUTE';
             return `
@@ -2503,10 +2524,10 @@ async function loadAdminDisputes() {
                                 <strong>争议 #${d.id}</strong>
                                 <span style="background:${statusColor};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">${statusMap[d.status]}</span>
                             </div>
-                            <div style="font-size:13px;color:#666;">学生: ${escHtml(d.student_nickname||'')} (${d.student.slice(0,10)}...)</div>
-                            <div style="font-size:13px;color:#666;">教师: ${escHtml(d.teacher_nickname||'')} (${d.employer.slice(0,10)}...)</div>
-                            <div style="font-size:13px;color:#666;">岗位: ${escHtml(d.job_title)} · 打卡时间: ${d.clock_in_time} · 工时: ${d.work_minutes}分钟</div>
-                            <div style="margin-top:8px;padding:10px;background:#f8f8f8;border-radius:6px;font-size:13px;">
+                            <div style="font-size:13px;color:var(--text-light);">学生: ${escHtml(d.student_nickname||'')} (${d.student.slice(0,10)}...)</div>
+                            <div style="font-size:13px;color:var(--text-light);">教师: ${escHtml(d.teacher_nickname||'')} (${d.employer.slice(0,10)}...)</div>
+                            <div style="font-size:13px;color:var(--text-light);">岗位: ${escHtml(d.job_title)} · 打卡时间: ${d.clock_in_time} · 工时: ${d.work_minutes}分钟</div>
+                            <div style="margin-top:8px;padding:10px;background:#1a1a1a;border:1px solid var(--border);border-radius:6px;font-size:13px;">
                                 <strong>申诉理由：</strong>${escHtml(d.reason)}
                                 ${d.evidence_hash ? '<br><strong>佐证哈希：</strong>' + escHtml(d.evidence_hash) : ''}
                             </div>
@@ -2514,8 +2535,8 @@ async function loadAdminDisputes() {
                         </div>
                         ${canResolve ? `
                         <div style="display:flex;flex-direction:column;gap:6px;margin-left:12px;">
-                            <button class="btn btn-success btn-sm" onclick="resolveDispute(${d.id}, false)">✅ 强制通过</button>
-                            <button class="btn btn-danger btn-sm" onclick="resolveDispute(${d.id}, true)">❌ 维持驳回</button>
+                            <button class="btn btn-success btn-sm" onclick="resolveDispute(${d.id}, false)"> 强制通过</button>
+                            <button class="btn btn-danger btn-sm" onclick="resolveDispute(${d.id}, true)"> 维持驳回</button>
                         </div>` : ''}
                     </div>
                 </div>
@@ -2550,7 +2571,7 @@ async function loadAdminVerifyProfiles() {
         if (profiles.length > 0) { badge.textContent = profiles.length; badge.style.display = 'inline'; }
         else { badge.style.display = 'none'; }
 
-        const levelMap = {A:'A级 🔴', B:'B级 🟠', C:'C级 🟡', NORMAL:'普通 🟢'};
+        const levelMap = {A:'A级 ', B:'B级 ', C:'C级 ', NORMAL:'普通 '};
         const tbody = document.getElementById('adminProfileTable');
         if (!profiles.length) {
             tbody.innerHTML = '<tr><td colspan="7" class="empty-state">暂无待审核画像</td></tr>';
@@ -2562,11 +2583,11 @@ async function loadAdminVerifyProfiles() {
                 <td>${escHtml(p.nickname)}<br><span class="wallet-addr">${p.wallet.slice(0,10)}...</span></td>
                 <td>${levelMap[p.financial_level] || p.financial_level}</td>
                 <td>${p.available_hours}h/周</td>
-                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;">${p.cert_hash || '-'}</td>
+                <td>${p.cert_hash ? (p.cert_hash.startsWith('/uploads/') ? '<a href="' + p.cert_hash + '" target="_blank" style="color:var(--gold);"> 查看文件</a>' : '<span style="font-size:11px;">' + p.cert_hash.slice(0,16) + '...</span>') : '-'}</td>
                 <td>${p.created_at}</td>
                 <td>
-                    <button class="btn btn-success btn-sm" onclick="verifyProfile(${p.id}, true)">✅ 通过</button>
-                    <button class="btn btn-danger btn-sm" onclick="verifyProfile(${p.id}, false)">❌ 驳回</button>
+                    <button class="btn btn-success btn-sm" onclick="verifyProfile(${p.id}, true)"> 通过</button>
+                    <button class="btn btn-danger btn-sm" onclick="verifyProfile(${p.id}, false)"> 驳回</button>
                 </td>
             </tr>
         `).join('');
@@ -2602,7 +2623,7 @@ async function loadAdminRiskAlerts() {
         const alerts = await res.json();
         const tbody = document.getElementById('adminRiskTable');
         if (!alerts.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">暂无风险记录 ✅</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">暂无风险记录 </td></tr>';
             return;
         }
         tbody.innerHTML = alerts.map(a => `
@@ -2612,7 +2633,7 @@ async function loadAdminRiskAlerts() {
                 <td>${escHtml(a.job_title)}</td>
                 <td>${a.clock_in}</td>
                 <td>${a.minutes}分钟</td>
-                <td><span style="color:var(--danger);font-weight:700;">⚠️ ${a.risk_flag}</span></td>
+                <td><span style="color:var(--danger);font-weight:700;"> ${a.risk_flag}</span></td>
                 <td style="font-size:12px;">${a.in_ip || '-'}</td>
                 <td style="font-size:12px;">${a.out_ip || '-'}</td>
             </tr>
@@ -2755,7 +2776,7 @@ async function aiGenerateDesc() {
         showToast('AI 调用失败: ' + e.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '🤖 AI 生成';
+        btn.innerHTML = ' AI 生成';
     }
 }
 
@@ -2794,7 +2815,7 @@ async function saveAIConfig() {
 
 async function testAI() {
     const resultDiv = document.getElementById('aiTestResult');
-    resultDiv.innerHTML = '<span style="color:var(--gold);">⏳ 正在测试 AI 连接...</span>';
+    resultDiv.innerHTML = '<span style="color:var(--gold);"> 正在测试 AI 连接...</span>';
     try {
         const res = await fetch(`${API}/ai_generate_desc`, {
             method: 'POST', headers: {'Content-Type':'application/json'},
@@ -2802,13 +2823,76 @@ async function testAI() {
         });
         const d = await res.json();
         if (d.success) {
-            resultDiv.innerHTML = '<span style="color:var(--success);">✅ 连接成功！生成结果: ' + escHtml(d.description) + '</span>';
+            resultDiv.innerHTML = '<span style="color:var(--success);"> 连接成功！生成结果: ' + escHtml(d.description) + '</span>';
         } else {
-            resultDiv.innerHTML = '<span style="color:var(--danger);">❌ ' + escHtml(d.msg) + '</span>';
+            resultDiv.innerHTML = '<span style="color:var(--danger);"> ' + escHtml(d.msg) + '</span>';
         }
     } catch (e) {
-        resultDiv.innerHTML = '<span style="color:var(--danger);">❌ 连接失败: ' + e.message + '</span>';
+        resultDiv.innerHTML = '<span style="color:var(--danger);"> 连接失败: ' + e.message + '</span>';
     }
+}
+
+// ======================== 佐证材料上传 ========================
+async function uploadCertFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+        showToast('正在上传佐证材料...', 'info');
+        const res = await fetch(`${API}/upload_certification`, { method: 'POST', body: fd });
+        const d = await res.json();
+        if (d.success) {
+            document.getElementById('profileCertHash').value = d.url;
+            showToast('上传成功: ' + d.filename, 'success');
+        } else {
+            showToast(d.msg || '上传失败', 'error');
+        }
+    } catch (e) {
+        showToast('上传失败: ' + e.message, 'error');
+    }
+    event.target.value = '';
+}
+
+// ======================== 模拟攻击（管理员演示） ========================
+let attackRunning = false;
+async function simulateAttack() {
+    if (attackRunning) return;
+    attackRunning = true;
+    const logDiv = document.getElementById('attackLog');
+    const btn = document.getElementById('attackBtn');
+    btn.disabled = true;
+    btn.innerText = '攻击进行中...';
+    logDiv.innerHTML += '<div style="color:var(--gold);margin:4px 0;">[系统] 安全监控已启动，开始扫描威胁...</div>';
+
+    for (let i = 0; i < 8; i++) {
+        await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
+        try {
+            const res = await fetch(`${API}/simulate_attack`, { method: 'POST' });
+            const d = await res.json();
+            const time = new Date().toLocaleTimeString();
+            const severityColor = d.severity === '严重' ? 'var(--danger)' : d.severity === '高危' ? 'var(--warning)' : 'var(--info)';
+            const statusIcon = d.blocked ? '[已拦截]' : '[检测到]';
+            const statusColor = d.blocked ? 'var(--success)' : 'var(--danger)';
+            logDiv.innerHTML += `<div style="margin:4px 0;line-height:1.6;">
+                <span style="color:var(--text-dim);">[${time}]</span>
+                <span style="color:${severityColor};">[${d.severity}]</span>
+                <span style="color:${statusColor};font-weight:700;">${statusIcon}</span>
+                <span style="color:var(--text);"> ${d.attack_name}</span>
+                <span style="color:var(--text-light);"> → ${d.target}</span>
+                <span style="color:var(--text-dim);"> | payload: ${d.payload}</span>
+            </div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        } catch (e) {
+            logDiv.innerHTML += `<div style="color:var(--danger);margin:4px 0;">[错误] 请求失败</div>`;
+        }
+    }
+    logDiv.innerHTML += '<div style="color:var(--gold);margin:8px 0;font-weight:700;">[系统] 模拟攻击结束，共发送 8 次攻击请求</div>';
+    logDiv.innerHTML += '<div style="color:var(--success);margin:4px 0;">[系统] 防火墙状态: 正常 | WAF规则: 已更新 | 入侵检测: 活跃</div>';
+    logDiv.scrollTop = logDiv.scrollHeight;
+    btn.disabled = false;
+    btn.innerText = '启动模拟攻击';
+    attackRunning = false;
 }
 </script>
 </body>

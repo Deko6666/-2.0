@@ -1986,6 +1986,10 @@ def ai_generate_desc(data: AIGenerateRequest):
 4. 只输出简介内容，不要标题和多余文字"""
 
     try:
+        # 确保 URL 以 /v1/chat/completions 结尾
+        if not api_url.endswith('/v1/chat/completions'):
+            api_url = api_url.rstrip('/') + '/v1/chat/completions'
+
         with httpx.Client(timeout=30) as client:
             resp = client.post(
                 api_url,
@@ -2045,7 +2049,9 @@ def update_ai_config(data: AIConfigUpdate):
 # ======================== 岗位图片管理 ========================
 
 JOB_IMAGE_DIR = os.path.join(UPLOAD_DIR, "job_images")
+CERT_DIR = os.path.join(UPLOAD_DIR, "certifications")
 os.makedirs(JOB_IMAGE_DIR, exist_ok=True)
+os.makedirs(CERT_DIR, exist_ok=True)
 
 @app.post("/api/upload_job_image")
 async def upload_job_image(file: UploadFile = File(...)):
@@ -2126,6 +2132,65 @@ def get_job_detail_full(job_id: int):
                 "applicant_count": app_count
             }
         }
+
+# ======================== 佐证材料上传 ========================
+
+@app.post("/api/upload_certification")
+async def upload_certification(file: UploadFile = File(...)):
+    """学生上传佐证材料"""
+    ext = file.filename.split(".")[-1].lower()
+    if ext not in ("jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx"):
+        return {"success": False, "msg": "仅支持 jpg/png/pdf/doc 格式"}
+    filename = f"cert_{int(time.time())}_{os.urandom(4).hex()}.{ext}"
+    save_path = os.path.join(CERT_DIR, filename)
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"success": True, "url": f"/uploads/certifications/{filename}", "filename": file.filename}
+
+@app.get("/api/admin/certifications")
+def get_certifications():
+    """管理员查看所有佐证材料"""
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT p.id, p.wallet_address, p.certification_hash, p.financial_level,
+                   COALESCE(u.nickname,''), p.created_at
+            FROM student_profiles p JOIN users u ON p.user_id = u.id
+            WHERE p.certification_hash IS NOT NULL AND p.certification_hash != ''
+            ORDER BY p.created_at DESC
+        """)).fetchall()
+        return [{"id": r[0], "wallet": r[1], "cert_url": r[2], "financial_level": r[3],
+                 "nickname": r[4], "created_at": str(r[5])} for r in rows]
+
+# ======================== 模拟攻击（仅供演示） ========================
+
+ATTACK_SCENARIOS = [
+    {"name": "SQL注入攻击", "target": "/api/login", "payload": "' OR 1=1 --", "severity": "高危"},
+    {"name": "XSS跨站脚本", "target": "/api/save_job", "payload": "<script>alert('xss')</script>", "severity": "中危"},
+    {"name": "CSRF跨站请求伪造", "target": "/api/approve_application", "payload": "伪造审批请求", "severity": "高危"},
+    {"name": "DDoS流量洪泛", "target": "/api/public_jobs", "payload": "10000 req/s", "severity": "严重"},
+    {"name": "路径遍历攻击", "target": "/uploads/../../etc/passwd", "payload": "../../../etc/passwd", "severity": "高危"},
+    {"name": "合约重入攻击", "target": "settleSalary()", "payload": "fallback() loop", "severity": "严重"},
+    {"name": "私钥窃取尝试", "target": "MetaMask", "payload": "eth_requestAccounts flood", "severity": "严重"},
+    {"name": "未授权访问", "target": "/api/admin/stats", "payload": "无Token直接访问", "severity": "中危"},
+    {"name": "SSRF服务端请求伪造", "target": "/api/ai_generate_desc", "payload": "http://169.254.169.254", "severity": "高危"},
+    {"name": "文件上传漏洞", "target": "/api/upload_avatar", "payload": "shell.php.jpg", "severity": "高危"},
+]
+
+@app.post("/api/simulate_attack")
+def simulate_attack():
+    """模拟安全攻击（纯演示，不执行任何真实攻击）"""
+    import random
+    scenario = random.choice(ATTACK_SCENARIOS)
+    blocked = random.choice([True, True, True, False])  # 75% blocked
+    return {
+        "success": True,
+        "attack_name": scenario["name"],
+        "target": scenario["target"],
+        "payload": scenario["payload"],
+        "severity": scenario["severity"],
+        "blocked": blocked,
+        "message": f"{'已拦截' if blocked else '检测到'} {scenario['name']} → {scenario['target']}"
+    }
 
 # ======================== 静态文件挂载 (必须放最后) ========================
 
