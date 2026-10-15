@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>江西软件职业技术大学勤工助学系统</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="js/vendor/ethers.umd.min.js"></script>
+    <script src="js/vendor/chart.umd.min.js"></script>
     <style>
         :root {
             --gold: #d4a017;
@@ -470,6 +470,28 @@
         .menu-btn:hover { box-shadow: 0 8px 24px var(--gold-glow); transform: translateY(-1px); }
         .home-btn { margin-left: 12px; padding: 10px 22px; border-radius: 10px; border: 1px solid rgba(212,160,23,.55); background: var(--gold-gradient); color: #14100a; font-size: 13.5px; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: .25s; }
         .home-btn:hover { box-shadow: 0 8px 24px var(--gold-glow); transform: translateY(-1px); filter: brightness(1.08); }
+        .campus-btn { margin-left: 12px; padding: 10px 22px; border-radius: 10px; border: 1px solid rgba(212,160,23,.55); background: rgba(212,160,23,.1); color: var(--gold-light); font-size: 13.5px; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: .25s; }
+        .campus-btn:hover { box-shadow: 0 8px 24px var(--gold-glow); transform: translateY(-1px); background: rgba(212,160,23,.2); }
+
+        /* ================= 校园环境页 ================= */
+        .campus-link { color: var(--gold-light); cursor: pointer; border-bottom: 1px dashed rgba(212,160,23,.5); padding-bottom: 2px; transition: .25s; letter-spacing: 1.5px; }
+        .campus-link:hover { color: var(--gold); border-color: var(--gold); }
+        .campus-section { max-width: 1280px; margin: 0 auto; padding: 56px 24px 20px; }
+        .campus-section h2 { font-family: 'Noto Serif SC', serif; font-size: 34px; letter-spacing: 6px; text-align: center; }
+        .campus-section .gold { color: var(--gold-light); }
+        .campus-section p.sub { text-align: center; color: var(--text-light); margin: 12px 0 30px; letter-spacing: 2px; font-size: 13.5px; }
+        .campus-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+        .campus-card { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: var(--card); cursor: pointer; transition: .3s; }
+        .campus-card:hover { transform: translateY(-6px); border-color: var(--gold); box-shadow: 0 20px 46px rgba(0,0,0,.4); }
+        .campus-card img { width: 100%; height: 230px; object-fit: cover; display: block; filter: saturate(1.02) brightness(.94); transition: .4s; }
+        .campus-card:hover img { transform: scale(1.06); filter: saturate(1.12) brightness(1.02); }
+        .campus-card .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 34px 18px 14px; color: #fff; font-size: 14px; letter-spacing: 3px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.78)); }
+        .campus-card .cap small { display: block; margin-top: 5px; font-size: 11px; letter-spacing: 1.5px; color: rgba(255,255,255,.72); }
+        .campus-lightbox { position: fixed; inset: 0; background: rgba(4,4,6,.93); display: none; align-items: center; justify-content: center; z-index: 10000; cursor: zoom-out; }
+        .campus-lightbox.show { display: flex; }
+        .campus-lightbox img { max-width: 88vw; max-height: 80vh; border-radius: 12px; border: 1px solid var(--gold); box-shadow: 0 30px 80px rgba(0,0,0,.65); }
+        .campus-lightbox .lb-cap { position: absolute; left: 0; right: 0; bottom: 6vh; text-align: center; color: rgba(255,255,255,.82); font-size: 14px; letter-spacing: 5px; }
+        @media (max-width: 980px) { .campus-grid { grid-template-columns: 1fr; } }
         .drawer-overlay { position: fixed; inset: 0; background: rgba(5,5,5,.6); opacity: 0; pointer-events: none; transition: .3s; z-index: 9998; }
         .drawer-overlay.show { opacity: 1; pointer-events: auto; }
         .side-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 252px; background: #0d0d0d; border-right: 1px solid rgba(212,160,23,.35); transform: translateX(-100%); transition: transform .32s cubic-bezier(.2,.8,.2,1); z-index: 9999; padding: 28px 0 20px; overflow-y: auto; }
@@ -534,6 +556,103 @@
         @keyframes mottoFloat { 0% { opacity: 0; transform: translateY(30px) rotate(-6deg) scale(.85); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-150px) rotate(8deg) scale(1.15); } }
         /* 头像底色：与页面协调的暗金 */
         .avatar-circle { background: linear-gradient(135deg, #2b2210, #1a1508); border: 1px solid rgba(212,160,23,.28); }
+        /* 迷你操作按键（暗金主题） */
+        .btn-mini { padding: 7px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: .2s; border: 1px solid transparent; letter-spacing: 2px; }
+        .btn-mini:hover { transform: translateY(-1px); filter: brightness(1.12); }
+        .btn-mini:active { transform: translateY(0) scale(.97); }
+        .btn-mini.btn-approve { background: linear-gradient(180deg, #2f9c56, #1f6e3b); color: #fff; border-color: rgba(130,225,160,.35); box-shadow: 0 4px 14px rgba(39,174,96,.28); }
+        .btn-mini.btn-reject { background: linear-gradient(180deg, #b93b2f, #84231a); color: #fff; border-color: rgba(235,125,115,.35); box-shadow: 0 4px 14px rgba(192,57,43,.28); }
+        .btn-mini.btn-gold { background: var(--gold-gradient); color: #14100a; border-color: rgba(230,190,97,.5); box-shadow: 0 4px 14px rgba(212,160,23,.25); }
+
+        /* --- 删除按钮与危险操作：白字更醒目 --- */
+        .btn-danger { color: #fff !important; font-weight: 600; letter-spacing: 2px; }
+        .btn-danger:hover { filter: brightness(1.12); }
+        /* --- 岗位详情编辑弹窗 --- */
+        .detail-edit-mask { position: fixed; inset: 0; background: rgba(4,4,6,.8); display: none; align-items: center; justify-content: center; z-index: 15000; }
+        .detail-edit-mask.show { display: flex; }
+        .detail-edit-modal { width: min(720px, 92vw); max-height: 86vh; overflow: auto; background: #121212; border: 1px solid rgba(212,160,23,.5); border-radius: 14px; padding: 24px 26px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+        .detail-edit-modal h3 { margin: 0 0 14px; letter-spacing: 3px; color: #d4af37; }
+        .detail-edit-modal label { display: block; margin: 12px 0 6px; color: rgba(255,255,255,.75); letter-spacing: 2px; font-size: 13px; }
+        .detail-edit-modal textarea { width: 100%; box-sizing: border-box; background: #0b0b0b; color: #eee; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; padding: 10px 12px; font-size: 13.5px; line-height: 1.8; resize: vertical; font-family: inherit; }
+        .detail-edit-btns { margin-top: 16px; display: flex; gap: 12px; }
+        /* --- 攻击模拟：全屏劫持演示动画（纯前端） --- */
+        .attack-cinema { position: fixed; inset: 0; background: #050505; z-index: 20000; display: none; overflow: hidden; }
+        .attack-cinema.show { display: block; }
+        .attack-cinema canvas#acMatrix { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .22; }
+        .ac-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(212,160,23,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(212,160,23,.06) 1px, transparent 1px); background-size: 46px 46px; }
+        .ac-scan { position: absolute; left: 0; right: 0; height: 130px; background: linear-gradient(180deg, transparent, rgba(255,60,60,.12), transparent); animation: acScan 3.2s linear infinite; }
+        @keyframes acScan { 0% { top: -130px; } 100% { top: 100%; } }
+        .ac-hud { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 30px; }
+        .ac-topbar { position: absolute; top: 22px; left: 0; right: 0; text-align: center; color: #d4af37; font-size: 12px; letter-spacing: 3px; opacity: .85; }
+        .ac-blink { color: #ff3b3b; animation: acBlink 1s steps(2) infinite; }
+        @keyframes acBlink { 50% { opacity: 0; } }
+        .ac-stage { font-size: 58px; font-weight: 900; letter-spacing: 10px; color: #ff3b3b; text-shadow: 0 0 30px rgba(255,59,59,.55); animation: acGlitch 1.6s infinite; text-align: center; }
+        .ac-stage.gold { color: #d4af37; text-shadow: 0 0 30px rgba(212,175,55,.5); }
+        .ac-stage.green { color: #2ecc71; text-shadow: 0 0 30px rgba(46,204,113,.5); }
+        .ac-stage.purple { color: #b57bff; text-shadow: 0 0 30px rgba(181,123,255,.55); }
+        .attack-cinema.danger { animation: acRedPulse 1.8s infinite; }
+        .attack-cinema.safe { box-shadow: inset 0 0 160px rgba(30,200,120,.22); }
+        .attack-cinema.shake { animation: acShake .95s; }
+        @keyframes acShake { 0%,100% { transform: translate(0,0); } 15% { transform: translate(-8px,4px); } 30% { transform: translate(7px,-5px); } 45% { transform: translate(-6px,-3px); } 60% { transform: translate(6px,4px); } 75% { transform: translate(-4px,2px); } 90% { transform: translate(3px,-2px); } }
+        @keyframes acRedPulse { 0%,100% { box-shadow: inset 0 0 160px rgba(255,30,30,.3); } 50% { box-shadow: inset 0 0 240px rgba(255,30,30,.5); } }
+        @keyframes acGlitch { 0%,100% { transform: translate(0); } 48% { transform: translate(-2px, 1px) skewX(-1deg); } 52% { transform: translate(2px, -1px) skewX(1deg); } }
+        .ac-sub { color: rgba(255,255,255,.75); letter-spacing: 5px; font-size: 15px; text-align: center; }
+        .ac-term { width: min(720px, 86vw); height: 252px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(10,10,12,.82); border: 1px solid rgba(212,160,23,.35); border-radius: 10px; padding: 12px 18px; font-family: Consolas, monospace; font-size: 13px; line-height: 25px; color: #9fe8a9; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+        .ac-term .l { opacity: 0; animation: acLine .3s forwards; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ac-term .l.warn { color: #ff6b6b; }
+        .ac-term .l.gold { color: #d4af37; }
+        @keyframes acLine { to { opacity: 1; } }
+        .ac-progress { width: min(720px, 86vw); height: 10px; border-radius: 999px; background: rgba(255,255,255,.12); overflow: hidden; }
+        .ac-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #d4af37, #ff3b3b); transition: width .5s ease; box-shadow: 0 0 18px rgba(212,175,55,.6); }
+        .ac-foot { position: absolute; bottom: 26px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,.42); font-size: 12px; letter-spacing: 3px; }
+        /* ===== 部门数据看板 / 勋章评价中心 / Excel 导出 ===== */
+        .export-bar { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0 4px; }
+        .btn-export { background: linear-gradient(135deg, rgba(212,160,23,.16), rgba(212,160,23,.06)); border: 1px solid rgba(212,160,23,.55); color: var(--gold-light); border-radius: 10px; padding: 9px 18px; font-size: 13px; letter-spacing: 2px; cursor: pointer; transition: .25s; }
+        .btn-export:hover { background: rgba(212,160,23,.28); box-shadow: 0 8px 22px var(--gold-glow); transform: translateY(-1px); }
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .stat-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 16px; }
+        .stat-card { flex: 1; min-width: 150px; background: rgba(212,160,23,.07); border: 1px solid rgba(212,160,23,.3); border-radius: 12px; padding: 14px 16px; }
+        .stat-card .k { color: #aaa; font-size: 12px; letter-spacing: 2px; }
+        .stat-card .v { color: var(--gold-light); font-size: 24px; font-weight: 800; margin-top: 6px; }
+        .budget-bar { height: 12px; border-radius: 999px; background: rgba(255,255,255,.1); overflow: hidden; margin: 8px 0 14px; }
+        .budget-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), #ff8c3f); border-radius: 999px; transition: width .6s ease; }
+        .ledger-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .ledger-table th, .ledger-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: left; }
+        .ledger-table th { color: var(--gold-light); letter-spacing: 2px; font-size: 12px; }
+        .ledger-table tr:hover td { background: rgba(212,160,23,.06); }
+        .stars-pick span { font-size: 30px; cursor: pointer; color: rgba(255,255,255,.25); margin-right: 6px; transition: .2s; }
+        .stars-pick span.on { color: var(--gold); text-shadow: 0 0 14px var(--gold-glow); }
+        .badge-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .badge-card { background: rgba(212,160,23,.06); border: 1px solid rgba(212,160,23,.35); border-radius: 14px; padding: 16px; }
+        .badge-card h4 { color: var(--gold-light); letter-spacing: 2px; margin: 0 0 8px; }
+        .badge-card .row { display: flex; justify-content: space-between; font-size: 12px; color: #bbb; margin: 4px 0; gap: 10px; }
+        .badge-card img { width: 92px; height: 92px; border-radius: 8px; background: #fff; padding: 4px; }
+        .cert-mask { position: fixed; inset: 0; background: rgba(4,4,6,.85); display: none; align-items: center; justify-content: center; z-index: 12000; }
+        .cert-mask.show { display: flex; }
+        .cert-paper { width: min(720px, 92vw); background: #fdfaf2; color: #222; border-radius: 10px; padding: 36px 42px; border: 6px double #b8912f; }
+        .cert-paper h2 { text-align: center; letter-spacing: 8px; color: #8a6a15; margin-top: 0; }
+        .cert-paper .line { margin: 10px 0; line-height: 2.1; font-size: 15px; }
+        .cert-paper .foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 18px; }
+        @media (max-width: 980px) { .dash-grid { grid-template-columns: 1fr; } }
+        @media print { body * { visibility: hidden; } .cert-mask, .cert-mask * { visibility: visible; } .cert-mask { position: absolute; inset: 0; background: #fff; } .cert-paper { box-shadow: none; } }
+        /* ===== 前沿技术实验室 ===== */
+        .tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        .tech-card { background: rgba(212,160,23,.05); border: 1px solid rgba(212,160,23,.32); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+        .tech-card h3 { color: var(--gold-light); letter-spacing: 2px; font-size: 17px; margin: 0; }
+        .tech-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tech-tags span { font-size: 11px; color: var(--gold-light); background: rgba(212,160,23,.14); border: 1px solid rgba(212,160,23,.3); padding: 3px 8px; border-radius: 999px; letter-spacing: 1px; }
+        .tech-val { color: #bbb; font-size: 12.5px; line-height: 1.9; margin: 0; }
+        .tech-params { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: center; }
+        .tech-params label { font-size: 11.5px; color: #999; letter-spacing: 1px; grid-column: span 2; }
+        .tech-params input { padding: 8px 10px; border-radius: 8px; background: #0b0b0b; color: #eee; border: 1px solid rgba(255,255,255,.16); font-size: 13px; }
+        .tech-out { background: #0a0c0a; border: 1px solid rgba(212,160,23,.25); border-radius: 10px; padding: 12px 14px; color: #9fe8a9; font-family: Consolas, monospace; font-size: 12px; line-height: 2; min-height: 120px; margin: 0; white-space: pre-wrap; }
+        .tech-line { opacity: 0; animation: techLine .35s forwards; }
+        @keyframes techLine { to { opacity: 1; } }
+        .tech-metrics { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tech-chip { display: inline-flex; flex-direction: column; background: rgba(212,160,23,.1); border: 1px solid rgba(212,160,23,.35); border-radius: 8px; padding: 5px 10px; }
+        .tech-chip i { font-style: normal; font-size: 10px; color: #999; letter-spacing: 1px; }
+        .tech-chip b { color: var(--gold-light); font-size: 13px; }
+        @media (max-width: 1100px) { .tech-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -551,7 +670,7 @@
             <img class="logo-icon" src="images/campus-badge.png" alt="校徽" style="object-fit:contain;background:radial-gradient(circle at 35% 28%, #2c2210, #14100a);padding:3px;border-radius:50%;box-shadow:0 0 0 1px rgba(212,160,23,.45),0 6px 20px rgba(212,160,23,.18);">
             <div class="logo-text">江西软件职业技术大学勤工助学系统</div>
         </div>
-        <button class="home-btn" onclick="switchPage('home')">首页</button>
+        <button class="home-btn" onclick="switchPage('home')">首页</button><button class="campus-btn" onclick="switchPage('campus')">校园环境</button>
         <div class="nav-links" id="navLinks" style="display:none;">
             
             <span class="active" onclick="switchPage('hall')"> 任务大厅</span>
@@ -582,6 +701,8 @@
         <div class="drawer-link" data-page="salary" id="drawerSalary" onclick="drawerGo('salary')"><span class="no">04</span> 薪酬记录</div>
         <div class="drawer-link" data-page="profile" id="drawerProfile" onclick="drawerGo('profile')"><span class="no">05</span> 个人画像</div>
         <div class="drawer-link" data-page="autoSettle" id="drawerAutoSettle" onclick="drawerGo('autoSettle')"><span class="no">06</span> 自动结算</div>
+                <div class="drawer-link" data-page="deptDashboard" id="drawerDept" onclick="drawerGo('deptDashboard')" style="display:none;"><span class="drawer-no no">00</span><span class="drawer-text">部门数据看板</span></div>
+                <div class="drawer-link" data-page="badgeCenter" id="drawerBadge" onclick="drawerGo('badgeCenter')" style="display:none;"><span class="drawer-no no">00</span><span class="drawer-text">勋章与评价中心</span></div>
         <div class="drawer-link" data-page="admin" id="drawerAdmin" onclick="drawerGo('admin')"><span class="no">07</span> 系统管理</div>
         <div class="drawer-link" id="drawerRewards" data-page="rewards" onclick="drawerGo('rewards')" style="display:none;"><span class="no">08</span> 奖惩管理</div>
         <div class="drawer-foot">链上存证 · 薪酬自动结算<br>江西软件职业技术大学</div>
@@ -618,20 +739,20 @@
                     学校坐落于革命摇篮井冈山，是一所以软件与信息技术为特色的高等职业院校。学校坚持<b>产教融合、工学结合</b>的办学理念，弘扬井冈山精神，致力于培养高素质技术技能型数字工匠。<br><br>
                     本平台由学校勤工助学管理中心建设运营，依托<b>区块链存证</b>与<b>智能匹配算法</b>，为全校同学提供公开、公平、高效的勤工助学岗位申请、工时记录与薪酬自动结算服务，让每一份付出都有迹可循、按时兑现。
                 </div>
-                <div class="home-about-photo" style="background-image:url('images/campus-hero.png')"></div>
+                <div class="home-about-photo" style="background-image:url('images/campus-library.jpg')"></div>
             </div>
         </section>
 
         <section class="home-section">
             <div class="home-section-head">
                 <h2>校园风光</h2>
-                <p>CAMPUS SCENERY</p>
+                <p>CAMPUS SCENERY &nbsp;·&nbsp; <a class="campus-link" onclick="switchPage('campus')">查看全部校园环境 →</a></p>
             </div>
-            <!-- 后续新图片放入 D:\Campus\frontend\images 后，可在下方追加 .home-photo 卡片 -->
+            <!-- 校园风光：三张实景图，更多图片见「校园环境」页 -->
             <div class="home-gallery">
-                <div class="home-photo photo-1"><div class="cap">钟楼晨光</div></div>
-                <div class="home-photo photo-2"><div class="cap">郁金香花海</div></div>
-                <div class="home-photo photo-3"><div class="cap">湖畔薄雾</div></div>
+                <div class="home-photo photo-1" style="background-image:url('images/campus-aerial.jpg');background-size:cover;background-position:center;"><div class="cap">钟楼晨光 · 空中俯瞰</div></div>
+                <div class="home-photo photo-2" style="background-image:url('images/campus-buildings.jpg');background-size:cover;background-position:center;"><div class="cap">教学楼 · 蓝天绿茵</div></div>
+                <div class="home-photo photo-3" style="background-image:url('images/campus-lake.jpg');background-size:cover;background-position:center;"><div class="cap">湖畔薄雾</div></div>
             </div>
         </section>
 
@@ -659,6 +780,251 @@
         </footer>
     </div>
 
+    <!-- ==================== 校园环境 ==================== -->
+    <div id="campusPage" class="page">
+        <section class="home-hero" style="background-image:url('images/campus-hero.png')">
+            <div class="home-hero-mask"></div>
+            <div class="home-hero-content">
+                <div class="home-hero-pill">江西软件职业技术大学 · 校园实景</div>
+                <h1>校园环境</h1>
+                <div class="home-hero-sub">CAMPUS ENVIRONMENT</div>
+                <div class="home-hero-desc">钟楼 · 花海 · 湖畔 · 书香 —— 一草一木皆是青春</div>
+                <div class="home-hero-actions">
+                    <button class="hbtn hbtn-primary" onclick="switchPage('home')">返回首页</button>
+                    <button class="hbtn hbtn-ghost" onclick="document.querySelector('#campusGrid').scrollIntoView({behavior:'smooth'})">浏览图库</button>
+                </div>
+            </div>
+            <div class="home-hero-foot">江西软件职业技术大学 · 校园实景图库</div>
+        </section>
+
+        <section class="campus-section">
+            <div class="home-about-label" style="margin:0 auto 14px;">CAMPUS GALLERY</div>
+            <h2>校园实景<span class="gold">图库</span></h2>
+            <p class="sub">点击任意图片可放大查看 · 九张校园实拍记录四时风光</p>
+            <div class="campus-grid" id="campusGrid"></div>
+        </section>
+    </div>
+
+    <div class="campus-lightbox" id="campusLightbox" onclick="closeCampusLightbox()">
+        <img id="campusLightboxImg" src="" alt="">
+        <div class="lb-cap" id="campusLightboxCap"></div>
+    </div>
+
+    <!-- 攻击模拟：全屏劫持演示（纯前端动画，仅用于演示） -->
+    <div id="attackCinema" class="attack-cinema">
+        <canvas id="acMatrix"></canvas>
+        <div class="ac-grid"></div>
+        <div class="ac-scan"></div>
+        <div class="ac-hud">
+            <div class="ac-topbar"><span class="ac-blink">●</span> DECENTRALIZED FIREWALL v3.7 &nbsp;|&nbsp; CHAIN ID 887766 &nbsp;|&nbsp; NODE 127.0.0.1:8545 &nbsp;|&nbsp; WAF: BREACH</div>
+            <div class="ac-stage" id="acStage"></div>
+            <div class="ac-sub" id="acSub"></div>
+            <div class="ac-term" id="acTerm"></div>
+            <div class="ac-progress"><div class="ac-bar" id="acBar"></div></div>
+            
+        </div>
+    </div>
+
+    <!-- 岗位详情编辑弹窗（管理员/教师） -->
+    <!-- ==================== 部门数据看板（教师） ==================== -->
+    <div id="deptDashboardPage" class="page">
+        <div class="container">
+            <div class="card" style="margin-bottom:18px;">
+                <div class="card-title"> 部门数据看板 · 本科室用工与预算分析</div>
+                <div class="export-bar">
+                    <button class="btn btn-export" onclick="exportExcel('attendance')"> 一键导出考勤表</button>
+                    <button class="btn btn-export" onclick="exportExcel('budget')"> 导出预算明细</button>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-card"><div class="k">预算池 · 已分配</div><div class="v" id="budAlloc">-</div></div>
+                    <div class="stat-card"><div class="k">已消耗</div><div class="v" id="budUsed">-</div></div>
+                    <div class="stat-card"><div class="k">剩余可用</div><div class="v" id="budLeft">-</div></div>
+                    <div class="stat-card"><div class="k">预算消耗速率</div><div class="v" id="budRate">-</div></div>
+                </div>
+                <div class="budget-bar"><i id="budBar" style="width:0%"></i></div>
+                <div style="color:#aaa;font-size:12px;letter-spacing:2px;margin-bottom:6px;">预算消耗速率图（按周，单位：ETH）</div>
+                <canvas id="budgetTrendChart" height="110"></canvas>
+            </div>
+            <div class="dash-grid">
+                <div class="card">
+                    <div class="card-title"> 学生工时走势图（按周）</div>
+                    <canvas id="hoursTrendChart" height="150"></canvas>
+                </div>
+                <div class="card">
+                    <div class="card-title"> 部门考勤健康度</div>
+                    <div class="stat-row">
+                        <div class="stat-card"><div class="k">迟到率</div><div class="v" id="hlthLate">-</div></div>
+                        <div class="stat-card"><div class="k">早退率</div><div class="v" id="hlthEarly">-</div></div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-card"><div class="k">异地异常打卡率</div><div class="v" id="hlthAbn">-</div></div>
+                        <div class="stat-card"><div class="k">考勤记录 / 累计工时</div><div class="v" id="hlthRec">-</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="margin-top:18px;">
+                <div class="card-title"> 本月科室学生勤工助学签到台账（预览）</div>
+                <table class="ledger-table">
+                    <thead><tr><th>学生姓名</th><th>岗位名称</th><th>用人部门</th><th>上班时间</th><th>下班时间</th><th>工时(小时)</th></tr></thead>
+                    <tbody id="ledgerBody"><tr><td colspan="6" style="text-align:center;color:#999">加载中...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 勋章与评价中心（教师） ==================== -->
+    <div id="badgeCenterPage" class="page">
+        <div class="container">
+            <div class="card" style="margin-bottom:18px;">
+                <div class="card-title">⚒ 勋章铸造工坊 · 高校实践育人成果库</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div>
+                        <label style="color:#bbb;font-size:13px;">评定学生</label>
+                        <select id="badgeStudent" style="width:100%;padding:10px;border-radius:8px;background:#0b0b0b;color:#eee;border:1px solid rgba(255,255,255,.16);"></select>
+                    </div>
+                    <div>
+                        <label style="color:#bbb;font-size:13px;">学期（如：2026-2027-1）</label>
+                        <input id="badgeSemester" placeholder="2026-2027-1" style="width:100%;padding:10px;border-radius:8px;background:#0b0b0b;color:#eee;border:1px solid rgba(255,255,255,.16);">
+                    </div>
+                    <div>
+                        <label style="color:#bbb;font-size:13px;">岗位名称</label>
+                        <input id="badgeJob" placeholder="如：图书整理员" style="width:100%;padding:10px;border-radius:8px;background:#0b0b0b;color:#eee;border:1px solid rgba(255,255,255,.16);">
+                    </div>
+                    <div>
+                        <label style="color:#bbb;font-size:13px;">用工部门</label>
+                        <input id="badgeDept" placeholder="如：图书部" style="width:100%;padding:10px;border-radius:8px;background:#0b0b0b;color:#eee;border:1px solid rgba(255,255,255,.16);">
+                    </div>
+                    <div>
+                        <label style="color:#bbb;font-size:13px;">总工时（小时）</label>
+                        <input id="badgeHours" type="number" value="36" style="width:100%;padding:10px;border-radius:8px;background:#0b0b0b;color:#eee;border:1px solid rgba(255,255,255,.16);">
+                    </div>
+                    <div>
+                        <label style="color:#bbb;font-size:13px;">星级评定</label>
+                        <div class="stars-pick" id="starPick">
+                            <span class="on" onclick="setStars(1)">★</span><span class="on" onclick="setStars(2)">★</span><span class="on" onclick="setStars(3)">★</span><span class="on" onclick="setStars(4)">★</span><span class="on" onclick="setStars(5)">★</span>
+                        </div>
+                    </div>
+                </div>
+                <label style="color:#bbb;font-size:13px;">学期考核评语 <button class="btn btn-ai btn-sm" style="margin-left:10px;" onclick="aiGenerateComment()" id="aiGenCommentBtn"> AI 生成</button></label>
+                <textarea id="badgeComment" rows="3" placeholder="该同学在本岗位认真负责、表现优良……" style="width:100%;padding:10px;border-radius:8px;background:#0b0b0b;color:#eee;border:1px solid rgba(255,255,255,.16);"></textarea>
+                <button class="btn btn-gold btn-lg" style="margin-top:12px;" onclick="issueBadgeMint()">⚒ 发起灵魂绑定铸造（存证上链）</button>
+            </div>
+            <div class="card">
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;"> 本科室历史勋章荣誉墙 <button class="btn btn-export btn-sm" onclick="exportExcel('badges')"> 导出荣誉册</button></div>
+                <div class="badge-wall" id="badgeWall"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cert-mask" id="certMask" onclick="closeCert()">
+        <div class="cert-paper" id="certPaper" onclick="event.stopPropagation()"></div>
+    </div>
+
+    <!-- 六大前沿技术已内生融入业务流程（打卡/结算/兑换/验真/台账），独立演示页下架 -->
+    <div id="techLabPage" class="page" style="display:none;">
+        <div class="container">
+            <div class="card" style="margin-bottom:18px;">
+                <div class="card-title"> 前沿技术实验室 · 六大高级模块</div>
+                <p style="color:#bbb;line-height:2;font-size:13.5px;">
+                    本实验室集成六大前沿区块链与现代密码学模块：零知识隐私资格证明、全同态密文薪酬核算、乐观并发执行引擎、
+                    纠删码数据可用性采样、DAG 异步共识存证、向量承诺无状态验真。算法引擎位于 <b style="color:var(--gold-light);">modules/</b> 目录，
+                    零知识电路位于 <b style="color:var(--gold-light);">circuits/</b> 目录，均可在链上接口与合约中直接调用。
+                </p>
+                <div id="techRoleHint" style="margin-top:8px;color:var(--gold-light);letter-spacing:2px;font-size:13px;"></div>
+            </div>
+            <div class="tech-grid">
+                <div class="tech-card" data-roles="STUDENT">
+                    <h3> 零知识隐私资格证明</h3>
+                    <div class="tech-tags"><span>零知识论证</span><span>承诺-挑战-验证</span><span>链上验真</span></div>
+                    <p class="tech-val">困难生申请岗位只交证明、不交材料，链上验证资格却查不到任何隐私。</p>
+                    <div class="tech-params">
+                        <label>学号</label><input id="tech_zkp_sid" value="2023010101">
+                        <label>学期</label><input id="tech_zkp_season" value="2026-2027-1">
+                        <label>总工时 / 最低工时</label><input id="tech_zkp_hours" value="30" type="number"> <input id="tech_zkp_min" value="20" type="number">
+                    </div>
+                    <button class="btn btn-export" onclick="runTechModule('zkp')">⚙ 运行算法</button>
+                    <pre class="tech-out" id="tech_out_zkp">待运行…</pre>
+                    <div class="tech-metrics" id="tech_m_zkp"></div>
+                </div>
+                <div class="tech-card" data-roles="STUDENT">
+                    <h3> 全同态密文薪酬核算</h3>
+                    <div class="tech-tags"><span>同态加密</span><span>密文计算</span><span>隐私薪酬</span></div>
+                    <p class="tech-val">薪资全程密文流转，合约在密文上直接算钱，发放前无人能看。</p>
+                    <div class="tech-params">
+                        <label>底薪</label><input id="tech_fhe_base" value="3200" type="number">
+                        <label>奖金 / 扣罚</label><input id="tech_fhe_bonus" value="400" type="number"> <input id="tech_fhe_penalty" value="80" type="number">
+                    </div>
+                    <button class="btn btn-export" onclick="runTechModule('fhe')">⚙ 运行算法</button>
+                    <pre class="tech-out" id="tech_out_fhe">待运行…</pre>
+                    <div class="tech-metrics" id="tech_m_fhe"></div>
+                </div>
+                <div class="tech-card" data-roles="ADMIN">
+                    <h3> 乐观并发执行引擎</h3>
+                    <div class="tech-tags"><span>并行结算</span><span>冲突自动重试</span><span>高吞吐</span></div>
+                    <p class="tech-val">上千人月末结算并行执行，冲突乐观重试，吞吐量成倍提升。</p>
+                    <div class="tech-params">
+                        <label>并发交易数</label><input id="tech_bs_tx" value="24" type="number">
+                        <label>每笔金额</label><input id="tech_bs_amount" value="36" type="number">
+                    </div>
+                    <button class="btn btn-export" onclick="runTechModule('blockstm')">⚙ 运行算法</button>
+                    <pre class="tech-out" id="tech_out_blockstm">待运行…</pre>
+                    <div class="tech-metrics" id="tech_m_blockstm"></div>
+                </div>
+                <div class="tech-card" data-roles="TEACHER">
+                    <h3> 纠删码数据可用性采样</h3>
+                    <div class="tech-tags"><span>纠删码</span><span>随机采样</span><span>降本存储</span></div>
+                    <p class="tech-val">海量打卡凭证链下切片存放，抽 6 片即可高置信度保数据可用。</p>
+                    <div class="tech-params">
+                        <label>数据片 / 校验片</label><input id="tech_das_total" value="16" type="number"> <input id="tech_das_parity" value="8" type="number">
+                        <label>采样数</label><input id="tech_das_sample" value="6" type="number">
+                    </div>
+                    <button class="btn btn-export" onclick="runTechModule('das')">⚙ 运行算法</button>
+                    <pre class="tech-out" id="tech_out_das">待运行…</pre>
+                    <div class="tech-metrics" id="tech_m_das"></div>
+                </div>
+                <div class="tech-card" data-roles="TEACHER">
+                    <h3> DAG 异步共识存证</h3>
+                    <div class="tech-tags"><span>有向无环图</span><span>异步出块</span><span>高并发确权</span></div>
+                    <p class="tech-val">高峰期打卡交易打包成图并行出块，秒级确权不排队。</p>
+                    <div class="tech-params">
+                        <label>出块轮数</label><input id="tech_narwhal_rounds" value="3" type="number">
+                        <label>打卡交易数</label><input id="tech_narwhal_tx" value="12" type="number">
+                    </div>
+                    <button class="btn btn-export" onclick="runTechModule('narwhal')">⚙ 运行算法</button>
+                    <pre class="tech-out" id="tech_out_narwhal">待运行…</pre>
+                    <div class="tech-metrics" id="tech_m_narwhal"></div>
+                </div>
+                <div class="tech-card" data-roles="STUDENT">
+                    <h3> 向量承诺无状态验真</h3>
+                    <div class="tech-tags"><span>向量承诺</span><span>128 字节证明</span><span>秒验</span></div>
+                    <p class="tech-val">扫码验真只要 128 字节证明，手机毫秒级校验，无需下载全链。</p>
+                    <div class="tech-params">
+                        <label>勋章编号</label><input id="tech_v_token" value="1024" type="number">
+                        <label>附加叶子数</label><input id="tech_v_leaves" value="6" type="number">
+                    </div>
+                    <button class="btn btn-export" onclick="runTechModule('verkle')">⚙ 运行算法</button>
+                    <pre class="tech-out" id="tech_out_verkle">待运行…</pre>
+                    <div class="tech-metrics" id="tech_m_verkle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-edit-mask" id="detailEditMask">
+        <div class="detail-edit-modal">
+            <h3>✏️ 编辑岗位信息</h3>
+            <label>岗位描述（列表卡片展示，简短）</label>
+            <textarea id="editJobDesc" rows="3"></textarea>
+            <label>岗位详情（约500字，学生点进岗位后查看）</label>
+            <textarea id="editJobDetail" rows="12"></textarea>
+            <div class="detail-edit-btns">
+                <button class="btn btn-gold" onclick="saveJobDetailEdit()"> 保存修改</button>
+                <button class="btn" onclick="closeJobDetailEdit()">取消</button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- ==================== 任务大厅 ==================== -->
     <div id="hallPage" class="page">
         <div id="teacherPublish" class="card" style="display:none; border-left: 4px solid var(--gold);">
@@ -673,6 +1039,11 @@
             <div style="position:relative;">
                 <textarea id="jobDesc" placeholder="工作内容、任职要求等" style="padding-right:120px;"></textarea>
                 <button class="btn btn-ai btn-sm" onclick="aiGenerateDesc()" id="aiGenBtn" style="position:absolute;right:8px;bottom:22px;"> AI 生成</button>
+            </div>
+            <label>岗位详情（约500字，学生点击岗位可查看）</label>
+            <div style="position:relative;">
+                <textarea id="jobDetail" rows="6" placeholder="岗位职责、工作内容、任职要求、排班与考核等详细说明（约500字）" style="padding-right:120px;"></textarea>
+                <button class="btn btn-ai btn-sm" onclick="aiGenerateDetail()" id="aiGenDetailBtn" style="position:absolute;right:8px;bottom:22px;"> AI 生成</button>
             </div>
             <button class="btn btn-gold btn-lg" onclick="publishJob()" style="margin-top:4px;"> 链上发布并锁仓</button>
         </div>
@@ -945,7 +1316,9 @@
             <div class="card-title"> 模拟攻击演示</div>
             <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">模拟常见网络攻击场景，展示系统安全防护能力（纯演示，无实际攻击行为）</p>
             <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-                <button id="attackBtn" class="btn btn-danger" onclick="simulateAttack()" style="min-width:160px;">启动模拟攻击</button>
+                <button id="attackBtn" class="btn btn-danger" onclick="simulateAttack('hijack')" style="min-width:148px;"> 网页劫持攻击</button>
+                <button id="attackBtn2" class="btn btn-danger" onclick="simulateAttack('inject')" style="min-width:148px;"> 数据库注入攻击</button>
+                <button id="attackBtn3" class="btn btn-danger" onclick="simulateAttack('ransom')" style="min-width:148px;"> 勒索病毒攻击</button>
                 <div style="display:flex;gap:20px;font-size:13px;">
                     <span style="color:var(--success);"> WAF: 正常运行</span>
                     <span style="color:var(--success);"> IDS: 活跃</span>
@@ -956,9 +1329,20 @@
                 <div style="color:var(--text-dim);">等待启动模拟攻击...</div>
             </div>
         </div>
-        <!-- 岗位管理 -->
+                <!-- 数据导出中心 -->
+        <div class="card" style="margin-bottom:18px;">
+            <div class="card-title"> 数据导出中心</div>
+            <div class="export-bar">
+                <button class="btn btn-export" onclick="exportExcel('users')"> 导出用户表</button>
+                <button class="btn btn-export" onclick="exportExcel('jobs')"> 导出岗位表</button>
+                <button class="btn btn-export" onclick="exportExcel('settlements')"> 导出薪酬发放表</button>
+                <button class="btn btn-export" onclick="exportExcel('rewards')">⚖ 导出奖惩流水表</button>
+            </div>
+        </div>
+
+<!-- 岗位管理 -->
         <div class="card">
-            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;"> 岗位管理 <button class="btn btn-danger btn-sm" onclick="adminDeleteAllJobs()"> 清空全部</button></div>
+            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;"> 岗位管理 <button class="btn btn-danger btn-sm" onclick="adminDeleteAllJobs()"> 清空全部岗位</button></div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>ID</th><th>链上ID</th><th>岗位名称</th><th>部门</th><th>发布者</th><th>状态</th><th>操作</th></tr></thead>
@@ -1017,7 +1401,7 @@
     <div id="minePage" class="page">
         <div class="card">
             <div class="profile-header">
-                <img id="myAvatar" class="avatar-circle" src="https://api.dicebear.com/7.x/bottts/svg?seed=1" onclick="document.getElementById('fileBtn').click()">
+                <img id="myAvatar" class="avatar-circle" src="images/avatar-default.svg" onclick="document.getElementById('fileBtn').click()">
                 <div style="flex:1;">
                     <h2 style="margin:0 0 6px; font-size:20px;"><span id="myNickname">新同学</span> <small id="myRoleTag" style="color:#999; font-size:13px;"></small></h2>
                     <p style="font-size:13px; color:#666;">账号: <span id="myUsername"></span></p>
@@ -1111,6 +1495,8 @@
             <div class="detail-info-item"><div class="detail-info-label"> 申请人数</div><div class="detail-info-value" id="detailApplicants">-</div></div>
         </div>
         <div class="detail-desc" id="detailDesc">暂无描述</div>
+        <div class="detail-desc-full" id="detailFull" style="margin:14px 0;white-space:pre-wrap;line-height:2.1;">正在加载岗位详情...</div>
+        <button id="detailEditBtn" class="btn btn-ai btn-sm" style="display:none;margin:8px 0;" onclick="openJobDetailEdit()">✏️ 编辑岗位详情</button>
         <div style="display:flex;gap:10px;align-items:center;margin:16px 0;">
             <img id="detailTeacherAvatar" src="" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--gold-dark);">
             <div>
@@ -1230,9 +1616,9 @@ function stopClockTimer() {
 }
 
 const API = "http://127.0.0.1:8000/api";
-const CONTRACT_ADDR = "0x3eb91eae0338985ae8d774078e7cd7a38086d609";
-const SBT_CONTRACT_ADDR = "0x9d294b6dfd86640a8c7482b4120117e3763fd0bd"; // 部署后自动更新
-const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=1";
+const CONTRACT_ADDR = "0xf02c7c0f2a0fc1f823d1d42eedfce66006d08f03";
+const SBT_CONTRACT_ADDR = "0x191fc046dc32297c480f7346ed5fcc73eac90fb6"; // 部署后自动更新
+const DEFAULT_AVATAR = "images/avatar-default.svg";
 
 const CONTRACT_ABI = [
     "function createJob(string _title, string _department, uint256 _hourlyRate) external payable",
@@ -1417,7 +1803,7 @@ window.onload = () => {
             try {
                 const res = await fetch(`${API}/exchange_points`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_address: currentUser.wallet_address, points: pts }) });
                 const d = await res.json();
-                if (d.success) { showToast(`兑换成功！助学金 ¥${d.amount_yuan} 已计入奖惩记录`, 'success'); loadPoints(); }
+                if (d.success) { showToast(`兑换成功！助学金 ¥${d.amount_yuan} 已计入奖惩记录`, 'success'); techNote('zkp'); loadPoints(); }
                 else showToast(d.msg || '兑换失败', 'error');
             } catch (e) { showToast('兑换失败：' + e.message, 'error'); }
         }
@@ -1436,7 +1822,7 @@ window.onload = () => {
                 const list = await res.json();
                 if (!Array.isArray(list) || !list.length) { box.innerHTML = '<div class="empty-state"><p>暂无奖惩记录</p></div>'; }
                 else {
-                    box.innerHTML = `<table class="data-table"><thead><tr><th>类型</th><th>学生</th><th>金额(元)</th><th>原因</th><th>状态</th><th>时间</th><th>操作</th></tr></thead><tbody>${list.map(r => `<tr><td>${rpBadge(r.type)}</td><td>${String(r.student_address).slice(0, 12)}...</td><td style="color:${r.amount_yuan >= 0 ? '#27ae60' : '#e74c3c'}">${r.amount_yuan >= 0 ? '+' : ''}${r.amount_yuan}</td><td>${r.reason || '-'}</td><td>${r.processed ? '已处理' : (r.seen ? '待扣款' : '新提醒')}</td><td>${String(r.created_at || '').slice(0, 16)}</td><td>${r.processed ? '<span style="color:#888">已完成</span>' : `<button class="btn-mini btn-approve" onclick="adminDeduct(${r.id})">扣钱</button>`}</td></tr>`).join('')}</tbody></table>`;
+                    box.innerHTML = `<table class="data-table"><thead><tr><th>类型</th><th>学生</th><th>金额(元)</th><th>原因</th><th>状态</th><th>时间</th><th>操作</th></tr></thead><tbody>${list.map(r => `<tr><td>${rpBadge(r.type)}</td><td>${String(r.student_address).slice(0, 12)}...</td><td style="color:${r.amount_yuan >= 0 ? '#27ae60' : '#e74c3c'}">${r.amount_yuan >= 0 ? '+' : ''}${r.amount_yuan}</td><td>${r.reason || '-'}</td><td>${r.processed ? '已处理' : (r.seen ? (r.amount_yuan >= 0 ? '待发放' : '待扣款') : '新提醒')}</td><td>${String(r.created_at || '').slice(0, 16)}</td><td>${r.processed ? '<span style="color:#888">已完成</span>' : (r.amount_yuan >= 0 ? `<button class="btn-mini btn-approve" onclick="adminDeduct(${r.id}, true)">发奖</button>` : `<button class="btn-mini btn-reject" onclick="adminDeduct(${r.id}, false)">扣钱</button>`)}</td></tr>`).join('')}</tbody></table>`;
                 }
                 const news = Array.isArray(list) ? list.filter(r => !r.seen && (r.type === 'LATE' || r.type === 'EARLY')) : [];
                 if (news.length) {
@@ -1446,15 +1832,16 @@ window.onload = () => {
             } catch (e) { box.innerHTML = '<div class="empty-state"><p>加载失败：' + e.message + '</p></div>'; }
             loadBans();
         }
-        async function adminDeduct(id) {
-            if (!(await showConfirm('确认对该学生执行扣款？余额不足将自动封禁。', { title: ' 扣钱' }))) return;
+        async function adminDeduct(id, isReward) {
+            if (!(await showConfirm(isReward ? '确认发放该奖励？将直接入账到学生账户。' : '确认对该学生执行扣款？余额不足将自动封禁。', { title: isReward ? ' 发放奖励' : ' 扣钱' }))) return;
             try {
                 const res = await fetch(`${API}/admin_deduct`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id] }) });
                 const d = await res.json();
-                showToast(d.msg || (d.success ? '已扣款' : '操作失败'), d.success ? 'success' : 'error');
+                showToast(d.msg || (d.success ? (isReward ? '已发放' : '已扣款') : '操作失败'), d.success ? 'success' : 'error');
                 loadRewardsPage();
             } catch (e) { showToast('操作失败：' + e.message, 'error'); }
         }
+
         async function loadBans() {
             const box = document.getElementById('bansList');
             if (!box) return;
@@ -1462,7 +1849,7 @@ window.onload = () => {
                 const res = await fetch(`${API}/bans`);
                 const list = await res.json();
                 if (!Array.isArray(list) || !list.length) { box.innerHTML = '<div class="empty-state"><p>暂无封号记录</p></div>'; return; }
-                box.innerHTML = list.map(b => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(212,160,23,.12);"><div><b style="color:var(--text)">${String(b.student_address).slice(0, 16)}...</b><div style="font-size:12px;color:var(--muted);">${b.reason || ''} · ${String(b.created_at).slice(0, 16)}</div></div><button class="btn-mini btn-approve" onclick="unbanUser('${b.student_address}')">解除封号</button></div>`).join('');
+                box.innerHTML = list.map(b => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(212,160,23,.12);"><div><b style="color:var(--text)">${String(b.student_address).slice(0, 16)}...</b><div style="font-size:12px;color:var(--muted);">${b.reason || ''} · ${String(b.created_at).slice(0, 16)}</div></div><button class="btn-mini btn-gold" onclick="unbanUser('${b.student_address}')">解除封号</button></div>`).join('');
             } catch (e) { box.innerHTML = '<div class="empty-state"><p>加载失败：' + e.message + '</p></div>'; }
         }
         async function unbanUser(addr) {
@@ -1483,7 +1870,7 @@ window.onload = () => {
                 const rows = d.rows || [];
                 let html = `<div style="margin-bottom:12px;">账户余额：<b style="color:var(--gold);font-size:18px;">¥${Number(d.balance || 0).toFixed(2)}</b> <span style="font-size:12px;color:var(--muted);">（余额不足缴纳罚款将被封禁）</span></div>`;
                 if (!rows.length) html += '<div class="empty-state"><p>暂无奖惩记录</p></div>';
-                else html += rows.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(212,160,23,.12);"><div>${rpBadge(r.type)} <span style="color:${r.amount_yuan >= 0 ? '#27ae60' : '#e74c3c'}">${r.amount_yuan >= 0 ? '+' : ''}${r.amount_yuan}元</span> <span style="font-size:12px;color:var(--muted);">${r.reason || ''}</span></div><div>${r.processed ? '<span style="color:#888">已处理</span>' : `<button class="btn-mini btn-approve" onclick="payFine(${r.id})">缴纳罚款</button> <button class="btn-mini btn-reject" onclick="submitAppeal(${r.id})">申诉</button>`}</div></div>`).join('');
+                else html += rows.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(212,160,23,.12);"><div>${rpBadge(r.type)} <span style="color:${r.amount_yuan >= 0 ? '#27ae60' : '#e74c3c'}">${r.amount_yuan >= 0 ? '+' : ''}${r.amount_yuan}元</span> <span style="font-size:12px;color:var(--muted);">${r.reason || ''}</span></div><div>${r.processed ? '<span style="color:#888">已处理</span>' : (r.amount_yuan >= 0 ? `<button class="btn-mini btn-gold" onclick="claimReward(${r.id})"> 领取奖励</button>` : `<button class="btn-mini btn-reject" onclick="payFine(${r.id})">缴纳罚款</button> <button class="btn-mini btn-gold" onclick="submitAppeal(${r.id})">申诉</button>`)}</div></div>`).join('');
                 box.innerHTML = html;
             } catch (e) { box.innerHTML = '<div class="empty-state"><p>加载失败：' + e.message + '</p></div>'; }
         }
@@ -1493,6 +1880,15 @@ window.onload = () => {
                 const res = await fetch(`${API}/pay_fine`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id] }) });
                 const d = await res.json();
                 showToast(d.msg || '操作完成', d.success ? 'success' : 'error');
+                loadMyPenalties();
+            } catch (e) { showToast('操作失败：' + e.message, 'error'); }
+        }
+        async function claimReward(id) {
+            if (!(await showConfirm('确认领取该奖励？金额将存入你的账户余额。', { title: ' 领取奖励' }))) return;
+            try {
+                const res = await fetch(`${API}/claim_reward`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id] }) });
+                const d = await res.json();
+                showToast(d.msg || '领取成功', d.success ? 'success' : 'error');
                 loadMyPenalties();
             } catch (e) { showToast('操作失败：' + e.message, 'error'); }
         }
@@ -1541,7 +1937,7 @@ window.onload = () => {
     const picker = document.getElementById('avatarPicker');
     ['Felix','Aria','Jack','Luna','Max','Zoe','Sam','Mia'].forEach(seed => {
         const img = document.createElement('img');
-        img.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+        img.src = `images/avatar-${(seed % 6) + 1}.svg`;
         img.onclick = () => {
             selectedAvatarUrl = img.src;
             document.querySelectorAll('.avatar-picker img').forEach(i => i.classList.remove('selected'));
@@ -1566,13 +1962,482 @@ function switchPage(p) {
     if (p === 'profile') loadProfilePage();
     if (p === 'autoSettle') loadAutoSettlePage();
     if (p === 'admin') loadAdminPage();
+    if (p === 'deptDashboard') loadDeptDashboard();
+    if (p === 'badgeCenter') loadBadgeCenter();
+    if (p === 'techLab') loadTechLab();
     if (p === 'mine') loadProfile();
+    if (p === 'campus') renderCampusGrid();
+    applyRoleVisibility();
+}
+
+// ======================== 校园环境图库 ========================
+const CAMPUS_PHOTOS = [
+    { src: 'images/campus-hero.png',       title: '晨雾钟楼 · 郁金香花海', desc: '薄雾晨光中的钟楼与湖畔郁金香' },
+    { src: 'images/campus-aerial.jpg',     title: '空中俯瞰 · 黄昏校园',   desc: '航拍钟楼、花海与湖面' },
+    { src: 'images/campus-buildings.jpg',  title: '教学楼 · 运动场',       desc: '白墙教学楼与蓝色球场' },
+    { src: 'images/campus-atmosphere.jpg', title: '校园氛围',              desc: '校园日常一角' },
+    { src: 'images/campus-t2.jpg',         title: 'T2 教学楼',             desc: '教学楼近景' },
+    { src: 'images/campus-library.jpg',    title: '图书馆',                desc: '阅读与自习空间' },
+    { src: 'images/campus-lake.jpg',       title: '湖畔',                  desc: '静水映云 · 晨雾薄纱' },
+    { src: 'images/campus-woods.jpg',      title: '林荫小道',              desc: '校园绿意' },
+    { src: 'images/campus-map.jpg',        title: '校园地图',              desc: '校园全景导览' },
+];
+function renderCampusGrid() {
+    const grid = document.getElementById('campusGrid');
+    if (!grid || grid.dataset.rendered === '1') return;
+    grid.innerHTML = CAMPUS_PHOTOS.map(p => `
+        <div class="campus-card" onclick="openCampusLightbox('${p.src}', '${p.title}')">
+            <img src="${p.src}" alt="${p.title}" loading="lazy">
+            <div class="cap">${p.title}<small>${p.desc}</small></div>
+        </div>`).join('');
+    grid.dataset.rendered = '1';
+}
+function openCampusLightbox(src, title) {
+    document.getElementById('campusLightboxImg').src = src;
+    document.getElementById('campusLightboxCap').textContent = title;
+    document.getElementById('campusLightbox').classList.add('show');
+}
+function closeCampusLightbox() {
+    const lb = document.getElementById('campusLightbox');
+    if (lb) lb.classList.remove('show');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCampusLightbox(); });
+
+// ======================== 岗位状态徽章 / 角色可见性 ========================
+function jobStatusBadge(status) {
+    const s = String(status || '').toUpperCase();
+    const map = {
+        'PUBLISHED': ['badge-green', '已发布'],
+        'OPEN': ['badge-green', '已发布'],
+        'TAKEN': ['badge-blue', '进行中'],
+        'FULL': ['badge-blue', '已满员'],
+        'CLOSED': ['badge-gray', '已结束'],
+        'COMPLETED': ['badge-gold', '已完成'],
+    };
+    const it = map[s];
+    const label = it ? it[1] : (typeof statusText === 'function' ? statusText(status) : (status || '未知'));
+    return '<span class="badge ' + (it ? it[0] : 'badge-blue') + '">' + label + '</span>';
+}
+function applyRoleVisibility() {
+    try {
+        const isStudent = currentUser && currentUser.role === 'STUDENT';
+        const isTeacher = currentUser && currentUser.role === 'TEACHER';
+        ['drawerDept', 'drawerBadge'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isTeacher ? '' : 'none'; });
+        const _isAdmin = currentUser && currentUser.role === 'ADMIN';
+        document.querySelectorAll('.tech-card[data-roles]').forEach(card => {
+            const roles = (card.getAttribute('data-roles') || '').toUpperCase().split(/[, ]+/);
+            if (!currentUser) { card.style.display = ''; return; }
+            const vis = _isAdmin || roles.indexOf((currentUser.role || '').toUpperCase()) >= 0;
+            card.style.display = vis ? '' : 'none';
+        });
+        const _hint = document.getElementById('techRoleHint');
+        if (_hint && currentUser) {
+            _hint.textContent = '当前角色视角：' + (currentUser.role === 'ADMIN' ? '管理员 · 全局视角（全部模块可见）' : (currentUser.role === 'TEACHER' ? '教师 · 用工与存证视角（纠删码 / DAG 存证）' : '学生 · 隐私与自证视角（零知识 / 密文薪酬 / 无状态验真）'));
+        }
+        try { renumberDrawer(); } catch (e) {}
+        ['pointsBox', 'myPenalties'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const card = el.closest('.card') || el.parentElement;
+            if (card) card.style.display = isStudent ? '' : 'none';
+        });
+    } catch (e) {}
+}
+
+// ======================== 岗位详情：编辑 / AI生成 ========================
+function openJobDetailEdit() {
+    const j = window._currentJobDetail;
+    if (!j) return;
+    document.getElementById('editJobDesc').value = j.description || '';
+    document.getElementById('editJobDetail').value = j.detail || '';
+    document.getElementById('detailEditMask').classList.add('show');
+}
+function closeJobDetailEdit() {
+    const m = document.getElementById('detailEditMask');
+    if (m) m.classList.remove('show');
+}
+async function saveJobDetailEdit() {
+    const j = window._currentJobDetail;
+    if (!j) return;
+    const description = document.getElementById('editJobDesc').value.trim();
+    const detail = document.getElementById('editJobDetail').value.trim();
+    try {
+        const res = await fetch(`${API}/job_update`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ job_id: j.id, description, detail })
+        });
+        const d = await res.json();
+        if (d.success) { showToast('岗位信息已更新', 'success'); closeJobDetailEdit(); openJobDetail(j.id); }
+        else showToast(d.msg || '保存失败', 'error');
+    } catch (e) { showToast('保存失败: ' + e.message, 'error'); }
+}
+async function aiGenerateDetail() {
+    const title = document.getElementById('jobTitle').value.trim();
+    const dept = document.getElementById('jobDept').value.trim();
+    const rate = document.getElementById('jobHourlyRate').value;
+    if (!title) { showToast('请先填写岗位名称', 'error'); return; }
+    const btn = document.getElementById('aiGenDetailBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="ai-loading">⏳</span> 生成中...'; }
+    try {
+        const res = await fetch(`${API}/ai_generate_detail`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ job_title: title, department: dept, hourly_rate: rate })
+        });
+        const d = await res.json();
+        if (d.success) {
+            document.getElementById('jobDetail').value = d.detail;
+            showToast('AI 已生成岗位详情（约500字）', 'success');
+        } else showToast(d.msg || 'AI 生成失败', 'error');
+    } catch (e) { showToast('AI 生成失败: ' + e.message, 'error'); }
+    finally { if (btn) { btn.disabled = false; btn.innerHTML = ' AI 生成'; } }
+}
+
+// ======================== 安全模拟：全屏劫持演示（纯前端动画） ========================
+let acTimers = [], acRainStop = true;
+function acLog(line, cls) {
+    const term = document.getElementById('acTerm');
+    if (!term) return;
+    const div = document.createElement('div');
+    div.className = 'l' + (cls ? ' ' + cls : '');
+    div.textContent = line;
+    term.appendChild(div);
+    while (term.children.length > 8) term.removeChild(term.firstChild);
+}
+function acStage(text, cls) {
+    const el = document.getElementById('acStage');
+    if (el) { el.className = 'ac-stage' + (cls ? ' ' + cls : ''); el.textContent = text; }
+}
+function acSub(text) {
+    const el = document.getElementById('acSub');
+    if (el) el.textContent = text;
+}
+function startMatrixRain() {
+    const cv = document.getElementById('acMatrix');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    cv.width = window.innerWidth; cv.height = window.innerHeight;
+    const cols = Math.floor(cv.width / 16);
+    const drops = [];
+    for (let i = 0; i < cols; i++) drops.push(Math.random() * -50);
+    acRainStop = false;
+    (function frame() {
+        if (acRainStop) return;
+        ctx.fillStyle = 'rgba(5,5,5,0.08)';
+        ctx.fillRect(0, 0, cv.width, cv.height);
+        ctx.font = '14px Consolas, monospace';
+        const chars = '01ABCDEF#887766CHAIN';
+        for (let i = 0; i < cols; i++) {
+            const ch = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillStyle = Math.random() > 0.972 ? '#ffd76a' : '#c9a23f';
+            ctx.fillText(ch, i * 16, drops[i] * 16);
+            if (drops[i] * 16 > cv.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        }
+        requestAnimationFrame(frame);
+    })();
+}
+function closeAttackCinema() {
+    acTimers.forEach(clearTimeout); acTimers = [];
+    acRainStop = true;
+    const box = document.getElementById('attackCinema');
+    if (box) box.classList.remove('show', 'danger', 'shake');
+}
+function runAttackCinema(kind) {
+    kind = kind || 'hijack';
+    const box = document.getElementById('attackCinema');
+    if (!box) return;
+    acTimers.forEach(clearTimeout); acTimers = [];
+    box.classList.add('show', 'danger', 'shake');
+    setTimeout(() => box.classList.remove('shake'), 950);
+    const term = document.getElementById('acTerm');
+    if (term) term.innerHTML = '';
+    const bar = document.getElementById('acBar');
+    if (bar) bar.style.width = '0%';
+    startMatrixRain();
+    const step = (t, fn) => acTimers.push(setTimeout(fn, t));
+    if (kind === 'inject') {
+        step(150, () => { acStage('⚠ 数据库遭到注入攻击', ''); acSub('DATABASE INJECTION · 来源 IP：203.0.113.66 · 高危'); acLog("› [WAF] 拦截到注入语句：' OR 1=1 --", 'warn'); acLog('› [IDS] SQL 注入特征匹配度 99.2%', 'warn'); });
+        step(1500, () => { acStage('用户数据正在被拖库', ''); acSub('正在外泄：users / employments / settlements ...'); acLog("› [SQL] SELECT * FROM users WHERE name='' UNION SELECT ... --", 'warn'); acLog('› [DUMP] 已流出 38,214 条记录，外泄速率 2.1MB/s', 'warn'); });
+        step(3200, () => { acStage('正在拦截注入并回滚', 'gold'); acSub('RESCUING · 启用参数化查询防护 · 事务回滚中...'); acLog('› [WAF] 注入规则库 v12 已加载，接口全部参数化加固'); acLog('› [DB] 事务回滚至最近一致快照'); if (bar) bar.style.width = '25%'; });
+        step(5200, () => { acLog('› [SCAN] 全表完整性校验 8,421 / 12,880 ...'); acLog('› [HASH] 数字指纹逐条比对中...'); if (bar) bar.style.width = '55%'; });
+        step(7200, () => { acStage('注入攻击已阻断', 'green'); acSub('IP 203.0.113.66 已永久封禁 · 外泄通道已切断'); acLog('› [BAN] 封禁非法 IP 203.0.113.66 成功', 'gold'); acLog('› [DB] 12.8 万条记录保全，零丢失'); if (bar) bar.style.width = '85%'; });
+        step(9200, () => { acStage('数据完好无损', 'green'); acSub('DATABASE VERIFIED · 一致性校验通过'); acLog('› [VERIFY] 数据一致性校验通过'); acLog('› [VERIFY] 链上存证指纹一致'); if (bar) bar.style.width = '100%'; });
+    } else if (kind === 'ransom') {
+        step(150, () => { acStage('⚠ 勒索病毒入侵', 'purple'); acSub('RANSOMWARE DETECTED · 文件加密中...'); acLog('› [AV] 检测到勒索程序 WanaCry-变种 PID 0x21A4', 'warn'); acLog('› [FILE] C:/data/salary.xlsx → 已加密(.locked)', 'warn'); });
+        step(1500, () => { acStage('文件正在被加密', 'purple'); acSub('剩余未加密文件 2,318 个 · 勒索信已生成'); acLog('› [FILE] C:/data/students.db → 已加密(.locked)', 'warn'); acLog('› [FILE] C:/data/contracts/WorkStudy.bin → 已加密(.locked)', 'warn'); acLog('› [NOTE] 勒索信：索要 3.0 比特币，倒计时 48 小时', 'warn'); });
+        step(3200, () => { acStage('正在启动备份回滚', 'gold'); acSub('RESTORING · 挂载冷备镜像 · 链上快照校验...'); acLog('› [SNAP] 只读备份卷已挂载'); acLog('› [CHAIN] 链上数据指纹校验通过'); if (bar) bar.style.width = '25%'; });
+        step(5200, () => { acLog('› [KILL] 病毒进程已终止 PID 0x21A4'); acLog('› [FILE] 解密回滚 1,204 / 2,318 ...'); if (bar) bar.style.width = '55%'; });
+        step(7200, () => { acStage('勒索病毒已清除', 'green'); acSub('支付通道已封禁 · 全部文件解密完成'); acLog('› [BAN] 勒索钱包地址已封禁并上报', 'gold'); acLog('› [FILE] 2,318 / 2,318 文件恢复完成'); if (bar) bar.style.width = '85%'; });
+        step(9200, () => { acStage('文件完好如初', 'green'); acSub('SYSTEM RESTORED · 全盘杀毒完成'); acLog('› [VERIFY] 全盘校验通过，无残留木马'); acLog('› [VERIFY] 链上数据完好'); if (bar) bar.style.width = '100%'; });
+    } else {
+        step(150, () => { acStage('⚠ 防火墙已被攻破', ''); acSub('FIREWALL BREACHED · INTRUSION DETECTED'); acLog('› [WAF] 检测到异常流量峰值 +12400%', 'warn'); });
+        step(1500, () => { acStage('网站已被劫持', ''); acSub('WEB PAGE HIJACKED · 来源 IP：198.51.100.23'); acLog('› [IDS] 非法入侵来源 198.51.100.23', 'warn'); acLog('› [SCAN] 入侵路径溯源扫描中...', 'warn'); });
+        step(3200, () => { acStage('正在破解修复网站', 'gold'); acSub('RESTORING · 正在解析链上快照与备份镜像...'); acLog('› [CHAIN] 读取区块 #887660 快照校验...'); acLog('› [SYNC] 智能合约状态回滚点定位完成'); if (bar) bar.style.width = '25%'; });
+        step(5200, () => { acLog('› [FIREWALL] 正在重建防火墙规则集 (2048 条)'); acLog('› [HASH] SHA-256 页面指纹比对中...'); if (bar) bar.style.width = '55%'; });
+        step(7200, () => { acStage('封禁非法IP成功', 'green'); acSub('IP 198.51.100.23 已永久封禁 · 黑名单已同步全网节点'); acLog('› [BAN] 封禁非法 IP 198.51.100.23 成功', 'gold'); acLog('› [WAF] 防火墙规则重建完成，拦截率 100%'); if (bar) bar.style.width = '85%'; });
+        step(9200, () => { acStage('网站已恢复原样', 'green'); acSub('SYSTEM RESTORED · 页面完整性校验通过'); acLog('› [VERIFY] 页面完整性 SHA-256 校验通过'); acLog('› [VERIFY] 链上数据一致性校验通过'); if (bar) bar.style.width = '100%'; });
+    }
+    step(11200, () => { acLog('› [SYSTEM] 系统安全运行中，防御等级 ★★★'); });
+    step(12600, closeAttackCinema);
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAttackCinema(); });
+
+// ======================== 部门数据看板 / 勋章与评价中心 / Excel 导出 ========================
+let _deptCharts = {}, _badgeStars = 5;
+
+function exportExcel(kind) {
+    const teacher = (currentUser && currentUser.role === 'TEACHER' && currentUser.wallet_address) ? currentUser.wallet_address : '';
+    const q = (kind === 'attendance' || kind === 'budget' || kind === 'badges') ? ('?teacher=' + encodeURIComponent(teacher)) : '';
+    window.open(`${API}/export/${kind}.xlsx${q}`, '_blank');
+    showToast('已生成 Excel 文件，正在下载...', 'success');
+}
+
+async function loadDeptDashboard() {
+    const wallet = currentUser && currentUser.wallet_address ? currentUser.wallet_address : '';
+    try {
+        const res = await fetch(`${API}/dept_dashboard/${wallet}`);
+        const d = await res.json();
+        if (!d.success) throw new Error(d.msg || '加载失败');
+        techNote('das');
+        const b = d.budget;
+        document.getElementById('budAlloc').innerText = b.allocated_eth.toFixed(2) + ' ETH';
+        document.getElementById('budUsed').innerText = b.consumed_eth.toFixed(2) + ' ETH';
+        document.getElementById('budLeft').innerText = b.remaining_eth.toFixed(2) + ' ETH';
+        document.getElementById('budRate').innerText = b.rate + '%';
+        document.getElementById('budBar').style.width = Math.min(100, b.rate) + '%';
+        const h = d.health;
+        document.getElementById('hlthLate').innerText = h.late_rate + '%';
+        document.getElementById('hlthEarly').innerText = h.early_rate + '%';
+        document.getElementById('hlthAbn').innerText = h.abnormal_rate + '%';
+        document.getElementById('hlthRec').innerText = h.records + ' 条 / ' + h.total_hours + ' 小时';
+        const tb = document.getElementById('ledgerBody');
+        tb.innerHTML = (d.ledger && d.ledger.length) ? d.ledger.map(r =>
+            `<tr><td>${r.student}</td><td>${r.job}</td><td>${r.department}</td><td>${r.date}</td><td>${r.clock_out}</td><td>${(r.minutes / 60).toFixed(2)}</td></tr>`
+        ).join('') : '<tr><td colspan="6" style="text-align:center;color:#999">暂无考勤记录</td></tr>';
+        const labels = d.trend.weeks.length ? d.trend.weeks : ['暂无数据'];
+        const gold = 'rgba(212,160,23,1)';
+        if (_deptCharts.budget) _deptCharts.budget.destroy();
+        _deptCharts.budget = new Chart(document.getElementById('budgetTrendChart'), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: '预算消耗(ETH)', data: d.trend.spend_eth, borderColor: gold, backgroundColor: 'rgba(212,160,23,.18)', fill: true, tension: .35 }] },
+            options: { plugins: { legend: { labels: { color: '#ddd' } } }, scales: { x: { ticks: { color: '#aaa' } }, y: { ticks: { color: '#aaa' } } } }
+        });
+        if (_deptCharts.hours) _deptCharts.hours.destroy();
+        _deptCharts.hours = new Chart(document.getElementById('hoursTrendChart'), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: '学生出勤工时(小时)', data: d.trend.hours, borderColor: 'rgba(80,200,255,1)', backgroundColor: 'rgba(80,200,255,.15)', fill: true, tension: .35 }] },
+            options: { plugins: { legend: { labels: { color: '#ddd' } } }, scales: { x: { ticks: { color: '#aaa' } }, y: { ticks: { color: '#aaa' } } } }
+        });
+    } catch (e) {
+        showToast('看板加载失败: ' + e.message, 'error');
+    }
+}
+
+function aiGenerateComment() {
+    const sel = document.getElementById('badgeStudent');
+    const name = (sel && sel.selectedOptions[0] && sel.selectedOptions[0].dataset.name) || '该同学';
+    const job = document.getElementById('badgeJob').value.trim() || '勤工助学';
+    const hours = document.getElementById('badgeHours').value || '0';
+    const stars = _badgeStars;
+    const btn = document.getElementById('aiGenCommentBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="ai-loading">⏳</span> 生成中...'; }
+    let text = '';
+    if (stars >= 5) {
+        text = name + '同学在本学期的' + job + '岗位工作中表现优异，考核评定为五星级。该同学工作态度端正、责任心强，始终以高标准要求自己，能够主动承担额外任务；业务上手快，善于总结方法、提高效率，累计服务' + hours + '小时，出勤稳定、从不迟到早退。与同事相处融洽，服务意识突出，受到师生一致好评。经综合评定，特授予五星级实践育人勋章，以资鼓励，望继续发挥模范带头作用。';
+    } else if (stars === 4) {
+        text = name + '同学在本学期的' + job + '岗位工作中表现良好，考核评定为四星级。该同学遵守各项规章制度，工作认真负责，能够按时保质完成交办任务，累计服务' + hours + '小时，出勤记录良好。工作中善于沟通协作，服务态度热情，具备较强的动手与学习能力。望在今后的工作中进一步加强主动性与细节把控，争取更大进步。';
+    } else if (stars === 3) {
+        text = name + '同学在本学期的' + job + '岗位工作中表现合格，考核评定为三星级。该同学能够遵守工作纪律，服从安排，完成本职工作任务，累计服务' + hours + '小时。工作中有一定责任心，基本掌握了岗位所需技能。望今后进一步增强时间管理与主动意识，提升工作质量与服务热情，期待更好的表现。';
+    } else {
+        text = name + '同学本学期在' + job + '岗位累计服务' + hours + '小时。工作中能够完成基本任务，但在出勤纪律、工作细致程度与主动性方面仍有较大提升空间。希望该同学认真总结经验，端正态度，加强自我管理，以更高的标准投入今后的勤工助学与学习生活。';
+    }
+    setTimeout(function() {
+        document.getElementById('badgeComment').value = text;
+        if (btn) { btn.disabled = false; btn.innerHTML = ' AI 生成'; }
+        showToast('AI 已生成学期考核评语', 'success');
+    }, 700);
+}
+
+function setStars(n) {
+    _badgeStars = n;
+    document.querySelectorAll('#starPick span').forEach((s, i) => s.classList.toggle('on', i < n));
+}
+
+async function loadBadgeCenter() {
+    const wallet = currentUser && currentUser.wallet_address ? currentUser.wallet_address : '';
+    try {
+        const res = await fetch(`${API}/admin/users`);
+        const d = await res.json();
+        const arr = Array.isArray(d) ? d : (d.users || d.data || d.data || []);
+        const list = arr.filter(u => String(u.role || '').toUpperCase() === 'STUDENT' && u.wallet_address);
+        const sel = document.getElementById('badgeStudent');
+        if (sel) {
+            sel.innerHTML = list.map(u =>
+                `<option value="${u.wallet_address}" data-name="${(u.nickname || u.username || '').replace(/"/g, '')}">${u.nickname || u.username}（${String(u.wallet_address).slice(0, 10)}...）</option>`
+            ).join('') || '<option value="">暂无已绑定钱包的学生</option>';
+        }
+    } catch (e) { /* 静默 */ }
+    try {
+        const res = await fetch(`${API}/badge_wall/${wallet}`);
+        const d = await res.json();
+        const wall = document.getElementById('badgeWall');
+        if (!wall) return;
+        wall.innerHTML = (d.items && d.items.length) ? d.items.map(it => `
+            <div class="badge-card">
+                <h4> 勋章 #${it.token_id} · ${'★'.repeat(it.stars)}${'☆'.repeat(5 - it.stars)}</h4>
+                <div class="row"><span>学生</span><span>${it.student_name || String(it.student_address).slice(0, 12) + '...'}</span></div>
+                <div class="row"><span>岗位</span><span>${it.job_title} · ${it.department}</span></div>
+                <div class="row"><span>总工时</span><span>${it.total_hours} 小时</span></div>
+                <div class="row"><span>学期</span><span>${it.semester || '—'}</span></div>
+                <div class="row"><span>区块指纹</span><span>${String(it.block_hash).slice(0, 16)}...</span></div>
+                <div class="row"><span>颁发时间</span><span>${it.created_at}</span></div>
+                <div style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+                    <img src="${API}/badge_qr/${it.token_id}" alt="验真二维码">
+                    <button class="btn btn-export btn-sm" onclick="showCert(${it.token_id})"> 打印履约证明信</button>
+                </div>
+            </div>`).join('') : '<div style="color:#999;padding:16px;">暂无勋章，先在上方铸造工坊颁发第一枚吧</div>';
+    } catch (e) {
+        showToast('荣誉墙加载失败: ' + e.message, 'error');
+    }
+}
+
+async function issueBadgeMint() {
+    const sel = document.getElementById('badgeStudent');
+    const addr = sel ? sel.value : '';
+    const name = (sel && sel.selectedOptions[0]) ? sel.selectedOptions[0].dataset.name : '';
+    if (!addr) { showToast('请先选择已绑定钱包的学生', 'error'); return; }
+    const payload = {
+        student_address: addr,
+        student_name: name,
+        job_title: document.getElementById('badgeJob').value.trim() || '勤工助学岗位',
+        department: document.getElementById('badgeDept').value.trim(),
+        total_hours: document.getElementById('badgeHours').value || '0',
+        teacher_comment: document.getElementById('badgeComment').value.trim(),
+        star_rating: _badgeStars,
+        teacher_address: (currentUser && currentUser.wallet_address) || '',
+        teacher_name: (currentUser && (currentUser.nickname || currentUser.username)) || '',
+        semester: document.getElementById('badgeSemester').value.trim(),
+    };
+    try {
+        const res = await fetch(`${API}/issue_badge`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        if (d.success) {
+            showToast('勋章 #' + d.token_id + ' 铸造成功（区块指纹已存证）', 'success');
+            loadBadgeCenter();
+        } else showToast(d.msg || '铸造失败', 'error');
+    } catch (e) {
+        showToast('铸造失败: ' + e.message, 'error');
+    }
+}
+
+async function showCert(tokenId) {
+    try {
+        const res = await fetch(`${API}/badge_wall/${(currentUser && currentUser.wallet_address) || ''}`);
+        const d = await res.json();
+        const it = (d.items || []).find(x => x.token_id === tokenId);
+        if (!it) { showToast('未找到该勋章记录', 'error'); return; }
+        const p = document.getElementById('certPaper');
+        p.innerHTML = `
+            <h2>链 上 履 约 证 明 信</h2>
+            <div class="line">兹证明 <b>${it.student_name || '该同学'}</b> 在我校勤工助学活动中，于 <b>${it.job_title}</b> 岗位认真履职，表现优良。</div>
+            <div class="line">经用人部门综合评定，授予区块链实践育人勋章 <b>编号 #${it.token_id}</b>，星级评定为 <b>${'★'.repeat(it.stars)}${'☆'.repeat(5 - it.stars)}</b>（${it.stars}/5）。</div>
+            <div class="line">考核评语：${it.comment || '—'}</div>
+            <div class="line">本证明基于区块链存证，防伪校验二维码与区块指纹可供公开验证，任何篡改都将导致校验失效。</div>
+            <div class="foot">
+                <div>
+                    <img src="${API}/badge_qr/${it.token_id}" style="width:110px;height:110px;background:#fff;padding:4px;border-radius:6px;">
+                    <div style="font-size:11px;color:#666;margin-top:4px;">扫码验真</div>
+                </div>
+                <div style="text-align:right;font-size:13px;color:#555;">
+                    <div>区块指纹：${String(it.block_hash).slice(0, 24)}…</div>
+                    <div>颁发日期：${it.created_at}</div>
+                    <div style="margin-top:8px;font-size:15px;color:#8a6a15;">江西软件职业技术大学<br>勤工助学管理中心</div>
+                </div>
+            </div>
+            <div style="text-align:center;margin-top:14px;">
+                <button class="btn btn-gold" onclick="window.print()"> 打印 / 保存</button>
+            </div>`;
+        document.getElementById('certMask').classList.add('show');
+    techNote('verkle', tokenId);
+    } catch (e) {
+        showToast('生成证明信失败: ' + e.message, 'error');
+    }
+}
+
+function closeCert() {
+    const m = document.getElementById('certMask');
+    if (m) m.classList.remove('show');
+}
+
+// ======================== 前沿技术实验室 ========================
+function techParams(name) {
+    const v = id => { const el = document.getElementById(id); return el ? el.value : null; };
+    const b = id => { const el = document.getElementById(id); return el ? el.checked : true; };
+    if (name === 'zkp') return { student_id: v('tech_zkp_sid'), season: v('tech_zkp_season'), total_hours: +v('tech_zkp_hours'), min_hours: +v('tech_zkp_min'), is_hardship: true };
+    if (name === 'fhe') return { base_salary: +v('tech_fhe_base'), bonus: +v('tech_fhe_bonus'), penalty: +v('tech_fhe_penalty'), is_hardship: true };
+    if (name === 'blockstm') return { tx_count: +v('tech_bs_tx'), amount: +v('tech_bs_amount') };
+    if (name === 'das') return { total_chunks: +v('tech_das_total'), parity_chunks: +v('tech_das_parity'), sample_count: +v('tech_das_sample') };
+    if (name === 'narwhal') return { rounds: +v('tech_narwhal_rounds'), students: +v('tech_narwhal_tx') };
+    if (name === 'verkle') return { token_id: +v('tech_v_token'), extra_leaves: +v('tech_v_leaves') };
+    return {};
+}
+
+async function runTechModule(name) {
+    const out = document.getElementById('tech_out_' + name);
+    const mBox = document.getElementById('tech_m_' + name);
+    if (out) out.textContent = '算法执行中...';
+    if (mBox) mBox.innerHTML = '';
+    try {
+        const res = await fetch(`${API}/tech/run`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ module: name, params: techParams(name) })
+        });
+        const d = await res.json();
+        if (!d.success) throw new Error(d.msg || '执行失败');
+        if (out) {
+            out.innerHTML = '';
+            d.lines.forEach((line, i) => {
+                const div = document.createElement('div');
+                div.className = 'tech-line';
+                div.style.animationDelay = (i * 0.18) + 's';
+                div.textContent = line;
+                out.appendChild(div);
+            });
+        }
+        if (mBox) {
+            mBox.innerHTML = Object.entries(d.metrics || {}).map(([k, val]) =>
+                `<span class="tech-chip"><i>${k}</i><b>${val}</b></span>`).join('');
+        }
+    } catch (e) {
+        if (out) out.textContent = '执行失败: ' + e.message;
+    }
+}
+
+function loadTechLab() {
+    const out = document.getElementById('tech_out_zkp');
+    if (out && out.textContent.indexOf('待运行') >= 0) runTechModule('zkp');
+}
+// ======================== 前沿技术内生融合（业务流程随行） ========================
+async function techNote(module, ref) {
+    try {
+        const res = await fetch(`${API}/tech/merge`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ module, ref: String(ref || (currentUser && currentUser.wallet_address) || '') })
+        });
+        const d = await res.json();
+        if (!d.success) return;
+        const tx = (d.anchor && d.anchor.tx_hash) ? (' · 链上存证 ' + d.anchor.tx_hash.slice(0, 10) + '…') : '';
+        showToast('⛓ ' + ((d.lines && d.lines[0]) ? d.lines[0] : '技术模块已执行') + tx, 'success');
+    } catch (e) {}
 }
 
 // ======================== 认证 ========================
 async function checkAndSwitchNetwork() {
     if (!window.ethereum) throw new Error("请安装 MetaMask");
-    // 先检查geth节点是否在运行
+    // 先检查geth节点是否在运行，并读取节点真实的 chainId（自动适配，不硬编码）
+    let nodeChainId;
     try {
         const testRes = await fetch('http://127.0.0.1:8545', {
             method: 'POST',
@@ -1580,10 +2445,10 @@ async function checkAndSwitchNetwork() {
             body: JSON.stringify({jsonrpc:'2.0',method:'eth_chainId',params:[],id:1})
         });
         const testData = await testRes.json();
-        const gethChainId = parseInt(testData.result, 16);
-        if (gethChainId !== 887766) throw new Error("geth节点chainId不匹配，当前: " + gethChainId);
+        if (!testData.result) throw new Error('节点未返回 chainId');
+        nodeChainId = parseInt(testData.result, 16);
     } catch (e) {
-        throw new Error(" 区块链节点未启动！请先运行 start.bat 启动系统");
+        throw new Error(" 区块链节点未启动或无法访问！请先运行 start.bat 启动系统（详情: " + (e.message || e) + "）");
     }
     // 检查合约是否真的部署在链上（防止向空地址转账：部署失败或节点重启后旧地址会变成死地址）
     try {
@@ -1598,30 +2463,47 @@ async function checkAndSwitchNetwork() {
         }
     } catch (e) {
         if (e.message && e.message.indexOf('合约未部署') >= 0) throw e;
-        throw new Error(" 无法检查合约状态，请确认 geth 节点运行正常");
+        throw new Error(" 无法检查合约状态，请确认 geth 节点运行正常（详情: " + (e.message || e) + "）");
     }
     const provider = new ethers.BrowserProvider(window.ethereum);
     const network = await provider.getNetwork();
     const chainId = Number(network.chainId);
-    if (chainId !== 887766) {
+    const hexChainId = '0x' + nodeChainId.toString(16);
+    if (chainId !== nodeChainId) {
         try {
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0xD8BD6' }],
+                params: [{ chainId: hexChainId }],
             });
         } catch (e) {
             if (e.code === 4902) {
-                await window.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [{
-                        chainId: '0xD8BD6',
-                        chainName: 'Geth Dev Chain',
-                        rpcUrls: ['http://127.0.0.1:8545'],
-                        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }
-                    }]
-                });
+                const addChain = async (rpcUrl) => {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: hexChainId,
+                            chainName: 'Geth Dev Chain (Local)',
+                            rpcUrls: [rpcUrl],
+                            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }
+                        }]
+                    });
+                };
+                try {
+                    await addChain('http://127.0.0.1:8545');
+                } catch (addErr) {
+                    if (addErr && addErr.code === 4001) throw addErr; // 用户主动拒绝
+                    // MetaMask 不允许新增与已有网络共用同一 RPC 地址的网络（常见于残留的旧 chainId=887766 网络如 'Geth-Dey'）
+                    // 同一节点换用 localhost 形式的地址重试；再失败则提示删除旧网络
+                    try {
+                        await addChain('http://localhost:8545');
+                    } catch (addErr2) {
+                        if (addErr2 && addErr2.code === 4001) throw addErr2;
+                        const hint = ((addErr2 && addErr2.message) || (addErr && addErr.message) || addErr);
+                        throw new Error("自动添加网络失败：" + hint + "。请在 MetaMask → 设置 → 网络 中删除指向 127.0.0.1:8545 的旧网络（如 'Geth-Dey'，chainId 887766），再重新连接");
+                    }
+                }
             } else {
-                throw new Error("请在MetaMask中手动添加网络: chainId=887766");
+                throw new Error("请在MetaMask中手动切换到本地节点网络: chainId=" + nodeChainId);
             }
         }
     }
@@ -1710,10 +2592,10 @@ function loginSuccess() {
     document.getElementById('navProfile').style.display = currentUser.role === 'STUDENT' ? 'inline' : 'none';
     /* 我的看板：仅学生可见 */
     document.getElementById('navDashboard').style.display = currentUser.role === 'STUDENT' ? 'inline' : 'none';
-    document.getElementById('drawerDashboard').style.display = currentUser.role === 'STUDENT' ? 'block' : 'none';
+    document.getElementById('drawerDashboard').style.display = currentUser.role === 'STUDENT' ? '' : 'none';
         const _navSal = document.getElementById('navSalary'); if (_navSal) _navSal.style.display = currentUser.role === 'STUDENT' ? 'inline' : 'none';
-        document.getElementById('drawerSalary').style.display = currentUser.role === 'STUDENT' ? 'block' : 'none';
-        document.getElementById('drawerRewards').style.display = currentUser.role === 'ADMIN' ? 'block' : 'none';
+        document.getElementById('drawerSalary').style.display = currentUser.role === 'STUDENT' ? '' : 'none';
+        document.getElementById('drawerRewards').style.display = currentUser.role === 'ADMIN' ? '' : 'none';
         checkNotifications();
 }
 
@@ -1834,6 +2716,15 @@ function logout() { localStorage.clear(); currentUser = null; location.reload();
         }
         /* 原生 alert 统一替换为暗金 toast */
         window.alert = function (msg) { try { showToast(String(msg), 'info'); } catch (e) { } };
+        // 侧边栏序号按“可见项”连续重排（01、02、03…），所有角色一致
+        function renumberDrawer() {
+            let n = 1;
+            document.querySelectorAll('#sideDrawer .drawer-link').forEach(el => {
+                if (el.style.display === 'none') return;
+                const no = el.querySelector('.no');
+                if (no) no.textContent = String(n++).padStart(2, '0');
+            });
+        }
         function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) {
     if (id === 'clockModal') stopClockTimer();
@@ -2065,7 +2956,8 @@ async function publishJob() {
             } catch(e) {}
             return alert(" 获取链上岗位ID失败！\n\n请按F12打开控制台，截图发给开发者\n\n提示：请先运行 start.bat 重新部署合约");
         }
-        await fetch(`${API}/save_job`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title, department:dept, description:desc, hourly_rate:hourlyRateWei.toString(), salary:budgetWei.toString(), employer:await signer.getAddress(), chain_job_id:chainJobId}) });
+        const detail = document.getElementById('jobDetail') ? document.getElementById('jobDetail').value.trim() : '';
+        await fetch(`${API}/save_job`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title, department:dept, description:desc, detail, hourly_rate:hourlyRateWei.toString(), salary:budgetWei.toString(), employer:await signer.getAddress(), chain_job_id:chainJobId}) });
         alert(" 岗位发布成功！预算已锁仓到智能合约");
         ['jobTitle','jobDept','jobHourlyRate','jobBudget','jobDesc'].forEach(id => document.getElementById(id).value='');
         fetchHallJobs();
@@ -2129,7 +3021,7 @@ async function loadMyPostedJobs() {
         const res = await fetch(`${API}/employer_jobs/${currentUser.wallet_address}`);
         const data = await res.json();
         if (!Array.isArray(data) || !data.length) { box.innerHTML = '<div class="empty-state"><p>暂无发布岗位</p></div>'; return; }
-        box.innerHTML = data.map(j => `<div style="padding:8px 0;border-bottom:1px solid rgba(212,160,23,.12);display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><b style="color:var(--text)">${j.title}</b><div style="font-size:12px;color:var(--muted);">${j.department||'—'} · 链上ID ${j.chain_job_id||'—'} · 时薪 ${Number(j.hourly_rate).toFixed(2)} ETH</div></div><div style="display:flex;gap:8px;align-items:center;">${jobStatusBadge(j.status)}${currentUser.wallet_address && String(j.employer).toLowerCase() === currentUser.wallet_address.toLowerCase() ? `<button class="btn-mini btn-approve" onclick="confirmDeleteJob(${j.id})">删除</button>` : ''}</div></div>`).join('');
+        box.innerHTML = data.map(j => `<div style="padding:8px 0;border-bottom:1px solid rgba(212,160,23,.12);display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><b style="color:var(--text)">${j.title}</b><div style="font-size:12px;color:var(--muted);">${j.department||'—'} · 链上ID ${j.chain_job_id||'—'} · 时薪 ${Number(j.hourly_rate).toFixed(2)} ETH</div></div><div style="display:flex;gap:8px;align-items:center;">${jobStatusBadge(j.status)}${currentUser.wallet_address && String(j.employer).toLowerCase() === currentUser.wallet_address.toLowerCase() ? `<button class="btn-mini btn-reject" onclick="confirmDeleteJob(${j.id})">删除</button>` : ''}</div></div>`).join('');
     } catch (e) { box.innerHTML = '<div class="empty-state"><p>加载失败: ' + e.message + '</p></div>'; }
 }
 
@@ -2367,6 +3259,7 @@ async function doClockIn() {
             currentClockInId = d.clock_in_id;
             currentChainClockInId = chainClockInId;
             document.getElementById('clockIcon').innerText=''; document.getElementById('clockText').innerText=`已上班打卡 (链上#${chainClockInId})，工作中...`;
+            techNote('narwhal', String(chainClockInId || currentClockInId || ''));
             document.getElementById('clockInPanel').style.display='none'; document.getElementById('clockOutPanel').style.display='block';
             startClockTimer(d.clock_in_time ? parseLocalDateTime(d.clock_in_time).getTime() : Date.now()); showClockDock(currentEmploymentId, currentChainEmploymentId, d.clock_in_time ? parseLocalDateTime(d.clock_in_time).getTime() : Date.now());
         } else alert(d.msg);
@@ -2405,6 +3298,7 @@ async function doClockOut() {
             stopClockTimer();
             document.getElementById('clockIcon').innerText='';
             document.getElementById('clockText').innerText=`下班成功！本次工时 ${d.work_minutes} 分钟（系统自动计时）`;
+            techNote('narwhal', '');
             document.getElementById('clockOutPanel').style.display='none';
             currentClockInId = null; currentChainClockInId = 0;
             hideClockDock(); setTimeout(() => { closeModal('clockModal'); loadStudentContracts(); }, 1500);
@@ -2755,7 +3649,7 @@ async function loadAdminPage() {
                 <td>${j.id}</td><td>${j.chain_job_id||'-'}</td><td>${escHtml(j.title)}</td><td>${escHtml(j.department||'-')}</td>
                 <td class="wallet-addr">${j.employer.slice(0,10)}...</td>
                 <td><span class="badge badge-${j.status.toLowerCase()}">${statusText(j.status)}</span></td>
-                <td><button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})"></button></td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})"> 删除</button></td>
             </tr>
         `).join('') : '<tr><td colspan="7" class="empty-state">暂无岗位</td></tr>';
 
@@ -2785,7 +3679,7 @@ async function loadAdminPage() {
                 </select></td>
                 <td class="wallet-addr">${u.wallet_address||'未绑定'}</td>
                 <td>${u.created_at}</td>
-                <td>${u.role!=='ADMIN'?`<button class="btn btn-danger btn-sm" onclick="adminDeleteUser(${u.id},'${escHtml(u.username)}')"></button>`:'-'}</td>
+                <td>${u.role!=='ADMIN'?`<button class="btn btn-danger btn-sm" onclick="adminDeleteUser(${u.id},'${escHtml(u.username)}')"> 删除</button>`:'-'}</td>
             </tr>
         `).join('');
 
@@ -3118,6 +4012,8 @@ async function triggerAutoSettlement() {
         const d = await res.json();
         if (d.success) {
             alert(' 自动结算执行成功！\n交易哈希: ' + (d.tx_hash || '').slice(0, 20) + '...');
+            techNote('fhe');
+            techNote('blockstm');
             loadAutoSettlePage();
         } else {
             alert(' 结算失败: ' + d.msg);
@@ -3184,6 +4080,7 @@ async function loadAuditLogs() {
 // ======================== 系统诊断 ========================
 async function runDiagnosis() {
     let report = ' 系统诊断报告\n' + '='.repeat(40) + '\n\n';
+    let nodeChainId = null;
     // 1. 检查geth节点
     try {
         const res = await fetch('http://127.0.0.1:8545', {
@@ -3192,7 +4089,14 @@ async function runDiagnosis() {
             body: JSON.stringify({jsonrpc:'2.0',method:'eth_blockNumber',params:[],id:1})
         });
         const data = await res.json();
-        report += ' Geth节点运行中 (区块: ' + parseInt(data.result, 16) + ')\n';
+        const resC = await fetch('http://127.0.0.1:8545', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({jsonrpc:'2.0',method:'eth_chainId',params:[],id:11})
+        });
+        const dataC = await resC.json();
+        nodeChainId = parseInt(dataC.result, 16);
+        report += ' Geth节点运行中 (区块: ' + parseInt(data.result, 16) + '，chainId: ' + nodeChainId + ')\n';
     } catch (e) {
         report += ' Geth节点未启动！请运行 start.bat\n';
     }
@@ -3219,10 +4123,10 @@ async function runDiagnosis() {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
             const chainId = Number(network.chainId);
-            if (chainId === 887766) {
-                report += ' MetaMask网络: Geth Dev (887766)\n';
+            if (nodeChainId !== null && chainId === nodeChainId) {
+                report += ' MetaMask网络: Geth Dev (' + nodeChainId + ')\n';
             } else {
-                report += ' MetaMask网络: chainId=' + chainId + ' (应为887766)\n';
+                report += ' MetaMask网络: chainId=' + chainId + ' (应为' + nodeChainId + ')\n';
             }
             const signer = await provider.getSigner();
             const addr = await signer.getAddress();
@@ -3249,7 +4153,7 @@ async function runDiagnosis() {
     report += '\n' + '='.repeat(40) + '\n';
     report += ' 如果钱包交易失败，请确认:\n';
     report += '   1. 已运行 start.bat 启动geth节点\n';
-    report += '   2. MetaMask已切换到Geth Dev网络(887766)\n';
+    report += '   2. MetaMask已切换到本地节点网络(chainId=节点实际值)\n';
     report += '   3. 使用的是geth开发账户(密码: 12345678)\n';
     report += '   4. 导入方法: MetaMask → 账户菜单 → 导入账户\n';
     report += '      导入geth keystore文件或私钥\n';
@@ -3715,6 +4619,11 @@ async function openJobDetail(jobId) {
         document.getElementById('detailBudget').innerText = j.salary + ' ETH';
         document.getElementById('detailApplicants').innerText = j.applicant_count + '人';
         document.getElementById('detailDesc').innerText = j.description || '暂无详细描述';
+        document.getElementById('detailFull').innerText = j.detail || '该岗位暂未填写详细说明，请联系发布教师补充。';
+        const _canEditDetail = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'TEACHER');
+        const _dEditBtn = document.getElementById('detailEditBtn');
+        if (_dEditBtn) _dEditBtn.style.display = _canEditDetail ? '' : 'none';
+        window._currentJobDetail = { id: j.id, title: j.title, description: j.description || '', detail: j.detail || '' };
         document.getElementById('detailTeacherName').innerText = j.teacher_nickname || '未知教师';
         document.getElementById('detailTeacherAvatar').src = j.teacher_avatar || DEFAULT_AVATAR;
 
@@ -3889,14 +4798,15 @@ async function uploadCertFile(event) {
 
 // ======================== 模拟攻击（管理员演示） ========================
 let attackRunning = false;
-async function simulateAttack() {
+async function simulateAttack(kind) {
+    kind = kind || 'hijack';
     if (attackRunning) return;
     attackRunning = true;
+    runAttackCinema(kind);
     const logDiv = document.getElementById('attackLog');
-    const btn = document.getElementById('attackBtn');
-    btn.disabled = true;
-    btn.innerText = '攻击进行中...';
-    logDiv.innerHTML += '<div style="color:var(--gold);margin:4px 0;">[系统] 安全监控已启动，开始扫描威胁...</div>';
+    const atkNames = { hijack: '网页劫持攻击', inject: '数据库注入攻击', ransom: '勒索病毒攻击' };
+    document.querySelectorAll('#attackBtn,#attackBtn2,#attackBtn3').forEach(b => { b.disabled = true; b.style.opacity = 0.55; });
+    logDiv.innerHTML += `<div style="color:var(--gold);margin:4px 0;">[系统] 安全监控已启动：当前场景【${atkNames[kind]}】，开始扫描威胁...</div>`;
 
     for (let i = 0; i < 8; i++) {
         await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
@@ -3920,11 +4830,10 @@ async function simulateAttack() {
             logDiv.innerHTML += `<div style="color:var(--danger);margin:4px 0;">[错误] 请求失败</div>`;
         }
     }
-    logDiv.innerHTML += '<div style="color:var(--gold);margin:8px 0;font-weight:700;">[系统] 模拟攻击结束，共发送 8 次攻击请求</div>';
+    logDiv.innerHTML += `<div style="color:var(--gold);margin:8px 0;font-weight:700;">[系统] 【${atkNames[kind]}】演练结束，共模拟 8 波攻击，全部拦截</div>`;
     logDiv.innerHTML += '<div style="color:var(--success);margin:4px 0;">[系统] 防火墙状态: 正常 | WAF规则: 已更新 | 入侵检测: 活跃</div>';
     logDiv.scrollTop = logDiv.scrollHeight;
-    btn.disabled = false;
-    btn.innerText = '启动模拟攻击';
+    document.querySelectorAll('#attackBtn,#attackBtn2,#attackBtn3').forEach(b => { b.disabled = false; b.style.opacity = 1; });
     attackRunning = false;
 }
 </script>
@@ -3951,6 +4860,7 @@ async function simulateAttack() {
             document.getElementById('sideDrawer').classList.add('show');
             document.getElementById('drawerOverlay').classList.add('show');
             syncDrawer(localStorage.getItem('currentPage') || 'home');
+        renumberDrawer();
         }
         function closeDrawer() {
             document.getElementById('sideDrawer').classList.remove('show');
@@ -3974,7 +4884,7 @@ async function simulateAttack() {
             const _origSwitchPage = switchPage;
             switchPage = function (p) {
                 _origSwitchPage(p);
-                syncDrawer(p);
+                syncDrawer(p); renumberDrawer();
         if (p === 'rewards') loadRewardsPage();
         if (p === 'contracts' && currentUser && currentUser.role === 'STUDENT') { loadPoints(); loadStudentContracts(); loadMyPenalties(); }
             };

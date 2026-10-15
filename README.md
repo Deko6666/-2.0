@@ -2,7 +2,7 @@
 
 基于区块链的高校勤工俭学管理系统：岗位发布、学生申请、教师审批、工时打卡、薪酬自动结算全流程上链，后端负责业务编排与数据持久化，前端提供多角色操作界面。
 
-- **区块链**：Geth Dev Chain（Chain ID `887766` / `0xD8BD6`，RPC `http://127.0.0.1:8545`）
+- **区块链**：Geth Dev Chain（Chain ID 自动适配节点实际值（geth --dev 为 `1337` / `0x539`），RPC `http://127.0.0.1:8545`）
 - **智能合约**：`contracts/WorkStudy.sol`（Solidity 0.8.20）
 - **后端**：FastAPI + web3.py + MySQL（SQLAlchemy），端口 `8000`
 - **前端**：单文件 `frontend/index.html`（ethers.js 6.7 + 原生 JS），由 FastAPI 直接托管
@@ -53,7 +53,7 @@ Campus/
 
 | 依赖 | 版本要求 | 说明 |
 |---|---|---|
-| Geth | 1.10+ | 本地开发链，Chain ID 887766 |
+| Geth | 1.10+ | 本地开发链，Chain ID 自动适配（--dev 为 1337） |
 | Node.js | 18+ | 运行 Hardhat / deploy.js |
 | Python | 3.10+ | 后端 |
 | MySQL | 5.7+ / 8.0 | 库名 `campus_db`，root 密码 `123456` |
@@ -75,7 +75,7 @@ geth --dev --http --http.addr 0.0.0.0 --http.port 8545 \
 
 启动后 MetaMask 添加网络：
 - RPC URL：`http://127.0.0.1:8545`
-- Chain ID：`887766`
+- Chain ID：自动适配节点实际值（geth --dev 为 `1337`）
 - 货币符号：`ETH`
 
 ### 2. 初始化数据库

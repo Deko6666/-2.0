@@ -4,11 +4,26 @@ title Jiangxi Software Vocational University - Work-Study System
 
 echo ============================================
 echo   Jiangxi Software Work-Study System
-echo   Blockchain: Geth Dev Chain (887766)
+echo   Blockchain: Geth Dev Chain (chainId auto-detect)
 echo ============================================
 echo.
 
 cd /d "%~dp0"
+
+echo [0/4] Checking blockchain node on 8545...
+powershell -NoProfile -Command "$up = Test-NetConnection -ComputerName 127.0.0.1 -Port 8545 -WarningAction SilentlyContinue -InformationLevel Quiet; if (-not $up) { Start-Process -FilePath 'D:\Campus\geth-node\old startgeth.bat' -WorkingDirectory 'D:\Campus\geth-node'; Write-Output '  Geth node not running, starting automatically...' } else { Write-Output '  Blockchain node (geth) already running.' }"
+set /a CHAIN_TRIES=0
+:WAIT_CHAIN
+set /a CHAIN_TRIES+=1
+powershell -NoProfile -Command "if (Test-NetConnection -ComputerName 127.0.0.1 -Port 8545 -WarningAction SilentlyContinue -InformationLevel Quiet) { exit 0 } else { exit 1 }"
+if not errorlevel 1 goto CHAIN_OK
+if %CHAIN_TRIES% lss 20 goto CHAIN_MORE
+goto CHAIN_OK
+:CHAIN_MORE
+timeout /t 2 /nobreak >nul
+goto WAIT_CHAIN
+:CHAIN_OK
+echo       Blockchain node ready.
 
 echo [1/4] Database reset (AUTO: clearing demo data - no prompt)
 echo       NOTE: clearing wipes jobs / employments / clock_ins / settlements / hour_limits (users are kept).
@@ -58,6 +73,6 @@ echo   System started!
 echo   Frontend:  http://127.0.0.1:8000
 echo   API docs:  http://127.0.0.1:8000/docs
 echo   Blockchain: http://127.0.0.1:8545 (Geth)
-echo   Chain ID:  887766 (0xD8BD6)
+echo   Chain ID:  auto (follow node eth_chainId, geth --dev = 1337)
 echo ============================================
 pause

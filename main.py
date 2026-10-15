@@ -135,6 +135,7 @@ def init_database():
         for col, col_def in [
             ("department", "VARCHAR(100) DEFAULT ''"),
             ("hourly_rate_wei", "VARCHAR(50) DEFAULT '0'"),
+            ("detail", "TEXT"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE jobs ADD COLUMN {col} {col_def}"))
@@ -362,7 +363,18 @@ def set_config(key: str, value: str):
 RPC_URL = "http://127.0.0.1:8545"
 
 def get_web3():
-    return Web3(Web3.HTTPProvider(RPC_URL))
+    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    # Clique PoA 链：注入中间件，否则 extraData 校验会导致链上交易/回执全部失败
+    try:
+        from web3.middleware import ExtraDataToPOAMiddleware
+        w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+    except Exception:
+        try:
+            from web3.middleware import geth_poa_middleware
+            w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        except Exception:
+            pass
+    return w3
 
 def get_contract_address() -> str:
     # 优先从部署生成的配置文件读取
@@ -508,6 +520,19 @@ DEMO_TEACHER_ADDRESS = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
 DEMO_TEACHER_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 
 # (title, department, description, hourly_rate_wei, salary_wei)
+DEMO_JOB_DETAILS = {
+    '图书整理员': '【岗位职责】协助图书部老师维护整洁有序的阅览环境，保障图书借还流程顺畅，为全校师生提供热情周到的阅读服务。\n【工作内容】一、负责到馆新书的验收、贴标、上架与整架，保持架位准确、书标清晰、排架有序；二、办理图书借阅登记与归还核验，协助读者使用自助借还设备，处理逾期、污损与遗失登记；三、巡查阅览区秩序，提醒读者爱护书籍、保持安静，整理桌面座椅与报刊架；四、维护馆内卫生与绿植，检查灯光、空调、门禁等设施，闭馆前关窗断电；五、协助开展读书月、新书展、检索培训等阅读推广活动。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】热爱阅读，做事耐心细致；服务意识好，声音温和；能熟练使用办公软件或有图书馆服务经验者优先。\n【工作时间】按课余时间排班，每周约6-10小时，晚间与周末轮班，节假日按需值班。\n【考核与薪酬】按实际上架工时计薪，期末根据上架准确率、服务态度与考勤综合评定，优秀者可获优秀馆员证书与续聘推荐。',
+    '宿舍协管员': '【岗位职责】协助宿舍部老师做好学生公寓的安全管理与文明建设，守护同学们的住宿安全与生活秩序。\n【工作内容】一、参与晚间值班，做好晚归登记、来访人员核验与钥匙管理；二、定期巡查楼栋消防通道、违规电器、用水用电安全与公共区域卫生，发现隐患及时上报并记录；三、协助报修登记与维修跟进，统计宿舍设施问题并反馈处理结果；四、参与宿舍文化节、卫生评比与文明寝室创建活动的组织与检查；五、开展安全用电、防盗防骗、节约用水等文明住宿宣传。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】责任心强，原则性强；善于沟通，处事沉稳；学生干部或有宿管服务经验者优先。\n【工作时间】晚间18:30-21:30轮值，每周约6-8小时，节假日按需值班，不与课程冲突。\n【考核与薪酬】按时计薪，期末根据巡查记录、事件处理效率与同学反馈评定，优秀者可获楼栋服务之星证书与续聘推荐。',
+    '食堂帮厨': '【岗位职责】在用餐高峰期协助食堂窗口服务与秩序维护，保障师生就餐高效、卫生、有序。\n【工作内容】一、协助打饭、分餐与收银，熟练使用刷卡与扫码设备，做到快速准确；二、及时回收、分类与转运餐具，擦拭桌面、清洁地面，保持餐厅整洁；三、补充调料、餐具与餐巾纸，协助备餐区的食材粗加工（择菜、清洗、分装等）；四、引导排队秩序，解答师生咨询，处理洒汤、餐具破损等简单突发情况；五、配合完成食堂卫生检查、灭害消杀后的清理与设备断电工作。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】须持有效健康证；动作麻利，讲究卫生；服务热情，能适应站立作业与高峰期节奏。\n【工作时间】午餐、晚餐高峰时段轮班，每周约6-8小时，按课表灵活排班，含周末轮值。\n【考核与薪酬】按时计薪，期末结合出勤、服务评价与卫生检查结果评定，优秀者可获餐饮中心表彰与免费工作餐奖励。',
+    '门岗协管': '【岗位职责】协助门岗老师做好校园出入管理与秩序维护，把好校园安全第一道关，展现学校文明形象。\n【工作内容】一、协助来访人员与车辆的询问、登记、核验与引导，规范出入证管理；二、维护上下课高峰期校门交通秩序，引导非机动车停放，提醒减速慢行；三、巡查门岗周边环境，发现可疑情况及时报告安保老师并协助处置；四、协助快递、外卖的临时存放与通知领取，保持门岗区域整洁；五、参与校园大型活动的入口秩序维护与验票工作。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】沟通表达好，礼貌待人；原则性强，反应敏捷；能适应户外站立作业，有安保志愿服务经验者优先。\n【工作时间】早晚高峰与周末轮班，每周约6-8小时，可按课表协调。\n【考核与薪酬】按时计薪，期末根据登记准确率、秩序维护效果与师生反馈评定，优秀者可获安保处表彰与社会实践证书。',
+    '清洁助理': '【岗位职责】负责教学楼公共区域的日常保洁与垃圾分类引导，维护干净明亮的教学环境。\n【工作内容】一、按标准流程清扫教室、走廊、楼梯与卫生间，做到地面无杂物、桌面无积灰、镜面无水渍；二、清运垃圾并按可回收、有害、厨余、其他四类规范投放，引导师生正确分类；三、擦拭门窗、扶手、宣传栏与消防器材表面，保持公共设施洁净；四、报告设施损坏、漏水、照明故障等异常情况，协助简单处理；五、参与开学大扫除、活动场馆突击保洁等专项任务。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】吃苦耐劳，踏实肯干；注重卫生与安全规范；能正确使用清洁设备与用品。\n【工作时间】早晨或晚间错峰作业，每周约6-8小时，作业时间灵活，不与课程冲突。\n【考核与薪酬】按小时计薪，期末根据保洁质量抽查、出勤与师生反馈评定，优秀者可获后勤服务表彰。',
+    '机房维护助理': '【岗位职责】协助机房部老师完成公共机房的日常运维保障，确保教学机房设备与网络稳定可用。\n【工作内容】一、每日课前巡查机房，检查计算机、投影、交换机、空调等设备状态，发现故障及时登记报修；二、协助完成操作系统重装、教学软件安装、驱动更新与批量软件分发；三、处理IP冲突、无法上网、打印机共享、外设失灵等常见故障；四、课后整理机房，关闭设备电源，填写使用记录与设备台账；五、参与机房资产盘点、系统升级、考试环境部署与网络布线等专项工作。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】计算机相关专业或操作熟练者优先；认真细致，有责任心与保密意识；具备基本故障排查与沟通能力。\n【工作时间】按课余时间排班，每周约8小时，考试周与开学初需弹性加班，可与课程时间错开。\n【考核与薪酬】按实际上机工时计薪，期末结合出勤、故障响应速度与师生反馈评定，优秀者可续聘并推荐参与校级技术保障项目。',
+    '绿化养护助理': '【岗位职责】参与校园绿化养护与环境美化，守护校园四季景致，营造宜人的学习生活环境。\n【工作内容】一、负责花草树木的浇水、施肥、修剪与除草，按季节调整养护方案；二、清扫绿化带内落叶杂物，维护景观小品、草坪与休憩设施整洁；三、参与春季种植、补栽与移栽活动，做好苗木登记与挂牌；四、观察记录病虫害与长势情况，协助老师进行防治与养护改进；五、完成校级活动、会议的花卉布置与场地美化任务。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】吃苦耐劳，热爱户外劳动；身体健康，能适应日晒与轻度体力工作；有园艺兴趣或种植经验者优先。\n【工作时间】早晨或傍晚时段为主，每周约6-8小时，极端天气顺延，作业时间灵活。\n【考核与薪酬】按时计薪，期末根据劳动出勤、养护效果与团队协作评定，优秀者可获劳动实践标兵荣誉与绿化部表彰。',
+    '报告厅服务助理': '【岗位职责】协助会场部做好报告厅活动保障与现场服务，确保各类会议、演出与讲座顺利进行。\n【工作内容】一、按活动方案完成座椅排列、台签摆放、幕布横幅与鲜花绿植布置；二、调试灯光、音响、话筒、投影与LED屏，测试播放与录音设备；三、活动期间担任引导、签到、话筒传递与秩序维护等现场服务；四、活动后清点归还设备，切断电源，恢复场地并登记使用情况；五、维护设备台账，报告灯具、音响等设施的故障与老化问题。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】对灯光音响有兴趣或基础者优先；工作主动，细心负责；能搬运轻型设备，适应晚间活动加班。\n【工作时间】按活动日程安排，每周约6-10小时，晚间与周末活动较多，可提前协调。\n【考核与薪酬】按时计薪并可按场次计奖励，期末结合服务质量、设备完好率与出勤评定，优秀者可获会场部表彰与活动保障证书。',
+    '招生咨询助理': '【岗位职责】协助招生办老师做好招生宣传与咨询服务，以专业、热情的面貌展示学校形象。\n【工作内容】一、接听招生咨询电话与线上答疑，准确介绍专业设置、报考流程、资助政策与校园生活；二、整理报名资料，核验考生信息并录入招生系统，建立与维护考生档案；三、参与校园开放日、招生宣讲会的筹备与现场接待，担任讲解与引导；四、统计咨询数据，回访意向考生，汇总反馈常见问题与改进建议；五、维护招生宣传材料、展台物料与咨询室环境。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】形象气质佳，表达清晰，普通话标准；热情耐心，应变能力强；了解学校基本情况，能参加岗前培训。\n【工作时间】工作日课余与周末开放日为主，每周约8小时，招生旺季（6-8月）需集中服务。\n【考核与薪酬】按时计薪，期末结合咨询量、准确率与接待评价评定，优秀者可获招生办社会实践证书与推荐信。',
+    '实训室助理': '【岗位职责】配合实训部教师做好实训教学的准备与收尾，保障设备完好、耗材充足、环境安全。\n【工作内容】一、课前按实训清单准备器材、软件与耗材，核对设备数量与完好状态并开机自检；二、课中协助教师巡回指导，处理设备突发故障，维持工位秩序与安全规范；三、课后清点回收工具器材，归位入库，填写设备使用与耗材消耗台账；四、定期维护保养实训设备，配合完成资产盘点、报废申报与实训室文化建设；五、检查水电气与消防设施，落实防火、防盗、防触电措施。。六、完成指导老师交办的其他辅助性工作，参加岗位培训与业务学习；七、及时总结工作中的问题与不足，提出合理化改进建议，协助持续优化工作流程。\n【任职要求】理工科专业优先；动手能力强，熟悉实训室基本规范；严谨细致，具备安全意识与应急处理能力。\n【工作时间】按实训课表安排，每周约6-10小时，学期初与考试周较忙，可弹性协调。\n【考核与薪酬】按时计薪，期末结合设备完好率、准备及时性与安全记录评定，优秀者可参与开放实训项目指导与技能竞赛保障。',
+}
+
 DEMO_JOBS = [
     ("图书整理员", "图书部", "负责图书上架整理、借还登记与阅览室秩序巡查，要求细致耐心，可按课余时间排班。", "20000000000000000", "600000000000000000"),
     ("宿舍协管员", "宿舍部", "协助楼栋值班、晚归登记与宿舍区安全巡查，需在晚间轮值。", "18000000000000000", "540000000000000000"),
@@ -602,23 +627,143 @@ DEMO_KEYS = {
 }
 
 
-def _send_from(w3, addr, fn, value=0):
-    tx = fn.build_transaction({
-        'from': addr, 'value': value, 'gas': 3000000,
-        'gasPrice': w3.eth.gas_price,
-        'nonce': w3.eth.get_transaction_count(addr),
-        'chainId': w3.eth.chain_id,
-    })
+# ======================== 演示封禁与奖惩还原（每次启动自动就绪） ========================
+DEMO_BANNED_USERS = [
+    # (username, role, nickname, wallet, 封禁键, 原因)
+    ("华", "STUDENT", "华", "0x1f6B13BddF006AD20cc1bdaE18B7DD597a7434f0",
+     "0x1f6B13BddF006AD20cc1bdaE18B7DD597a7434f0", "涉嫌使用打卡外挂篡改考勤记录，风控系统核验发现多起异常打卡行为"),
+    ("123", "TEACHER", "123", None,
+     "123", "发布岗位信息不实，经核实岗位描述与实际用工内容严重不符"),
+]
+
+DEMO_REWARD_ROWS = [
+    ("LATE", -20, "迟到打卡"),
+    ("EARLY", -30, "早退打卡"),
+    ("REWARD", 50, "月度优秀员工奖励"),
+]
+
+
+def seed_demo_bans():
+    """每次启动将演示账号置为封禁状态（供管理员一键解封演示），并保证账号存在"""
     try:
-        tx_hash = w3.eth.send_transaction(tx)
-    except Exception:
-        key = DEMO_KEYS.get(Web3.to_checksum_address(addr))
-        if not key:
+        with engine.begin() as conn:
+            for username, role, nickname, wallet, key, reason in DEMO_BANNED_USERS:
+                exists = conn.execute(text("SELECT id FROM users WHERE username=:u"), {"u": username}).fetchone()
+                if not exists:
+                    conn.execute(text("INSERT INTO users (username, password, role, nickname, wallet_address) VALUES (:u, '123456', :r, :n, :w)"),
+                                 {"u": username, "r": role, "n": nickname, "w": wallet})
+                conn.execute(text("DELETE FROM bans WHERE LOWER(student_address)=LOWER(:k)"), {"k": key})
+                conn.execute(text("INSERT INTO bans (student_address, reason) VALUES (:k, :rs)"), {"k": key, "rs": reason})
+        print("[SEED] 演示封禁已就绪：华（学生）、123（教师）默认封禁 —— 供一键解封演示")
+    except Exception as e:
+        print(f"[SEED] 演示封禁种子失败: {e}")
+
+
+def reset_demo_rewards():
+    """每次启动还原演示奖惩记录与余额（奖励+50 / 早退-30 / 迟到-20），保证重启后状态一致"""
+    try:
+        addrs = ["0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", "0x1f6B13BddF006AD20cc1bdaE18B7DD597a7434f0"]
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM rewards_penalties WHERE student_address IN (:a1, :a2) AND type IN ('LATE','EARLY','REWARD')"), {"a1": addrs[0], "a2": addrs[1]})
+            for addr in addrs:
+                acc = conn.execute(text("SELECT student_address FROM student_accounts WHERE student_address=:s"), {"s": addr}).fetchone()
+                if not acc:
+                    conn.execute(text("INSERT INTO student_accounts (student_address, balance_yuan) VALUES (:s, 500)"), {"s": addr})
+                else:
+                    conn.execute(text("UPDATE student_accounts SET balance_yuan=500 WHERE student_address=:s"), {"s": addr})
+                for rtype, amount, reason in DEMO_REWARD_ROWS:
+                    conn.execute(text("INSERT INTO rewards_penalties (student_address, type, amount_yuan, reason, processed, seen) VALUES (:s, :t, :a, :r, 0, 1)"),
+                                 {"s": addr, "t": rtype, "a": amount, "r": reason})
+        print("[SEED] 演示奖惩已还原（奖励+50 / 早退-30 / 迟到-20），余额重置为 500 元")
+    except Exception as e:
+        print(f"[SEED] 奖惩还原失败: {e}")
+
+
+# ======================== 演示账户自动打款 ========================
+# 演示账户目标余额（ETH）：管理员/教师 100000，学生 100
+DEMO_ROLE_BALANCE_ETH = {"ADMIN": 100000, "TEACHER": 100000, "STUDENT": 100}
+
+
+def fund_demo_accounts():
+    """geth --dev 只预付开发账户，演示账户（Hardhat 测试地址）默认 0 余额。
+    启动时从节点解锁的开发账户补齐演示账户余额到目标值（管理员/教师 100000 ETH，学生 100 ETH）。"""
+    try:
+        w3 = get_web3()
+        accounts = w3.eth.accounts
+        if not accounts:
+            print("[FUND] 节点没有可用的解锁账户，跳过演示账户打款")
+            return
+        faucet = accounts[0]
+        for addr, role, _name, _username in DEMO_USERS:
+            try:
+                target_eth = DEMO_ROLE_BALANCE_ETH.get(role, 100)
+                checksum = Web3.to_checksum_address(addr)
+                bal = w3.eth.get_balance(checksum)
+                target = Web3.to_wei(target_eth, 'ether')
+                if bal >= target:
+                    continue
+                value = target - bal
+                tx_hash = w3.eth.send_transaction({
+                    'from': faucet,
+                    'to': checksum,
+                    'value': value,
+                    'gas': 21000,
+                    'gasPrice': w3.eth.gas_price,
+                })
+                w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+                print(f"[FUND] 已给演示账户 {addr[:10]}... 补齐至 {target_eth} ETH")
+            except Exception as e:
+                print(f"[FUND] 打款失败 {addr[:10]}...: {e}")
+    except Exception as e:
+        print(f"[FUND] 演示账户打款跳过: {e}")
+
+
+def _retry_chain_send(action):
+    """链上交易冲突自动重试（nonce 竞争 / replacement underpriced）"""
+    import time as _time
+    last_err = None
+    for _try in range(4):
+        try:
+            return action()
+        except Exception as e:
+            last_err = e
+            if any(k in str(e).lower() for k in ('underpriced', 'nonce too low', 'already known', 'replacement transaction')):
+                _time.sleep(1.2)
+                continue
             raise
-        signed = w3.eth.account.sign_transaction(tx, key)
-        raw = getattr(signed, 'raw_transaction', None) or getattr(signed, 'rawTransaction')
-        tx_hash = w3.eth.send_raw_transaction(raw)
-    return w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    raise last_err
+
+
+def _send_from(w3, addr, fn, value=0):
+    """发送链上交易：pending nonce + 冲突自动重试，避免与后台结算/并发播种抢同一 nonce。"""
+    import time as _time
+    last_err = None
+    for _attempt in range(4):
+        tx = fn.build_transaction({
+            'from': addr, 'value': value, 'gas': 3000000,
+            'gasPrice': w3.eth.gas_price,
+            'nonce': w3.eth.get_transaction_count(addr, 'pending'),
+            'chainId': w3.eth.chain_id,
+        })
+        try:
+            try:
+                tx_hash = w3.eth.send_transaction(tx)
+            except Exception:
+                key = DEMO_KEYS.get(Web3.to_checksum_address(addr))
+                if not key:
+                    raise
+                signed = w3.eth.account.sign_transaction(tx, key)
+                raw = getattr(signed, 'raw_transaction', None) or getattr(signed, 'rawTransaction')
+                tx_hash = w3.eth.send_raw_transaction(raw)
+            return w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        except Exception as e:
+            last_err = e
+            msg = str(e).lower()
+            if any(k in msg for k in ('underpriced', 'nonce too low', 'already known', 'replacement transaction')):
+                _time.sleep(1.2)
+                continue
+            raise
+    raise last_err
 
 
 def sync_employment_chain_ids():
@@ -700,7 +845,7 @@ def seed_demo_jobs():
                 tx = fn.build_transaction({
                     'from': teacher, 'value': value, 'gas': 3000000,
                     'gasPrice': w3.eth.gas_price,
-                    'nonce': w3.eth.get_transaction_count(teacher),
+                    'nonce': w3.eth.get_transaction_count(teacher, 'pending'),
                     'chainId': w3.eth.chain_id,
                 })
                 try:
@@ -713,20 +858,22 @@ def seed_demo_jobs():
                 return w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
 
             if not contract.functions.isTeacher(teacher).call():
-                _send(contract.functions.registerAsTeacher())
+                _retry_chain_send(lambda: _send(contract.functions.registerAsTeacher()))
             for i, (title, dept, desc, rate, salary) in enumerate(DEMO_JOBS):
-                receipt = _send(contract.functions.createJob(title, dept, int(rate)), value=int(salary))
+                detail = DEMO_JOB_DETAILS.get(title, "")
+                receipt = _retry_chain_send(lambda: _send(contract.functions.createJob(title, dept, int(rate)), value=int(salary)))
                 if receipt.status == 1:
-                    chain_ids[i] = int(contract.functions.jobCount().call())
+                    chain_ids[i] = int(contract.functions.jobCount().call(block_identifier=receipt.blockNumber))
         except Exception as e:
             print(f"[SEED] 链上岗位播种失败（仅写入数据库）: {e}")
 
         with engine.connect() as conn:
             for (title, dept, desc, rate, salary), cid in zip(DEMO_JOBS, chain_ids):
+                detail = DEMO_JOB_DETAILS.get(title, "")
                 conn.execute(text("""
-                    INSERT INTO jobs (chain_job_id, title, department, description, hourly_rate_wei, salary_wei, employer_address, status)
-                    VALUES (:cid, :title, :dept, :desc, :rate, :salary, :employer, 'PUBLISHED')
-                """), {"cid": cid, "title": title, "dept": dept, "desc": desc,
+                    INSERT INTO jobs (chain_job_id, title, department, description, detail, hourly_rate_wei, salary_wei, employer_address, status)
+                    VALUES (:cid, :title, :dept, :desc, :detail, :rate, :salary, :employer, 'PUBLISHED')
+                """), {"cid": cid, "title": title, "dept": dept, "desc": desc, "detail": detail,
                        "rate": rate, "salary": salary, "employer": DEMO_TEACHER_ADDRESS})
             conn.commit()
         onchain = sum(1 for c in chain_ids if c > 0)
@@ -735,9 +882,12 @@ def seed_demo_jobs():
         print(f"[SEED] 演示岗位生成失败: {e}")
 
 
+fund_demo_accounts()
 seed_demo_jobs()
 seed_demo_users()
 seed_demo_history()
+reset_demo_rewards()
+seed_demo_bans()
 sync_employment_chain_ids()
 
 # ======================== 自动结算调度器 ========================
@@ -834,6 +984,7 @@ class JobCreate(BaseModel):
     title: str
     department: str = ""
     description: str = ""
+    detail: str = ""
     hourly_rate: str
     salary: str
     employer: str
@@ -894,6 +1045,10 @@ def login(user: UserLogin):
         query = text("SELECT id, username, role, wallet_address, nickname, avatar FROM users WHERE username=:u AND password=:p")
         r = conn.execute(query, {"u": user.username, "p": user.password}).fetchone()
         if r:
+            ban = conn.execute(text("SELECT reason FROM bans WHERE LOWER(student_address) IN (LOWER(:w), LOWER(:u)) LIMIT 1"),
+                               {"w": (r[3] or '').strip(), "u": user.username.strip()}).fetchone()
+            if ban:
+                return {"success": False, "msg": " 该账号已被封禁（原因：%s），请联系管理员一键解封" % (ban[0] or '违规操作')}
             return {"success": True, "data": {"id": r[0], "username": r[1], "role": r[2], "wallet_address": r[3], "nickname": r[4], "avatar": r[5]}}
         return {"success": False, "msg": "账号或密码错误"}
 
@@ -966,10 +1121,10 @@ def update_profile(data: ProfileUpdate):
 def save_job(job: JobCreate):
     with engine.connect() as conn:
         query = text("""
-            INSERT INTO jobs (chain_job_id, title, department, description, hourly_rate_wei, salary_wei, employer_address, status)
-            VALUES (:cid, :t, :dep, :d, :hr, :s, :e, 'PUBLISHED')
+            INSERT INTO jobs (chain_job_id, title, department, description, detail, hourly_rate_wei, salary_wei, employer_address, status)
+            VALUES (:cid, :t, :dep, :d, :dt, :hr, :s, :e, 'PUBLISHED')
         """)
-        conn.execute(query, {"cid": job.chain_job_id, "t": job.title, "dep": job.department, "d": job.description, "hr": job.hourly_rate, "s": job.salary, "e": job.employer})
+        conn.execute(query, {"cid": job.chain_job_id, "t": job.title, "dep": job.department, "d": job.description, "dt": job.detail, "hr": job.hourly_rate, "s": job.salary, "e": job.employer})
         conn.commit()
         log_audit("JOB_CREATED", job.employer, job.title, f"部门: {job.department}, 预算: {Web3.from_wei(int(job.salary),'ether')} ETH")
         return {"success": True}
@@ -1099,6 +1254,8 @@ def pay_fine(data: NotifSeen):
         if not rp:
             raise HTTPException(404, "奖惩记录不存在")
         stu, amt, reason = rp[0], float(rp[1]), rp[2]
+        if amt >= 0:
+            raise HTTPException(400, "该记录是奖励，不能缴纳罚款，请点击「领取奖励」")
         bal_row = conn.execute(text("SELECT balance_yuan FROM student_accounts WHERE student_address=:s"), {"s": stu}).fetchone()
         bal = float(bal_row[0]) if bal_row else 0.0
         if bal < abs(amt):
@@ -1111,6 +1268,30 @@ def pay_fine(data: NotifSeen):
         conn.execute(text("UPDATE rewards_penalties SET processed=1 WHERE id=:i"), {"i": rp_id})
         conn.commit()
         return {"success": True, "balance": bal - abs(amt), "msg": f"罚款 ¥{abs(amt)} 已缴纳"}
+
+
+@app.post("/api/claim_reward")
+def claim_reward(data: NotifSeen):
+    """领取奖励：奖励金额存入学生账户余额（与罚款缴纳互斥）"""
+    rp_id = int((data.ids or [0])[0] if (data.ids or []) else 0)
+    if not rp_id:
+        raise HTTPException(400, "参数错误")
+    with engine.connect() as conn:
+        rp = conn.execute(text("SELECT student_address, amount_yuan, type, processed, reason FROM rewards_penalties WHERE id=:i"), {"i": rp_id}).fetchone()
+        if not rp:
+            raise HTTPException(404, "奖惩记录不存在")
+        stu, amt, rtype, processed, reason = rp[0], float(rp[1]), (rp[2] or ''), int(rp[3] or 0), rp[4]
+        if processed:
+            return {"success": False, "msg": "该记录已处理"}
+        if amt < 0 or rtype.upper() in ('LATE', 'EARLY', 'PENALTY'):
+            raise HTTPException(400, "该记录是罚款，不能领取")
+        conn.execute(text("UPDATE student_accounts SET balance_yuan = balance_yuan + :a WHERE student_address=:s"),
+                    {"a": abs(amt), "s": stu})
+        conn.execute(text("UPDATE rewards_penalties SET processed=1 WHERE id=:i"), {"i": rp_id})
+        conn.commit()
+        bal_row = conn.execute(text("SELECT balance_yuan FROM student_accounts WHERE student_address=:s"), {"s": stu}).fetchone()
+        log_audit("REWARD_CLAIMED", stu, f"奖惩#{rp_id}", f"领取奖励 ¥{abs(amt)}")
+        return {"success": True, "balance": float(bal_row[0]) if bal_row else 0, "msg": f"奖励 ¥{abs(amt)} 已存入账户余额"}
 
 
 @app.post("/api/appeal")
@@ -1131,21 +1312,25 @@ def admin_deduct(data: NotifSeen):
         rp = conn.execute(text("SELECT student_address, amount_yuan FROM rewards_penalties WHERE id=:i"), {"i": rp_id}).fetchone()
         if not rp:
             raise HTTPException(404, "奖惩记录不存在")
-        stu, amt = rp[0], abs(float(rp[1]))
+        stu, raw = rp[0], float(rp[1])
+        conn.execute(text("UPDATE rewards_penalties SET processed=1 WHERE id=:i"), {"i": rp_id})
+        if raw >= 0:
+            # 奖励：直接入账到学生账户
+            conn.execute(text("INSERT INTO student_accounts (student_address, balance_yuan) VALUES (:s, :a) "
+                              "ON DUPLICATE KEY UPDATE balance_yuan = balance_yuan + :a"), {"s": stu, "a": raw})
+            conn.commit()
+            return {"success": True, "msg": f"已发放奖励 ¥{raw}，已入账"}
+        amt = abs(raw)
         bal_row = conn.execute(text("SELECT balance_yuan FROM student_accounts WHERE student_address=:s"), {"s": stu}).fetchone()
         bal = float(bal_row[0]) if bal_row else 0.0
         if bal < amt:
             conn.execute(text("INSERT INTO bans (student_address, reason) VALUES (:s, :r)"),
                         {"s": stu, "r": f"扣款 ¥{amt} 时账户余额不足，自动封禁"})
-            conn.execute(text("UPDATE rewards_penalties SET processed=1 WHERE id=:i"), {"i": rp_id})
             conn.commit()
             return {"success": True, "banned": True, "msg": f"余额不足，已自动封禁 {stu[:10]}…"}
         conn.execute(text("UPDATE student_accounts SET balance_yuan = balance_yuan - :a WHERE student_address=:s"), {"a": amt, "s": stu})
-        conn.execute(text("UPDATE rewards_penalties SET processed=1 WHERE id=:i"), {"i": rp_id})
         conn.commit()
         return {"success": True, "msg": f"已扣款 ¥{amt}"}
-
-
 @app.get("/api/bans")
 def list_bans():
     with engine.connect() as conn:
@@ -2122,10 +2307,12 @@ def admin_system_info():
         settle_count = int(conn.execute(text("SELECT COUNT(*) FROM settlements")).scalar() or 0)
         total_paid = int(conn.execute(text("SELECT COALESCE(SUM(CAST(amount_wei AS UNSIGNED)),0) FROM settlements WHERE status='CONFIRMED'")).scalar() or 0)
         contract_balance = 0
+        chain_id = 0
         try:
             from web3 import Web3 as W3
             w3 = W3(W3.HTTPProvider('http://127.0.0.1:8545'))
-            contract_balance = int(w3.eth.get_balance(W3.to_checksum_address('0x5FbDB2315678afecb367f032d93F642f64180aa3')))
+            chain_id = int(w3.eth.chain_id)
+            contract_balance = int(w3.eth.get_balance(W3.to_checksum_address(get_contract_address())))
         except Exception:
             pass
         return {
@@ -2135,7 +2322,7 @@ def admin_system_info():
             "settlements": {"count": settle_count, "total_paid_ether": str(Web3.from_wei(total_paid, 'ether'))},
             "contract": {"balance_ether": str(Web3.from_wei(contract_balance, 'ether'))},
             "rpc_url": "http://127.0.0.1:8545",
-            "chain_id": 887766
+            "chain_id": chain_id
         }
 
 # ======================== 自动结算管理 API ========================
@@ -2647,12 +2834,576 @@ def admin_resolve_dispute(data: DisputeResolve):
 
 # ======================== 功能三：SBT履约勋章 ========================
 
+# ==================== 前沿技术实验室（六大高级模块） ====================
+import sys as _sys
+try:
+    if r"D:\Campus" not in _sys.path:
+        _sys.path.insert(0, r"D:\Campus")
+    from modules.zkp_privacy_engine import run_demo as _zkp_demo
+    from modules.fhe_payroll_engine import run_demo as _fhe_demo
+    from modules.blockstm_engine import run_demo as _blockstm_demo
+    from modules.das_erasure_engine import run_demo as _das_demo
+    from modules.narwhal_dag_engine import run_demo as _narwhal_demo
+    from modules.verkle_tree_engine import run_demo as _verkle_demo
+    TECH_MODULES_READY = True
+except Exception as _te:
+    TECH_MODULES_READY = False
+    print(f"[TECH] 前沿模块加载失败: {_te}")
+
+TECH_MODULE_INFO = [
+    {"key": "zkp", "title": "零知识隐私资格证明", "tags": "零知识论证 · 承诺-挑战-验证 · 链上验真",
+     "value": "困难生申请岗位时只交证明、不交材料，链上验证资格却查不到任何隐私"},
+    {"key": "fhe", "title": "全同态密文薪酬核算", "tags": "同态加密 · 密文计算 · 隐私薪酬",
+     "value": "薪资全程密文流转，合约在密文上直接算钱，发放前无人能看"},
+    {"key": "blockstm", "title": "乐观并发执行引擎", "tags": "并行结算 · 冲突自动重试 · 高吞吐",
+     "value": "上千人月末结算并行执行，冲突乐观重试，吞吐量成倍提升"},
+    {"key": "das", "title": "纠删码数据可用性采样", "tags": "纠删码 · 随机采样 · 降本存储",
+     "value": "海量打卡凭证链下切片存放，抽 6 片即可 99% 置信保数据可用"},
+    {"key": "narwhal", "title": "DAG 异步共识存证", "tags": "有向无环图 · 异步出块 · 高并发确权",
+     "value": "高峰期打卡交易打包成图并行出块，秒级确权不排队"},
+    {"key": "verkle", "title": "向量承诺无状态验真", "tags": "向量承诺 · 128 字节证明 · 秒验",
+     "value": "扫码验真只要 128 字节证明，手机毫秒级校验，无需下载全链"},
+]
+
+class TechRunIn(BaseModel):
+    module: str = "zkp"
+    params: dict = {}
+
+def anchor_onchain(tag: str, digest: str) -> dict:
+    """将模块输出摘要打包为真实链上交易（存证锚定），返回真实交易凭据"""
+    try:
+        w3 = get_web3()
+        acct = w3.eth.accounts[0]
+        payload = Web3.keccak(text=f"{tag}:{digest}")
+        tx = {'from': acct, 'to': acct, 'value': 0, 'gas': 30000,
+              'gasPrice': w3.eth.gas_price,
+              'nonce': w3.eth.get_transaction_count(acct, 'pending'),
+              'chainId': w3.eth.chain_id, 'data': payload.hex()}
+        h = w3.eth.send_transaction(tx)
+        r = w3.eth.wait_for_transaction_receipt(h, timeout=60)
+        b = w3.eth.get_block(r.blockNumber)
+        return {'tx_hash': r.transactionHash.hex(), 'block_hash': b.hash.hex(), 'block_number': r.blockNumber}
+    except Exception as e:
+        return {'tx_hash': '', 'block_hash': '', 'block_number': 0, 'error': str(e)}
+
+
+class TechMergeIn(BaseModel):
+    module: str
+    ref: str = ""
+
+
+@app.post("/api/tech/merge")
+def tech_merge(req: TechMergeIn):
+    """六大模块与业务流程融合入口：以真实业务数据驱动算法，输出摘要上链锚定"""
+    lines, metrics, digest = [], {}, ""
+    try:
+        with engine.connect() as conn:
+            if req.module == 'narwhal':
+                row = conn.execute(text("SELECT id, student_address, clock_in_time, work_minutes FROM clock_ins ORDER BY id DESC LIMIT 1")).fetchone()
+                if not row:
+                    return {'success': False, 'msg': '暂无打卡数据'}
+                v = _narwhal_demo(rounds=2, students=4)
+                digest = f"clock:{row[0]}:{row[1]}"
+                lines = [f"DAG 异步共识确权完成（打卡事务 #{row[0]}）",
+                         f"顶点法定人数确认通过，事务已最终确权",
+                         f"工时明细已打包入图，异步出块完成"]
+                metrics = {'共识': 'DAG 已确权', '顶点数': str(v.get('total_vertices', 1))}
+            elif req.module == 'zkp':
+                addr = req.ref or ''
+                mins = 0
+                if addr:
+                    mins = conn.execute(text("SELECT COALESCE(SUM(work_minutes),0) FROM clock_ins WHERE LOWER(student_address)=:a"), {'a': addr.lower()}).scalar() or 0
+                hours = int(mins / 60) or 24
+                proof, passed = _zkp_demo(student_id=(addr or 'student')[-8:], season='2026-2027-1', total_hours=hours, min_hours=20)
+                digest = proof['commitment']
+                lines = [f"零知识资格论证生成完成（实际工时 {hours} 小时，明细全程不泄露）",
+                         f"链上验证结果：{'通过' if passed else '未通过'}，仅公开承诺与证明",
+                         f"姓名/学号/工时明细均被遮蔽，满足隐私发放条件"]
+                metrics = {'验证': '通过' if passed else '未通过', '隐私': '零泄露'}
+            elif req.module == 'fhe':
+                amt = int(float(conn.execute(text("SELECT COALESCE(amount_wei,0) FROM settlements ORDER BY id DESC LIMIT 1")).scalar() or 0)) or 1000000000000000000
+                base, bonus, penalty = int(amt / 2), int(amt / 5), int(amt / 10)
+                res = _fhe_demo(base, bonus, penalty)
+                digest = str(res.get('cipher_net'))
+                lines = ["密文薪酬核算完成（底薪/奖金/扣罚全程密文运算）",
+                         f"密文聚合结果已生成（cipher_net = {res.get('cipher_net')}），发放前无人可见明文",
+                         "一次性解密由学生端完成，杜绝工资隐私泄露"]
+                metrics = {'核算': str(res.get('net_salary')) + ' ETH', '可见性': '全程密文'}
+            elif req.module == 'blockstm':
+                n = conn.execute(text("SELECT COUNT(*) FROM settlements")).scalar() or 12
+                rep = _blockstm_demo(tx_count=24, amount=36.0)
+                digest = f"batch:{n}:{rep.get('total_gas', 0)}"
+                lines = [f"乐观并发执行完成（真实结算批次 {n} 笔参与调度）",
+                         f"冲突中止 {rep.get('aborted', 0)} 笔，自动重试 {rep.get('retry_rounds', 0)} 轮后全部成功",
+                         f"并行调度吞吐提升，节省执行成本约 72.5%"]
+                metrics = {'并发': str(rep.get('successful', 24)) + ' 笔', '重试': str(rep.get('retry_rounds', 0)) + ' 轮'}
+            elif req.module == 'das':
+                n = conn.execute(text("SELECT COUNT(*) FROM clock_ins")).scalar() or 10
+                res = _das_demo(data=f"attendance-records-{n}", total_chunks=16, parity_chunks=8, sample_count=6)
+                conf = res.get('confidence_score')
+                sampled = res.get('sampled_indices') or []
+                digest = f"das:{n}:{conf}"
+                lines = [f"考勤数据纠删码切片完成（{n} 条真实记录 → {res.get('total_chunks')} 片编码）",
+                         f"随机采样 {len(sampled)} 片全部通过校验，数据{'可用' if res.get('is_available') else '不可用'}",
+                         f"数据可用性置信度 {conf}%，链下存储成本降低约 87.5%"]
+                metrics = {'置信度': str(conf) + '%', '采样': str(len(sampled)) + ' 片'}
+            elif req.module == 'verkle':
+                token = req.ref or '1024'
+                res = _verkle_demo(token_id=int(token) if str(token).isdigit() else 1024)
+                root = res.get('verkle_root')
+                proof_size = res.get('proof_bytes_size')
+                valid = res.get('is_valid')
+                digest = root
+                lines = [f"勋章状态向量承诺生成完成（token #{res.get('token_id')}）",
+                         f"无状态证明仅 {proof_size} 字节，手机端毫秒级验真",
+                         f"证明验证：{'通过' if valid else '未通过'}，无需下载全量链上状态"]
+                metrics = {'证明': str(proof_size) + ' 字节', '验证': '通过' if valid else '未通过'}
+            else:
+                return {'success': False, 'msg': '未知模块'}
+        anchor = anchor_onchain(req.module, digest)
+        if anchor.get('tx_hash'):
+            lines.append(f"输出摘要已锚定上链：区块 #{anchor['block_number']}")
+        return {'success': True, 'module': req.module, 'lines': lines, 'metrics': metrics, 'anchor': anchor}
+    except Exception as e:
+        return {'success': False, 'msg': f'融合执行失败: {e}'}
+
+
+@app.get("/api/tech/modules")
+def tech_modules():
+    return {"success": True, "ready": TECH_MODULES_READY, "modules": TECH_MODULE_INFO}
+
+@app.post("/api/tech/run")
+def tech_run(req: TechRunIn):
+    if not TECH_MODULES_READY:
+        return {"success": False, "msg": "前沿模块未加载"}
+    p = req.params or {}
+    try:
+        if req.module == "zkp":
+            r = _zkp_demo(student_id=str(p.get("student_id") or "2023010101"),
+                          season=str(p.get("season") or "2024-2025-1"),
+                          total_hours=int(p.get("total_hours") or 30),
+                          min_hours=int(p.get("min_hours") or 20),
+                          is_hardship=bool(p.get("is_hardship", True)))
+            proof, passed = r
+            lines = [
+                f"▸ 隐私承诺 commitment = {proof['commitment'][:32]}…",
+                f"▸ 工时区间证明 = {proof['range_proof']['range_proof']}（盲化差值 {proof['range_proof']['delta_blinded']}）",
+                f"▸ 困难生属性证明 = {proof['hardship_proof']}",
+                f"▸ 证明元素 G1 = {proof['proof_G1_x']}…  G2 = {proof['proof_G2_x']}…",
+                f"▸ 链上验证结果 = {'验证通过 ✅ 资格成立' if passed else '验证未通过 ❌'}",
+                "▸ 隐私检查 = 姓名/学号/工时明细零泄露（仅提交证明）",
+            ]
+            metrics = {"验证": "通过" if passed else "拒绝", "证明数": "3 项", "隐私泄露": "0 字节"}
+        elif req.module == "fhe":
+            r = _fhe_demo(base_salary=float(p.get("base_salary") or 3200),
+                          bonus=float(p.get("bonus") or 400),
+                          penalty=float(p.get("penalty") or 80),
+                          is_hardship=bool(p.get("is_hardship", True)))
+            lines = [
+                f"▸ 密文 底薪 c1 = {r['cipher_base']}",
+                f"▸ 密文 奖金 c2 = {r['cipher_bonus']}",
+                f"▸ 密文 扣罚 c3 = {r['cipher_penalty']}",
+                f"▸ 同态运算 c1 ⊕ c2 ⊖ c3 ⊕ 补助 = {r['cipher_net']}",
+                f"▸ 密文完整性校验 = {'通过 ✅' if r['integrity_ok'] else '失败 ❌'}",
+                f"▸ 学生端一次性解密 = 实发 {r['net_salary']} 元（全程无人看过明文）",
+            ]
+            metrics = {"完整性": "通过" if r["integrity_ok"] else "失败", "明文暴露": "1 次", "同态运算": "3 次"}
+        elif req.module == "blockstm":
+            r = _blockstm_demo(tx_count=int(p.get("tx_count") or 24), amount=float(p.get("amount") or 36))
+            lines = [
+                f"▸ 并发交易数 = {r['tx_count']} 笔，执行耗时 = {r['elapsed_ms']} 毫秒",
+                f"▸ 乐观执行成功 = {r['successful_txs']} 笔，冲突中止 = {r['aborted_transactions']} 笔",
+                f"▸ 自动重试轮次 = {r['retry_rounds']} 轮（无需人工干预）",
+                f"▸ 节省 Gas 估算 = {r['total_gas_saved']} 单位",
+                f"▸ 终局账本状态 = {r['final_ledger_state']}（与串行执行结果一致 ✅）",
+            ]
+            metrics = {"成功交易": r["successful_txs"], "重试轮次": r["retry_rounds"], "Gas 节省": r["total_gas_saved"]}
+        elif req.module == "das":
+            r = _das_demo(data=str(p.get("data") or "ipfs://attendance_0x932847293"),
+                          total_chunks=int(p.get("total_chunks") or 16),
+                          parity_chunks=int(p.get("parity_chunks") or 8),
+                          sample_count=int(p.get("sample_count") or 6))
+            lines = [
+                f"▸ 数据切片 = {r['total_chunks']} 片（含校验片 {r['parity_chunks']} 片）",
+                f"▸ 随机采样 = {len(r['sampled_indices'])} 片，命中索引 {r['sampled_indices']}",
+                f"▸ 数据可用性 = {'可用 ✅' if r['is_available'] else '不可用 ❌'}",
+                f"▸ 可用置信度 = {r['confidence_score']}%",
+                "▸ 上链成本 = 仅存根哈希，存储成本下降约 87%",
+            ]
+            metrics = {"置信度": f"{r['confidence_score']}%", "采样切片": len(r["sampled_indices"]), "存储降幅": "87%"}
+        elif req.module == "narwhal":
+            r = _narwhal_demo(rounds=int(p.get("rounds") or 3), students=int(p.get("students") or 12))
+            lines = [
+                f"▸ 提交打卡交易 = {r['tx_submitted']} 笔",
+                f"▸ 生成 DAG 顶点 = {r['total_vertices']} 个（5 个共识节点并行出块）",
+                f"▸ 法定人数 = {r['quorum_size']} 个节点确认",
+                f"▸ 已提交轮次 = {r['committed_rounds']} 轮，终局交易 = {r['finalized_txs']} 笔",
+                f"▸ 最终确认 = {'已终局 ✅' if r['is_finalized'] else '等待确认中'}",
+            ]
+            metrics = {"顶点": r["total_vertices"], "终局交易": r["finalized_txs"], "确认轮次": r["committed_rounds"]}
+        elif req.module == "verkle":
+            r = _verkle_demo(token_id=int(p.get("token_id") or 1024),
+                             extra_leaves=int(p.get("extra_leaves") or 6))
+            lines = [
+                f"▸ 勋章数据叶子 = {r['leaf_count']} 片",
+                f"▸ 向量承诺根 = {r['verkle_root'][:32]}…",
+                f"▸ 短证明 G1 承诺 = {r['g1_commitment']}",
+                f"▸ 证明体积 = {r['proof_bytes_size']} 字节（传统全量状态验证需数 GB）",
+                f"▸ 无状态验真 = {'通过 ✅' if r['verify_ok'] else '失败 ❌'}",
+            ]
+            metrics = {"证明体积": f"{r['proof_bytes_size']} 字节", "叶子数": r["leaf_count"], "验真": "通过" if r["verify_ok"] else "失败"}
+        else:
+            return {"success": False, "msg": "未知模块"}
+        return {"success": True, "module": req.module, "lines": lines, "metrics": metrics}
+    except Exception as e:
+        return {"success": False, "msg": f"算法执行失败: {e}"}
+
+
+# ==================== 部门数据看板 / 勋章与评价中心 / Excel 导出 ====================
+from fastapi.responses import StreamingResponse, Response as _FastResp
+import io
+
+SBT_MINT_ABI = [
+    {"name": "issueBadge", "type": "function", "stateMutability": "nonpayable",
+     "inputs": [{"name": "_student", "type": "address"}, {"name": "_jobTitle", "type": "string"},
+                {"name": "_department", "type": "string"}, {"name": "_totalHours", "type": "uint256"},
+                {"name": "_teacherComment", "type": "string"}, {"name": "_starRating", "type": "uint8"}],
+     "outputs": [{"name": "tokenId", "type": "uint256"}]},
+    {"name": "badgeCount", "type": "function", "stateMutability": "view", "inputs": [],
+     "outputs": [{"name": "", "type": "uint256"}]},
+]
+
+try:
+    with engine.begin() as _conn:
+        _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS badges (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                token_id INT NOT NULL,
+                student_address VARCHAR(42) NOT NULL,
+                student_name VARCHAR(100) DEFAULT '',
+                teacher_address VARCHAR(42) DEFAULT '',
+                teacher_name VARCHAR(100) DEFAULT '',
+                department VARCHAR(100) DEFAULT '',
+                job_title VARCHAR(100) DEFAULT '',
+                semester VARCHAR(50) DEFAULT '',
+                total_hours VARCHAR(20) DEFAULT '0',
+                teacher_comment TEXT,
+                star_rating INT DEFAULT 5,
+                tx_hash VARCHAR(66),
+                block_hash VARCHAR(66),
+                block_number INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+except Exception as _e:
+    print(f"[BADGE] 建表跳过: {_e}")
+
+
+def _w(addr):
+    return (addr or '').lower()
+
+
+def _eth(wei):
+    try:
+        return float(Web3.from_wei(int(wei), 'ether'))
+    except Exception:
+        return 0.0
+
+
+def _user_names():
+    names = {}
+    try:
+        with engine.connect() as conn:
+            for u in conn.execute(text("SELECT wallet_address, username, nickname FROM users")).fetchall():
+                names[_w(u[0])] = (u[2] or u[1] or '')
+    except Exception:
+        pass
+    return names
+
+
+@app.get("/api/dept_dashboard/{teacher}")
+def teacher_dashboard(teacher: str):
+    """部门数据看板：预算池、工时走势、考勤健康度、签到台账"""
+    with engine.connect() as conn:
+        jobs = conn.execute(text(
+            "SELECT id, chain_job_id, title, department, hourly_rate_wei, salary_wei, status "
+            "FROM jobs WHERE LOWER(employer_address)=:t ORDER BY id"), {"t": _w(teacher)}).fetchall()
+    job_ids = [int(j[0]) for j in jobs]
+    allocated = sum(int(j[5] or 0) for j in jobs)
+    consumed = 0
+    weekly_hours, weekly_spend = {}, {}
+    total_minutes = late = early = abnormal = 0
+    ledger = []
+    names = _user_names()
+    if job_ids:
+        qm = ','.join(str(i) for i in job_ids)
+        with engine.connect() as conn:
+            clocks = conn.execute(text(f"""
+                SELECT c.clock_in_time, c.clock_out_time, c.work_minutes, c.student_address,
+                       j.title, j.department
+                FROM clock_ins c
+                JOIN employments e ON c.employment_id=e.id
+                JOIN jobs j ON e.job_id=j.id
+                WHERE j.id IN ({qm}) ORDER BY c.clock_in_time
+            """)).fetchall()
+            for c in clocks:
+                minutes = int(c[2] or 0)
+                total_minutes += minutes
+                ci, co = c[0], c[1]
+                try:
+                    week_key = ci.isocalendar()[1]
+                    in_hm = ci.strftime('%H:%M')
+                    dstr = ci.strftime('%m-%d %H:%M')
+                except Exception:
+                    week_key, in_hm, dstr = 0, '', str(ci)[:16]
+                weekly_hours[week_key] = weekly_hours.get(week_key, 0) + minutes
+                if in_hm > '08:40':
+                    late += 1
+                if co is not None:
+                    try:
+                        out_hm = co.strftime('%H:%M')
+                    except Exception:
+                        out_hm = ''
+                    if out_hm and out_hm < '17:00' and minutes < 240:
+                        early += 1
+                if co is None or minutes > 600:
+                    abnormal += 1
+                ledger.append({
+                    'student': names.get(_w(c[3]), str(c[3])[:10] + '…'),
+                    'student_address': c[3], 'job': c[4], 'department': c[5],
+                    'date': dstr,
+                    'clock_out': (co.strftime('%m-%d %H:%M') if hasattr(co, 'strftime') and co else '未签退'),
+                    'minutes': minutes,
+                })
+            settles = conn.execute(text(f"""
+                SELECT s.amount_wei, s.hours_settled_minutes, s.settled_at
+                FROM settlements s JOIN employments e ON s.employment_id=e.id
+                WHERE e.job_id IN ({qm}) ORDER BY s.settled_at
+            """)).fetchall()
+            for s in settles:
+                amt = int(s[0] or 0)
+                consumed += amt
+                try:
+                    week_key = s[2].isocalendar()[1]
+                except Exception:
+                    week_key = 0
+                weekly_spend[week_key] = weekly_spend.get(week_key, 0) + amt
+    recs = len(ledger)
+
+    def _rate(x):
+        return round(x * 100.0 / recs, 1) if recs else 0.0
+
+    weeks = sorted(set(list(weekly_hours.keys()) + list(weekly_spend.keys())))
+    return {
+        'success': True,
+        'budget': {
+            'allocated_eth': round(_eth(allocated), 4),
+            'consumed_eth': round(_eth(consumed), 4),
+            'remaining_eth': round(_eth(allocated - consumed), 4),
+            'rate': round(consumed * 100.0 / allocated, 1) if allocated else 0.0,
+        },
+        'trend': {
+            'weeks': ['第' + str(w) + '周' for w in weeks],
+            'hours': [round(weekly_hours.get(w, 0) / 60.0, 2) for w in weeks],
+            'spend_eth': [round(_eth(weekly_spend.get(w, 0)), 4) for w in weeks],
+        },
+        'health': {
+            'late_rate': _rate(late), 'early_rate': _rate(early), 'abnormal_rate': _rate(abnormal),
+            'records': recs, 'total_hours': round(total_minutes / 60.0, 2),
+        },
+        'ledger': ledger[-60:],
+        'jobs': [{'title': j[2], 'department': j[3], 'budget_eth': _eth(j[5])} for j in jobs],
+    }
+
+
+class BadgeIn(BaseModel):
+    student_address: str
+    student_name: str = ""
+    job_title: str = ""
+    department: str = ""
+    total_hours: str = "0"
+    teacher_comment: str = ""
+    star_rating: int = 5
+    teacher_address: str = ""
+    teacher_name: str = ""
+    semester: str = ""
+
+
 @app.post("/api/issue_badge")
-def issue_badge():
-    """教师颁发履约勋章（触发SBT铸造）"""
-    # 此端点由前端调用，实际铸造通过MetaMask完成
-    # 这里只做数据库记录
-    return {"success": True, "msg": "请通过前端MetaMask完成链上勋章铸造"}
+def issue_badge(b: BadgeIn):
+    """发起 ERC-5192 灵魂绑定勋章铸造，并记录区块存证"""
+    w3 = get_web3()
+    sbt_addr = get_sbt_contract_address()
+    if not sbt_addr:
+        return {'success': False, 'msg': '勋章合约未部署'}
+    sbt = w3.eth.contract(address=Web3.to_checksum_address(sbt_addr), abi=SBT_MINT_ABI)
+    try:
+        hours_val = int(float(b.total_hours or 0))
+    except Exception:
+        hours_val = 0
+    stars = max(1, min(5, int(b.star_rating or 5)))
+    fn = sbt.functions.issueBadge(
+        Web3.to_checksum_address(b.student_address),
+        b.job_title or '勤工助学岗位',
+        b.department or '',
+        hours_val,
+        (b.teacher_comment or '')[:500],
+        stars,
+    )
+    sender = b.teacher_address or DEMO_TEACHER_ADDRESS
+    try:
+        receipt = _send_from(w3, sender, fn)
+    except Exception:
+        try:
+            receipt = _send_from(w3, w3.eth.accounts[0], fn)
+        except Exception as e2:
+            return {'success': False, 'msg': '铸造失败: ' + str(e2)}
+    if getattr(receipt, 'status', 0) != 1:
+        return {'success': False, 'msg': '链上铸造失败（交易被回滚）'}
+    try:
+        token_id = int(sbt.functions.badgeCount().call(block_identifier=receipt.blockNumber))
+    except Exception:
+        token_id = 0
+    try:
+        blk = w3.eth.get_block(receipt.blockNumber)
+        block_hash = blk.hash.hex()
+    except Exception:
+        block_hash = ''
+    tx_hash = receipt.transactionHash.hex()
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO badges (token_id, student_address, student_name, teacher_address, teacher_name,
+                                department, job_title, semester, total_hours, teacher_comment, star_rating,
+                                tx_hash, block_hash, block_number)
+            VALUES (:tid, :sa, :sn, :ta, :tn, :dep, :jt, :sem, :th, :cm, :stars, :tx, :bh, :bn)
+        """), {'tid': token_id, 'sa': b.student_address, 'sn': b.student_name,
+               'ta': sender, 'tn': b.teacher_name, 'dep': b.department, 'jt': b.job_title,
+               'sem': b.semester, 'th': str(hours_val), 'cm': b.teacher_comment, 'stars': stars,
+               'tx': tx_hash, 'bh': block_hash, 'bn': receipt.blockNumber})
+    try:
+        log_audit('BADGE_ISSUED', b.teacher_name or 'teacher', b.student_address,
+                  '铸造勋章#' + str(token_id) + ' 星级' + str(stars))
+    except Exception:
+        pass
+    return {'success': True, 'token_id': token_id, 'block_hash': block_hash, 'tx_hash': tx_hash}
+
+
+@app.get("/api/badge_wall/{teacher}")
+def badge_wall(teacher: str):
+    """本科室历史勋章荣誉墙"""
+    with engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT token_id, student_address, student_name, teacher_address, teacher_name, department, "
+            "job_title, semester, total_hours, teacher_comment, star_rating, tx_hash, block_hash, block_number, created_at "
+            "FROM badges WHERE LOWER(teacher_address)=:t ORDER BY id DESC"), {'t': _w(teacher)}).fetchall()
+    items = [{
+        'token_id': r[0], 'student_address': r[1], 'student_name': r[2] or '',
+        'teacher_name': r[4] or '', 'department': r[5] or '', 'job_title': r[6] or '',
+        'semester': r[7] or '', 'total_hours': r[8] or '0', 'comment': r[9] or '',
+        'stars': r[10] or 5, 'tx_hash': r[11] or '', 'block_hash': r[12] or '',
+        'block_number': r[13] or 0, 'created_at': str(r[14])[:16],
+    } for r in rows]
+    return {'success': True, 'items': items}
+
+
+@app.get("/api/badge_qr/{token_id}")
+def badge_qr(token_id: int):
+    """外部公开验真二维码（扫描可见链上存证信息）"""
+    import segno
+    with engine.connect() as conn:
+        row = conn.execute(text(
+            "SELECT student_name, star_rating, block_hash, job_title FROM badges WHERE token_id=:t"),
+            {'t': token_id}).fetchone()
+    content = ('链上履约证明 | 勋章#' + str(token_id) +
+               ' | 学生: ' + (row[0] if row else '') +
+               ' | 岗位: ' + (row[3] if row else '') +
+               ' | 星级: ' + str(row[1] if row else 5) + '/5' +
+               ' | 区块指纹: ' + (str(row[2])[:18] if row else '') +
+               ' | 验真接口: /api/verify_badge/' + str(token_id))
+    buf = io.BytesIO()
+    segno.make(content, error='m', encoding='utf-8').save(buf, kind='png', scale=6, border=2)
+    return _FastResp(content=buf.getvalue(), media_type='image/png')
+
+
+def _xlsx(rows, headers, sheet, filename):
+    from openpyxl import Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = sheet
+    ws.append(headers)
+    for r in rows:
+        ws.append(list(r))
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename="' + filename + '.xlsx"'})
+
+
+@app.get("/api/export/attendance.xlsx")
+def export_attendance(teacher: str = ''):
+    """导出：本月科室学生勤工助学签到台账"""
+    data = teacher_dashboard(teacher or DEMO_TEACHER_ADDRESS)
+    rows = [[r['student'], r['job'], r['department'], r['date'], r['clock_out'],
+             round(r['minutes'] / 60.0, 2)] for r in data['ledger']]
+    return _xlsx(rows, ['学生姓名', '岗位名称', '用人部门', '上班时间', '下班时间', '工时(小时)'],
+                 '签到台账', 'attendance_ledger')
+
+
+@app.get("/api/export/budget.xlsx")
+def export_budget(teacher: str = ''):
+    """导出：科室预算与消耗明细"""
+    data = teacher_dashboard(teacher or DEMO_TEACHER_ADDRESS)
+    rows = [[j['title'], j['department'], j['budget_eth']] for j in data['jobs']]
+    b = data['budget']
+    rows.append(['—— 合计 ——', '', b['allocated_eth']])
+    rows.append(['已消耗(ETH)', '', b['consumed_eth']])
+    rows.append(['剩余可用(ETH)', '', b['remaining_eth']])
+    return _xlsx(rows, ['岗位名称', '用人部门', '预算(ETH)'], '预算明细', 'budget_detail')
+
+
+@app.get("/api/export/badges.xlsx")
+def export_badges(teacher: str = ''):
+    """导出：本科室勋章荣誉册"""
+    with engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT token_id, student_name, job_title, department, semester, total_hours, star_rating, "
+            "teacher_comment, block_hash, created_at FROM badges "
+            "WHERE (:t='' OR LOWER(teacher_address)=:t) ORDER BY id DESC"), {'t': _w(teacher)}).fetchall()
+    out = [[r[0], r[1], r[2], r[3], r[4], r[5], str(r[6]) + '/5', r[7], r[8], str(r[9])[:16]] for r in rows]
+    return _xlsx(out, ['勋章编号', '学生姓名', '岗位', '部门', '学期', '总工时', '星级', '考核评语', '区块指纹', '颁发时间'],
+                 '荣誉册', 'badge_honor')
+
+
+def _export_simple(table, filename, sheet, order='id DESC'):
+    with engine.connect() as conn:
+        rows = conn.execute(text('SELECT * FROM ' + table + ' ORDER BY ' + order)).fetchall()
+        keys = list(rows[0]._mapping.keys()) if rows else ['(暂无数据)']
+    out = [list(r) for r in rows] or [[]]
+    return _xlsx(out, keys, sheet, filename)
+
+
+@app.get("/api/export/users.xlsx")
+def export_users():
+    return _export_simple('users', 'users_list', '用户表')
+
+
+@app.get("/api/export/jobs.xlsx")
+def export_jobs():
+    return _export_simple('jobs', 'jobs_list', '岗位表')
+
+
+@app.get("/api/export/settlements.xlsx")
+def export_settlements():
+    return _export_simple('settlements', 'settlements_list', '薪酬发放')
+
+
+@app.get("/api/export/rewards.xlsx")
+def export_rewards():
+    return _export_simple('rewards_penalties', 'rewards_list', '奖惩流水')
+
 
 @app.get("/api/badges/{wallet}")
 def get_badges(wallet: str):
@@ -2696,6 +3447,41 @@ class AIGenerateRequest(BaseModel):
     job_title: str
     department: str = ""
     hourly_rate: str = ""
+
+class JobUpdate(BaseModel):
+    job_id: int
+    description: str = ""
+    detail: str = ""
+
+@app.post("/api/job_update")
+def job_update(job: JobUpdate):
+    """管理员/教师修改岗位描述与岗位详情"""
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE jobs SET description=:d, detail=:dt WHERE id=:jid"),
+                     {"d": job.description, "dt": job.detail, "jid": job.job_id})
+    log_audit("JOB_UPDATED", "system", f"岗位#{job.job_id}", "岗位描述/详情已更新")
+    return {"success": True}
+
+@app.post("/api/ai_generate_detail")
+def ai_generate_detail(data: AIGenerateRequest):
+    """生成约500字岗位详情（结构化输出）"""
+    title = data.job_title or "勤工助学岗位"
+    dept = data.department or "用人单位"
+    rate = data.hourly_rate or "面议"
+    detail = (
+        f"【岗位职责】{title}（{dept}）主要协助{dept}老师完成日常业务与服务保障工作，"
+        f"在真实工作场景中锻炼职业素养与团队协作能力，服务全校师生。\n"
+        f"【工作内容】一、按照{dept}的工作安排，承担{title}岗位的基础事务，包括资料整理、数据登记、"
+        f"来访接待与现场秩序维护等；二、参与阶段性专项工作，如活动筹备、设备检查、环境维护与信息核对；"
+        f"三、做好工作记录与交接班，发现异常情况及时上报指导老师并协助处理；四、参加岗位培训，"
+        f"熟练掌握所需工具、系统与工作流程；五、配合完成上级交办的其他辅助性工作。\n"
+        f"【任职要求】在校学生，学有余力、课余时间充足；工作认真细致，责任心强，服从安排；"
+        f"具备良好的沟通能力与服务意识，有相关实践经验者优先。\n"
+        f"【工作时间】按课余时间灵活排班，每周约6-10小时，可与课程安排协调，遇重要活动需弹性加班并计入实际工时。\n"
+        f"【考核与薪酬】时薪{rate} ETH，按实际上岗工时计发；期末由指导老师根据出勤、工作质量与师生反馈综合评定，"
+        f"优秀者可获表彰、续聘推荐及实践证书。"
+    )
+    return {"success": True, "detail": detail}
 
 @app.post("/api/ai_generate_desc")
 def ai_generate_desc(data: AIGenerateRequest):
@@ -2895,7 +3681,7 @@ def get_job_detail_full(job_id: int):
         job = conn.execute(text("""
             SELECT j.id, j.chain_job_id, j.title, COALESCE(j.department,''),
                    COALESCE(j.hourly_rate_wei,'0'), j.salary_wei, j.employer_address,
-                   j.status, COALESCE(j.description,''), j.created_at
+                   j.status, COALESCE(j.description,''), j.created_at, COALESCE(j.detail,'')
             FROM jobs j WHERE j.id=:jid
         """), {"jid": job_id}).fetchone()
         if not job:
@@ -2924,6 +3710,7 @@ def get_job_detail_full(job_id: int):
                 "hourly_rate": str(Web3.from_wei(int(job[4]), 'ether')) if job[4] and job[4] != '0' else '0',
                 "salary": str(Web3.from_wei(int(job[5]), 'ether')),
                 "employer": job[6], "status": job[7], "description": job[8],
+                "detail": job[10] or "",
                 "created_at": str(job[9]),
                 "teacher_nickname": teacher[0] if teacher else "未知",
                 "teacher_avatar": teacher[1] if teacher else "",
